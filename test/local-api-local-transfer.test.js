@@ -140,10 +140,33 @@ test("preview, atomic import, merged totals, conflict/stale handling, and undo",
     assert.equal(undoneSummary.body.totals.total_tokens, 40);
 
     const beforeBad = await h.call("/functions/tokentracker-usage-summary?from=2026-10-16&to=2026-10-16&tz=UTC");
-    const bad = await h.call("/api/local-transfer/import", { method: "POST", headers: h.authHeaders, body: JSON.stringify({ snapshot: { schema: "bad" } }) });
+    const bad = await h.call("/api/local-transfer/import", { method: "POST", headers: h.authHeaders, body: JSON.stringify({ snapshot: { ...first, prompt: "do not persist me" } }) });
     assert.equal(bad.status, 400);
     const afterBad = await h.call("/functions/tokentracker-usage-summary?from=2026-10-16&to=2026-10-16&tz=UTC");
     assert.equal(afterBad.body.totals.total_tokens, beforeBad.body.totals.total_tokens);
+    const state = JSON.parse(await fs.promises.readFile(path.join(h.dir, "imports", "state.json"), "utf8"));
+    assert.equal(JSON.stringify(state).includes("do not persist me"), false);
+  } finally {
+    await fs.promises.rm(h.dir, { recursive: true, force: true });
+  }
+});
+
+test("project usage summary includes imported rows when no project queue exists", async () => {
+  const h = await makeHarness([]);
+  try {
+    const imported = await h.call("/api/local-transfer/import", {
+      method: "POST",
+      headers: h.authHeaders,
+      body: JSON.stringify({ snapshot: makeSnapshot({ rows: [transferRow({ total_tokens: 45, input_tokens: 15, output_tokens: 30, billable_total_tokens: 45 })] }) }),
+    });
+    assert.equal(imported.status, 200);
+
+    const summary = await h.call("/functions/tokentracker-project-usage-summary");
+    assert.equal(summary.status, 200);
+    assert.equal(summary.body.entries.length, 1);
+    assert.equal(summary.body.entries[0].project_key, "codex");
+    assert.equal(summary.body.entries[0].total_tokens, "45");
+    assert.equal(summary.body.entries[0].billable_total_tokens, "45");
   } finally {
     await fs.promises.rm(h.dir, { recursive: true, force: true });
   }

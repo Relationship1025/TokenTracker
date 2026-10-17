@@ -3098,7 +3098,7 @@ function createLocalApiHandler({ queuePath, serverVersion = null, trackerDataDir
       // and produce wrong numbers; keep it only as the empty fallback.
       if (entries.length === 0 && projectRows.length === 0) {
         entries = await aggregateEntries(
-          await readQueueData(qp),
+          await readMergedQueueData(),
           (row) => row.source || "unknown",
           // Synthetic source-only row: leave project_ref empty rather than
           // fabricating `https://${src}.ai`, which resolves to unrelated
