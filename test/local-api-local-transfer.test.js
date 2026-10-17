@@ -76,7 +76,7 @@ async function makeHarness(localRows = []) {
 }
 
 test("local transfer endpoints enforce auth and export local queue only", async () => {
-  const local = transferRow({ total_tokens: 11, input_tokens: 1, output_tokens: 10 });
+  const local = transferRow({ total_tokens: 11, input_tokens: 1, output_tokens: 10, billable_total_tokens: undefined, total_cost_usd: "1.23" });
   const h = await makeHarness([local]);
   try {
     const snapshot = makeSnapshot();
@@ -90,8 +90,11 @@ test("local transfer endpoints enforce auth and export local queue only", async 
     const exportedSnapshot = exported.body;
     assert.equal(exportedSnapshot.rows.length, 1);
     assert.equal(exportedSnapshot.rows[0].total_tokens, 11);
-    assert.equal(exportedSnapshot.origin_id, exportedSnapshot.origin_id);
+    assert.equal(exportedSnapshot.rows[0].billable_total_tokens, 11);
+    assert.equal(Object.hasOwn(exportedSnapshot.rows[0], "total_cost_usd"), false);
     assert.notEqual(exportedSnapshot.origin_id, snapshot.origin_id);
+    const secondExport = await h.call("/api/local-transfer/export");
+    assert.equal(secondExport.body.revision, exportedSnapshot.revision + 1);
   } finally {
     await fs.promises.rm(h.dir, { recursive: true, force: true });
   }
