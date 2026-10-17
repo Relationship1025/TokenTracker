@@ -38,10 +38,10 @@ export function DataTransferSection() {
   const [error, setError] = useState("");
   const [exportName, setExportName] = useState("");
 
-  const request = async (url, options = {}) => {
+  const request = async (url, options = {}, { allowError = false } = {}) => {
     const headers = { ...(await getLocalApiAuthHeaders()), ...(options.headers || {}) };
     const response = await fetch(url, { ...options, headers });
-    if (!response.ok) throw new Error(`${copy("settings.transfer.request_failed")} (${response.status})`);
+    if (!response.ok && !allowError) throw new Error(`${copy("settings.transfer.request_failed")} (${response.status})`);
     return response;
   };
 
@@ -71,8 +71,11 @@ export function DataTransferSection() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ snapshot }),
-      });
+      }, { allowError: true });
       const result = await response.json();
+      if (!response.ok && !result?.action) {
+        throw new Error(result?.error || copy("settings.transfer.invalid_file"));
+      }
       setPreview({ snapshot, summary: { ...summarizeSnapshot(snapshot), ...(result.summary || {}) }, action: result.action });
     } catch (err) { setError(err.message || copy("settings.transfer.invalid_file")); }
     finally { setBusy(false); }
@@ -122,7 +125,7 @@ export function DataTransferSection() {
               <div><span className="text-oai-gray-500">{copy("settings.transfer.tokens_label")}: </span>{preview.summary.tokens ?? preview.summary.total_tokens}</div>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => setConfirming(true)} disabled={busy || preview.action === "noop"}><Upload size={15} className="mr-1.5" aria-hidden />{copy("settings.transfer.import")}</Button>
+              <Button size="sm" onClick={() => setConfirming(true)} disabled={busy || ["noop", "stale", "conflict"].includes(preview.action)}><Upload size={15} className="mr-1.5" aria-hidden />{copy("settings.transfer.import")}</Button>
               {undoAvailable ? <Button size="sm" variant="secondary" onClick={handleUndo} disabled={busy}><RotateCcw size={15} className="mr-1.5" aria-hidden />{copy("settings.transfer.undo")}</Button> : null}
             </div>
           </div>

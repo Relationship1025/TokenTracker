@@ -149,3 +149,22 @@ test("preview, atomic import, merged totals, conflict/stale handling, and undo",
   }
 });
 
+test("re-importing this computer's own export does not double-count local usage", async () => {
+  const local = transferRow({ total_tokens: 17, input_tokens: 7, output_tokens: 10 });
+  const h = await makeHarness([local]);
+  try {
+    const exported = await h.call("/api/local-transfer/export");
+    assert.equal(exported.status, 200);
+    const imported = await h.call("/api/local-transfer/import", {
+      method: "POST",
+      headers: h.authHeaders,
+      body: JSON.stringify({ snapshot: exported.body }),
+    });
+    assert.equal(imported.status, 200);
+    const summary = await h.call("/functions/tokentracker-usage-summary?from=2026-10-16&to=2026-10-16&tz=UTC");
+    assert.equal(summary.body.totals.total_tokens, 17);
+  } finally {
+    await fs.promises.rm(h.dir, { recursive: true, force: true });
+  }
+});
+

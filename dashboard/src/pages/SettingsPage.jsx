@@ -22,6 +22,7 @@ import { useProxySettings } from "../hooks/use-proxy-settings.js";
 import { cn } from "../lib/cn";
 import { copy } from "../lib/copy";
 import { isNativeWindowsApp } from "../lib/native-bridge.js";
+import { isLocalDashboardHost } from "../lib/host-mode";
 import { Button } from "../ui/components/Button.jsx";
 
 const SETTINGS_SECTION_IDS = {
@@ -71,10 +72,12 @@ export function SettingsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const requestedSection = searchParams.get("section");
+  const localDashboardHost = isLocalDashboardHost();
   const requestedSectionAvailable =
     Object.values(SETTINGS_SECTION_IDS).includes(requestedSection) &&
     (requestedSection !== SETTINGS_SECTION_IDS.NATIVE_APP || nativeSettingsAvailable) &&
-    (requestedSection !== SETTINGS_SECTION_IDS.NETWORK || proxySettingsAvailable);
+    (requestedSection !== SETTINGS_SECTION_IDS.NETWORK || proxySettingsAvailable) &&
+    (requestedSection !== SETTINGS_SECTION_IDS.TRANSFER || localDashboardHost);
   const activeSection = requestedSectionAvailable
     ? requestedSection
     : SETTINGS_SECTION_IDS.APPEARANCE;
@@ -125,14 +128,6 @@ export function SettingsPage() {
       group: SETTINGS_GROUP_IDS.PERSONAL,
       Icon: UserRound,
       content: <AccountSection settings={accountSettings} />,
-    },
-    {
-      id: SETTINGS_SECTION_IDS.TRANSFER,
-      label: copy("settings.section.transfer"),
-      description: copy("settings.section.transfer.description"),
-      group: SETTINGS_GROUP_IDS.PERSONAL,
-      Icon: FileDown,
-      content: <DataTransferSection />,
     },
     {
       id: SETTINGS_SECTION_IDS.CLOUD,
@@ -213,6 +208,16 @@ export function SettingsPage() {
         </div>
       ),
     },
+    ...(localDashboardHost
+      ? [{
+          id: SETTINGS_SECTION_IDS.TRANSFER,
+          label: copy("settings.section.transfer"),
+          description: copy("settings.section.transfer.description"),
+          group: SETTINGS_GROUP_IDS.PERSONAL,
+          Icon: FileDown,
+          content: <DataTransferSection />,
+        }]
+      : []),
     {
       id: SETTINGS_SECTION_IDS.LABS,
       label: copy("settings.section.labs"),

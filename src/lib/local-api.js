@@ -1118,7 +1118,14 @@ function createLocalApiHandler({ queuePath, serverVersion = null, trackerDataDir
     const projectedLocalRows = localRows.map(projectQueueRowToTransfer).filter(Boolean);
     const state = readLocalTransferImportState();
     if (state.snapshots.length === 0) return localRows;
-    const merged = mergeTransferredRows(projectedLocalRows, state.snapshots).rows;
+    // A snapshot exported by this same installation is already represented by
+    // the local queue. Ignore it during dashboard aggregation so importing a
+    // file back onto its source computer cannot double-count its history.
+    const localOriginId = getOrCreateMachineId(qp);
+    const importedSnapshots = localOriginId
+      ? state.snapshots.filter((snapshot) => snapshot.origin_id !== localOriginId)
+      : state.snapshots;
+    const merged = mergeTransferredRows(projectedLocalRows, importedSnapshots).rows;
     const localByKey = new Map(
       localRows
         .map((row) => [
