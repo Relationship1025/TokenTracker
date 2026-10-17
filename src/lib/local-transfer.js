@@ -9,6 +9,10 @@ const ROW_FIELDS = [
 ];
 const NUMERIC_FIELDS = ROW_FIELDS.slice(3);
 const ACCOUNT_LEVEL_SOURCES = new Set(['cursor', 'trae-cn']);
+const SNAPSHOT_FIELDS = [
+  'schema', 'origin_id', 'origin_name', 'generation_id', 'revision',
+  'exported_at', 'app_version', 'rows', 'content_hash',
+];
 
 function stableJson(value) {
   if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
@@ -57,6 +61,8 @@ function bucketKey(row) {
 
 function validateSnapshot(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('snapshot must be an object');
+  const unknown = Object.keys(value).filter((key) => !SNAPSHOT_FIELDS.includes(key));
+  if (unknown.length) throw new Error(`snapshot contains unknown or non-allowlist fields: ${unknown.join(',')}`);
   if (value.schema !== SCHEMA) throw new Error(`schema must be ${SCHEMA}`);
   for (const field of ['origin_id', 'origin_name', 'generation_id', 'app_version']) {
     if (!isString(value[field])) throw new Error(`${field} is required`);

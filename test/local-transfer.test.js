@@ -15,6 +15,7 @@ test('creates and validates a v1 snapshot with a sha256 content hash', () => {
 
 test('rejects malformed, nonfinite, negative, duplicate, and unknown row values', () => {
   assert.throws(() => validateSnapshot({}), /schema/i);
+  assert.throws(() => validateSnapshot({ ...snapshot(), prompt: 'sensitive content' }), /allowlist|unknown/i);
   assert.throws(() => validateSnapshot(snapshot({ rows: [row({ input_tokens: -1 })] })), /negative/i);
   assert.throws(() => validateSnapshot(snapshot({ rows: [row({ output_tokens: Infinity })] })), /finite/i);
   assert.throws(() => validateSnapshot(snapshot({ rows: [row(), row()] })), /duplicate/i);
