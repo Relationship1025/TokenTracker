@@ -437,6 +437,8 @@ settings.section.appearance,ui,SettingsPage,SettingsPage,sec_appearance,"Appeara
 settings.section.appearance.description,ui,SettingsPage,SettingsPage,sec_appearance_description,"Theme, language, currency, and number formatting.",,active
 settings.section.account,ui,SettingsPage,SettingsPage,sec_account,"Account",,active
 settings.section.account.description,ui,SettingsPage,SettingsPage,sec_account_description,"Public profile and account details.",,active
+settings.section.transfer,ui,SettingsPage,SettingsPage,sec_transfer,"Data transfer",,active
+settings.section.transfer.description,ui,SettingsPage,SettingsPage,sec_transfer_description,"Export or import local token usage between computers.",,active
 settings.section.cloud,ui,SettingsPage,CloudSection,sec_cloud,"Cloud",,active
 settings.section.cloud.description,ui,SettingsPage,CloudSection,sec_cloud_description,"Manage Cloud membership, billing, and device sync.",,active
 settings.section.limits,ui,SettingsPage,SettingsPage,sec_limits,"Usage & Limits",,active
@@ -2097,3 +2099,25 @@ cloud.rebuild.error,cloud,SettingsPage,CloudRebuildControl,error,Rebuild did not
 cloud.rebuild.busy,cloud,SettingsPage,CloudRebuildControl,busy,"Sync is running. Wait for it to finish, then retry.",,active
 usage.overview.kiro_notice_title,dashboard,DashboardPage,UsageOverview,kiro_notice_title,CLI token estimates,,active
 usage.overview.kiro_notice_body,dashboard,DashboardPage,UsageOverview,kiro_notice_body,"When Kiro CLI does not report token counts, tokens are estimated from new user messages, tool outputs and assistant text at ~4 characters/token. Re-sent history, system context and cache usage are not measured. Dollar amounts use model rates and do not represent Kiro credit charges.",,active
+settings.transfer.title,ui,SettingsPage,DataTransferSection,title,"Local data transfer",,active
+settings.transfer.subtitle,ui,SettingsPage,DataTransferSection,subtitle,"Move token usage between computers with a JSON snapshot.",,active
+settings.transfer.description,ui,SettingsPage,DataTransferSection,description,"Export this computer's usage, then preview a snapshot before importing it.",,active
+settings.transfer.name_label,ui,SettingsPage,DataTransferSection,name_label,"Computer name (optional)",,active
+settings.transfer.name_placeholder,ui,SettingsPage,DataTransferSection,name_placeholder,"This computer",,active
+settings.transfer.export,ui,SettingsPage,DataTransferSection,export,"Export JSON",,active
+settings.transfer.choose_file,ui,SettingsPage,DataTransferSection,choose_file,"Choose JSON file",,active
+settings.transfer.import,ui,SettingsPage,DataTransferSection,import,"Import snapshot",,active
+settings.transfer.undo,ui,SettingsPage,DataTransferSection,undo,"Undo import",,active
+settings.transfer.confirm,ui,SettingsPage,DataTransferSection,confirm,"Confirm import",,active
+settings.transfer.cancel,ui,SettingsPage,DataTransferSection,cancel,"Cancel",,active
+settings.transfer.confirm_title,ui,SettingsPage,DataTransferSection,confirm_title,"Import this snapshot?",,active
+settings.transfer.confirm_description,ui,SettingsPage,DataTransferSection,confirm_description,"The accepted snapshot will replace the same computer's previous transfer.",,active
+settings.transfer.account_source_warning,ui,SettingsPage,DataTransferSection,account_source_warning,"Cursor and TRAE CN usage is account-level and excluded from combined totals.",,active
+settings.transfer.source_label,ui,SettingsPage,DataTransferSection,source_label,"Source",,active
+settings.transfer.date_label,ui,SettingsPage,DataTransferSection,date_label,"Exported",,active
+settings.transfer.rows_label,ui,SettingsPage,DataTransferSection,rows_label,"Rows",,active
+settings.transfer.tokens_label,ui,SettingsPage,DataTransferSection,tokens_label,"Tokens",,active
+settings.transfer.unknown_source,ui,SettingsPage,DataTransferSection,unknown_source,"Unknown source",,active
+settings.transfer.unknown_date,ui,SettingsPage,DataTransferSection,unknown_date,"Unknown date",,active
+settings.transfer.request_failed,ui,SettingsPage,DataTransferSection,request_failed,"Transfer request failed",,active
+settings.transfer.invalid_file,ui,SettingsPage,DataTransferSection,invalid_file,"This file could not be previewed.",,active

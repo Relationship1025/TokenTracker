@@ -1,9 +1,10 @@
 import React from "react";
-import { Cloud, FlaskConical, Gauge, Globe, Monitor, Palette, Settings, UserRound } from "lucide-react";
+import { Cloud, FileDown, FlaskConical, Gauge, Globe, Monitor, Palette, Settings, UserRound } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { LimitsSettingsPanel } from "../components/LimitsSettingsPanel.jsx";
 import { AccountSection } from "../components/settings/AccountSection.jsx";
 import { CloudSection } from "../components/settings/CloudSection.jsx";
+import { DataTransferSection } from "../components/settings/DataTransferSection.jsx";
 import { useAccountProfileSettings } from "../components/settings/useAccountProfileSettings.js";
 import { AppearanceSection } from "../components/settings/AppearanceSection.jsx";
 import { LabsSection } from "../components/settings/LabsSection.jsx";
@@ -31,6 +32,7 @@ const SETTINGS_SECTION_IDS = {
   CLOUD: "cloud",
   LIMITS: "limits",
   LABS: "labs",
+  TRANSFER: "transfer",
 };
 
 const SETTINGS_GROUP_IDS = {
@@ -123,6 +125,14 @@ export function SettingsPage() {
       group: SETTINGS_GROUP_IDS.PERSONAL,
       Icon: UserRound,
       content: <AccountSection settings={accountSettings} />,
+    },
+    {
+      id: SETTINGS_SECTION_IDS.TRANSFER,
+      label: copy("settings.section.transfer"),
+      description: copy("settings.section.transfer.description"),
+      group: SETTINGS_GROUP_IDS.PERSONAL,
+      Icon: FileDown,
+      content: <DataTransferSection />,
     },
     {
       id: SETTINGS_SECTION_IDS.CLOUD,
