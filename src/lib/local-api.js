@@ -19,6 +19,13 @@ const { functionUrlFor, fetchFunctionResponse } = require("./function-url");
 const { createCloudDeviceTokenStore } = require("./cloud-device-token");
 const { parseBearerToken } = require("./bearer-token");
 const { writeJsonAtomicSync } = require("./atomic-json");
+const {
+  createSnapshot,
+  validateSnapshot,
+  mergeTransferredRows,
+  summarizeSnapshot,
+  NUMERIC_FIELDS: TRANSFER_NUMERIC_FIELDS,
+} = require("./local-transfer");
 
 const SYNC_TIMEOUT_MS = 120_000;
 // A failed account-view request should not stall every dashboard refresh
@@ -28,6 +35,8 @@ const SYNC_TIMEOUT_MS = 120_000;
 const ACCOUNT_VIEW_FAILURE_BACKOFF_MS = 2 * 60_000;
 const TRACKER_BIN = path.resolve(__dirname, "../../bin/tracker.js");
 const MAX_DEVICE_NAME_LENGTH = 128;
+const MAX_LOCAL_TRANSFER_BYTES = 8 * 1024 * 1024;
+const MAX_LOCAL_TRANSFER_NAME_LENGTH = 128;
 
 function getSystemDeviceName() {
   try {
@@ -401,9 +410,32 @@ function getRequestedUsageScope(url) {
   return normalizeUsageScope(url.searchParams.get("scope"));
 }
 
-async function scopedQueueRows(queuePath, url) {
+function projectQueueRowToTransfer(row) {
+  if (!row || typeof row !== "object") return null;
+  const hourStart = typeof row.hour_start === "string" ? row.hour_start : "";
+  const source = typeof row.source === "string" ? row.source : "";
+  const model = typeof row.model === "string" ? row.model : "";
+  if (!hourStart || !source || !model || Number.isNaN(Date.parse(hourStart))) return null;
+  const projected = { hour_start: hourStart, source, model };
+  for (const field of TRANSFER_NUMERIC_FIELDS) {
+    const fallback = field === "billable_total_tokens" ? row.total_tokens : 0;
+    const value = Number(row[field] ?? fallback);
+    projected[field] = Number.isFinite(value) && value >= 0 ? value : 0;
+  }
+  return projected;
+}
+
+function queueRowsSignature(rows) {
+  const normalized = rows
+    .map(projectQueueRowToTransfer)
+    .filter(Boolean)
+    .sort((a, b) => `${a.source}\0${a.model}\0${a.hour_start}`.localeCompare(`${b.source}\0${b.model}\0${b.hour_start}`));
+  return crypto.createHash("sha256").update(JSON.stringify(normalized)).digest("hex");
+}
+
+async function scopedQueueRows(queuePath, url, readRows = readQueueData) {
   const scope = getRequestedUsageScope(url);
-  const allRows = await readQueueData(queuePath);
+  const allRows = await readRows(queuePath);
   return {
     scope,
     allRows,
@@ -1016,6 +1048,95 @@ function createLocalApiHandler({ queuePath, serverVersion = null, trackerDataDir
   let relayCookies = new Map();
   const localAuthToken = crypto.randomBytes(24).toString("hex");
   const trackerDataDir = isolatedTrackerDataDir || path.dirname(qp);
+  const localTransferImportsDir = path.join(trackerDataDir, "imports");
+  const localTransferImportStatePath = path.join(localTransferImportsDir, "state.json");
+  const localTransferExportStatePath = path.join(trackerDataDir, "local-transfer-export.json");
+
+  function emptyLocalTransferImportState() {
+    return { version: 1, snapshots: [], undo: null };
+  }
+
+  function readLocalTransferImportState() {
+    let parsed;
+    try {
+      parsed = JSON.parse(fs.readFileSync(localTransferImportStatePath, "utf8"));
+    } catch (error) {
+      if (error?.code === "ENOENT") return emptyLocalTransferImportState();
+      throw error;
+    }
+    if (!parsed || parsed.version !== 1 || !Array.isArray(parsed.snapshots)) {
+      throw new Error("Invalid local transfer import state");
+    }
+    const snapshots = parsed.snapshots.map((snapshot) => validateSnapshot(snapshot));
+    return { version: 1, snapshots, undo: parsed.undo || null };
+  }
+
+  function writeLocalTransferImportState(state) {
+    fs.mkdirSync(localTransferImportsDir, { recursive: true });
+    writeJsonAtomicSync(localTransferImportStatePath, state);
+  }
+
+  function findImportedSnapshot(state, originId) {
+    return state.snapshots.find((snapshot) => snapshot.origin_id === originId) || null;
+  }
+
+  function transferActionFor(prior, snapshot) {
+    if (!prior) return "new";
+    if (snapshot.revision < prior.revision) return "stale";
+    if (snapshot.revision === prior.revision) {
+      return snapshot.content_hash === prior.content_hash ? "noop" : "conflict";
+    }
+    return "replace";
+  }
+
+  function localTransferSummary(snapshot) {
+    return summarizeSnapshot(snapshot);
+  }
+
+  function transferSnapshotFromBody(body) {
+    const candidate = body && typeof body === "object" && body.snapshot ? body.snapshot : body;
+    return validateSnapshot(candidate);
+  }
+
+  function readLocalTransferExportState() {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(localTransferExportStatePath, "utf8"));
+      if (!parsed || typeof parsed !== "object" || !parsed.snapshot) return null;
+      return { ...parsed, snapshot: validateSnapshot(parsed.snapshot) };
+    } catch (error) {
+      if (error?.code === "ENOENT") return null;
+      throw error;
+    }
+  }
+
+  function writeLocalTransferExportState(state) {
+    writeJsonAtomicSync(localTransferExportStatePath, state);
+  }
+
+  async function readMergedQueueData() {
+    const localRows = await readQueueData(qp);
+    const projectedLocalRows = localRows.map(projectQueueRowToTransfer).filter(Boolean);
+    const state = readLocalTransferImportState();
+    if (state.snapshots.length === 0) return localRows;
+    const merged = mergeTransferredRows(projectedLocalRows, state.snapshots).rows;
+    const localByKey = new Map(
+      localRows
+        .map((row) => [
+          `${row.source || ""}\0${row.model || ""}\0${row.hour_start || ""}`,
+          row,
+        ]),
+    );
+    return merged.map((row) => {
+      const local = localByKey.get(`${row.source}\0${row.model}\0${row.hour_start}`);
+      if (!local) return row;
+      const enriched = { ...row };
+      for (const [key, value] of Object.entries(local)) {
+        if (key === "hour_start" || key === "source" || key === "model" || TRANSFER_NUMERIC_FIELDS.includes(key)) continue;
+        enriched[key] = value;
+      }
+      return enriched;
+    });
+  }
   const cookiePath = path.join(trackerDataDir, "relay-cookies.json");
   const localSyncDeviceTokenStore = createCloudDeviceTokenStore(path.join(trackerDataDir, "cloud-device-token.json"));
   const localSyncDeviceTokenCache = new Map();
@@ -1692,6 +1813,124 @@ function createLocalApiHandler({ queuePath, serverVersion = null, trackerDataDir
         token: localAuthToken,
         ...(normalizedServerVersion ? { serverVersion: normalizedServerVersion } : {}),
       }));
+      return true;
+    }
+
+    // --- local usage transfer ------------------------------------------------
+    // Transfer snapshots contain normalized token buckets only. They are kept
+    // under imports/ and are deliberately excluded from queue.jsonl, sync
+    // cursors, upload offsets, and subsequent exports.
+    if (p === "/api/local-transfer/export") {
+      if (String(req.method || "GET").toUpperCase() !== "GET") {
+        json(res, { ok: false, error: "Method Not Allowed" }, 405);
+        return true;
+      }
+      try {
+        const rows = await readQueueData(qp);
+        const projectedRows = rows.map(projectQueueRowToTransfer).filter(Boolean);
+        const originId = getOrCreateMachineId(qp) || crypto.createHash("sha256").update(qp).digest("hex");
+        const priorExport = readLocalTransferExportState();
+        const requestedName = String(url.searchParams.get("name") || "").trim().slice(0, MAX_LOCAL_TRANSFER_NAME_LENGTH);
+        const originName = requestedName || priorExport?.snapshot?.origin_name || getSystemDeviceName() || `Token Tracker (${originId.slice(0, 8)})`;
+        const queueSignature = queueRowsSignature(projectedRows);
+        const revision = Number(priorExport?.snapshot?.revision || 0) + 1;
+        const generationId = priorExport?.snapshot?.generation_id || crypto.randomUUID();
+        const exportedAt = new Date().toISOString();
+        const snapshot = createSnapshot({
+          rows: projectedRows,
+          originId,
+          originName,
+          generationId,
+          revision,
+          appVersion: normalizedServerVersion || require("../../package.json").version,
+          exportedAt,
+        });
+        writeLocalTransferExportState({ queue_signature: queueSignature, snapshot });
+        const body = JSON.stringify(snapshot, null, 2) + "\n";
+        res.writeHead(200, {
+          "Content-Type": "application/json; charset=utf-8",
+          "Content-Disposition": `attachment; filename="tokentracker-usage-${originName.replace(/[^A-Za-z0-9._-]+/g, "-").slice(0, 48) || "export"}.json"`,
+          "Cache-Control": "no-store",
+          "X-Content-Type-Options": "nosniff",
+        });
+        res.end(body);
+      } catch (error) {
+        json(res, { ok: false, error: error?.message || "Export failed" }, 500);
+      }
+      return true;
+    }
+
+    if (p === "/api/local-transfer/preview" || p === "/api/local-transfer/import" || p === "/api/local-transfer/undo") {
+      const method = String(req.method || "GET").toUpperCase();
+      if (method !== "POST") {
+        json(res, { ok: false, error: "Method Not Allowed" }, 405);
+        return true;
+      }
+      if (!isAuthorizedLocalMutation(req)) {
+        json(res, { ok: false, error: "Unauthorized" }, 401);
+        return true;
+      }
+      try {
+        let state = readLocalTransferImportState();
+        if (p === "/api/local-transfer/undo") {
+          if (!state.undo) {
+            json(res, { ok: false, error: "Nothing to undo", code: "NO_UNDO" }, 409);
+            return true;
+          }
+          const { origin_id: originId, previous } = state.undo;
+          const snapshots = state.snapshots.filter((snapshot) => snapshot.origin_id !== originId);
+          if (previous) snapshots.push(validateSnapshot(previous));
+          snapshots.sort((a, b) => a.origin_id.localeCompare(b.origin_id));
+          writeLocalTransferImportState({ version: 1, snapshots, undo: null });
+          json(res, { ok: true, origin_id: originId, restored: Boolean(previous) });
+          return true;
+        }
+
+        const bodyBuffer = await readBodyLimited(req, MAX_LOCAL_TRANSFER_BYTES);
+        let body;
+        try {
+          body = JSON.parse(bodyBuffer.toString("utf8"));
+        } catch {
+          json(res, { ok: false, error: "Invalid JSON" }, 400);
+          return true;
+        }
+        const snapshot = transferSnapshotFromBody(body);
+        const prior = findImportedSnapshot(state, snapshot.origin_id);
+        const action = transferActionFor(prior, snapshot);
+        const response = {
+          ok: action !== "conflict" && action !== "stale",
+          action,
+          summary: localTransferSummary(snapshot),
+          previous_summary: prior ? localTransferSummary(prior) : null,
+        };
+        if (p === "/api/local-transfer/preview") {
+          json(res, response, action === "conflict" || action === "stale" ? 409 : 200);
+          return true;
+        }
+        if (action === "conflict") {
+          json(res, { ...response, error: "Same revision has a different content hash", code: "HASH_CONFLICT" }, 409);
+          return true;
+        }
+        if (action === "stale") {
+          json(res, { ...response, error: "Snapshot revision is older than the imported snapshot", code: "STALE_REVISION" }, 409);
+          return true;
+        }
+        if (action === "noop") {
+          json(res, response);
+          return true;
+        }
+        const snapshots = state.snapshots.filter((entry) => entry.origin_id !== snapshot.origin_id);
+        snapshots.push(snapshot);
+        snapshots.sort((a, b) => a.origin_id.localeCompare(b.origin_id));
+        writeLocalTransferImportState({
+          version: 1,
+          snapshots,
+          undo: { origin_id: snapshot.origin_id, previous: prior || null, replacement: snapshot },
+        });
+        json(res, { ...response, imported: true });
+      } catch (error) {
+        json(res, { ok: false, error: error?.message || "Local transfer failed" }, 400);
+      }
       return true;
     }
 
@@ -2375,7 +2614,7 @@ function createLocalApiHandler({ queuePath, serverVersion = null, trackerDataDir
     if (p === "/functions/tokentracker-wrapped") {
       const yearParam = url.searchParams.get("year");
       const year = yearParam ? Number(yearParam) : null;
-      const { rows, scope, excludedSources } = await scopedQueueRows(qp, url);
+      const { rows, scope, excludedSources } = await scopedQueueRows(qp, url, readMergedQueueData);
       const { aggregateWrapped } = require("./wrapped-aggregator");
       const summary = aggregateWrapped(rows, year ? { year } : {});
       json(res, { scope, excluded_sources: excludedSources, ...summary });
@@ -2404,7 +2643,7 @@ function createLocalApiHandler({ queuePath, serverVersion = null, trackerDataDir
       const from = url.searchParams.get("from") || "";
       const to = url.searchParams.get("to") || "";
       const timeZoneContext = getTimeZoneContext(url);
-      const { rows, scope, excludedSources } = await scopedQueueRows(qp, url);
+      const { rows, scope, excludedSources } = await scopedQueueRows(qp, url, readMergedQueueData);
       const allDaily = await aggregateByDay(rows, timeZoneContext);
       const daily = allDaily.filter((d) => d.day >= from && d.day <= to);
       const totals = daily.reduce(
@@ -2471,7 +2710,7 @@ function createLocalApiHandler({ queuePath, serverVersion = null, trackerDataDir
       const from = url.searchParams.get("from") || "";
       const to = url.searchParams.get("to") || "";
       const timeZoneContext = getTimeZoneContext(url);
-      const { rows, scope, excludedSources } = await scopedQueueRows(qp, url);
+      const { rows, scope, excludedSources } = await scopedQueueRows(qp, url, readMergedQueueData);
       const daily = (await aggregateByDay(rows, timeZoneContext)).filter((d) => d.day >= from && d.day <= to);
       json(res, { from, to, scope, excluded_sources: excludedSources, data: daily });
       return true;
@@ -2505,7 +2744,7 @@ function createLocalApiHandler({ queuePath, serverVersion = null, trackerDataDir
         json(res, { available: false, from, to, by_model: [], by_tool: [], totals: null });
         return true;
       }
-      const { rows, scope, excludedSources } = await scopedQueueRows(qp, url);
+      const { rows, scope, excludedSources } = await scopedQueueRows(qp, url, readMergedQueueData);
       const result = computeQualityPerDollar(rows, outcomes, { from, to });
       json(res, { from, to, scope, excluded_sources: excludedSources, ...result });
       return true;
@@ -2578,7 +2817,7 @@ function createLocalApiHandler({ queuePath, serverVersion = null, trackerDataDir
     if (p === "/functions/tokentracker-usage-heatmap") {
       const weeks = parseInt(url.searchParams.get("weeks") || "52", 10);
       const timeZoneContext = getTimeZoneContext(url);
-      const { rows, scope, excludedSources } = await scopedQueueRows(qp, url);
+      const { rows, scope, excludedSources } = await scopedQueueRows(qp, url, readMergedQueueData);
       const daily = await aggregateByDay(rows, timeZoneContext);
       const todayParts = getZonedParts(new Date(), timeZoneContext);
       const todayStr = formatPartsDayKey(todayParts) || new Date().toISOString().slice(0, 10);
@@ -2642,7 +2881,7 @@ function createLocalApiHandler({ queuePath, serverVersion = null, trackerDataDir
       const from = url.searchParams.get("from") || "";
       const to = url.searchParams.get("to") || "";
       const timeZoneContext = getTimeZoneContext(url);
-      const { rows: scopedRows, scope, excludedSources } = await scopedQueueRows(qp, url);
+      const { rows: scopedRows, scope, excludedSources } = await scopedQueueRows(qp, url, readMergedQueueData);
       const pricingRevision = getPricingRevision();
       const bySource = new Map();
       let processed = 0;
@@ -2735,7 +2974,7 @@ function createLocalApiHandler({ queuePath, serverVersion = null, trackerDataDir
             timeZoneContext,
           });
           if (!Number(result?.totals?.total_tokens || 0)) {
-            const fallback = buildCodexCategoryFallbackFromQueue(await readQueueData(qp), {
+            const fallback = buildCodexCategoryFallbackFromQueue(await readMergedQueueData(), {
               from,
               to,
               timeZoneContext,
@@ -3191,7 +3430,7 @@ function createLocalApiHandler({ queuePath, serverVersion = null, trackerDataDir
     if (p === "/functions/tokentracker-usage-hourly") {
       const day = url.searchParams.get("day") || new Date().toISOString().slice(0, 10);
       const timeZoneContext = getTimeZoneContext(url);
-      const { rows, scope, excludedSources } = await scopedQueueRows(qp, url);
+      const { rows, scope, excludedSources } = await scopedQueueRows(qp, url, readMergedQueueData);
       const data = await aggregateHourlyByDay(rows, day, timeZoneContext);
       json(res, { day, scope, excluded_sources: excludedSources, data });
       return true;
@@ -3202,7 +3441,7 @@ function createLocalApiHandler({ queuePath, serverVersion = null, trackerDataDir
       const from = url.searchParams.get("from") || "";
       const to = url.searchParams.get("to") || "";
       const timeZoneContext = getTimeZoneContext(url);
-      const { rows, scope, excludedSources } = await scopedQueueRows(qp, url);
+      const { rows, scope, excludedSources } = await scopedQueueRows(qp, url, readMergedQueueData);
       const byMonth = new Map();
       let processed = 0;
       for (const row of rows) {
@@ -3514,7 +3753,7 @@ function createLocalApiHandler({ queuePath, serverVersion = null, trackerDataDir
     // --- achievements (local badges) ---
     if (p === "/functions/tokentracker-achievements") {
       const timeZoneContext = getTimeZoneContext(url);
-      const queueRows = await readQueueData(qp);
+      const queueRows = await readMergedQueueData();
       const { projectRows } = await readProjectUsageContext(qp, url);
       json(res, {
         generated_at: new Date().toISOString(),
