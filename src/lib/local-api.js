@@ -80,6 +80,7 @@ const {
 
 const { computeCodexContextBreakdown } = require("./codex-context-breakdown");
 const { computeGrokContextBreakdown } = require("./grok-context-breakdown");
+const { aggregateLocalDeviceUsage } = require("./local-device-usage");
 
 const {
   deriveProjectKeyFromRef,
@@ -3766,6 +3767,35 @@ function createLocalApiHandler({ queuePath, serverVersion = null, trackerDataDir
         generated_at: new Date().toISOString(),
         achievements: computeLocalAchievements(queueRows, projectRows, { timeZoneContext }),
       });
+      return true;
+    }
+
+    // --- local device usage -----------------------------------------------
+    if (p === "/functions/tokentracker-local-device-usage") {
+      if (String(req.method || "GET").toUpperCase() !== "GET") {
+        json(res, { error: "Method Not Allowed" }, 405);
+        return true;
+      }
+      try {
+        const from = String(url.searchParams.get("from") || "").trim();
+        const to = String(url.searchParams.get("to") || "").trim();
+        const timeZoneContext = getTimeZoneContext(url);
+        const localRows = await readQueueData(qp);
+        const state = readLocalTransferImportState();
+        const localDeviceId = getOrCreateMachineId(qp);
+        const localDeviceName = getSystemDeviceName() || `Token Tracker (${localDeviceId.slice(0, 8)})`;
+        const usage = aggregateLocalDeviceUsage({
+          localRows,
+          importedSnapshots: state.snapshots,
+          localDevice: { id: localDeviceId, name: localDeviceName },
+          from,
+          to,
+          timeZoneContext,
+        });
+        json(res, usage);
+      } catch (error) {
+        json(res, { error: error?.message || "Local device usage failed" }, 500);
+      }
       return true;
     }
 
