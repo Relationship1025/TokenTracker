@@ -13,7 +13,6 @@ const DEFAULT_RESOURCE_LOADERS = Object.freeze({
 });
 
 let sessionCounter = 0;
-let session = createSession();
 
 class WindowSessionCache {
   constructor() {
@@ -62,6 +61,8 @@ function createTarget(key) {
 function createSession() {
   return new DashboardWindowSession();
 }
+
+let session = createSession();
 
 function assertTargetKey(targetKey) {
   if (!DASHBOARD_PRELOAD_TARGETS.includes(targetKey)) {
