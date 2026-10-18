@@ -91,21 +91,21 @@ const MODEL_PROVIDER_COLORS = {
   codex: "#3b82f6",
   gpt: "#10b981",
   openai: "#10b981",
-  
+
   claude: "#d97757",
   anthropic: "#d97757",
-  
+
   gemini: "#2196f3",
   google: "#2196f3",
-  
+
   kimi: "#a78bfa",
   moonshot: "#a78bfa",
 
   opencode: "#f59e0b",
   deepseek: "#f59e0b",
-  
+
   droid: "#ef4444",
-  
+
   kilo: "#facc15",
 };
 
@@ -451,7 +451,7 @@ export function TrendMonitor({
   className = "",
   // When `true`, the trend renders bare: no outer card chrome (rounded
   // border + bg + padding), no inner heading. Use this when the host
-  // already provides a section wrapper (e.g. the leaderboard profile
+  // already provides a section wrapper
   // modal). Default keeps the standalone dashboard appearance.
   embedded = false,
   // Tailwind height class for the bar row. The hardcoded h-40 is the small

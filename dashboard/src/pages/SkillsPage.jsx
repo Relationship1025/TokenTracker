@@ -16,7 +16,6 @@ import {
   ExternalLink,
   Flame,
   Loader2,
-  MonitorSmartphone,
   Plus,
   RefreshCw,
   Search,
@@ -34,14 +33,12 @@ import {
   checkSkillUpdates,
   deleteLocalSkill,
   discoverSkills,
-  getAccountSkillInventories,
   getInstalledSkills,
   getPopularSkills,
   getSkillRepos,
   getSkillUsage,
   importLocalSkill,
   installSkill,
-  publishSkillInventory,
   removeSkillRepo,
   restoreSkill,
   searchSkills,
@@ -49,9 +46,6 @@ import {
   uninstallSkill,
   updateSkills,
 } from "../lib/skills-api";
-import { mergeSkillInventories } from "../lib/skills-inventory";
-import { useInsforgeAuth } from "../contexts/InsforgeAuthContext.jsx";
-import { getCloudSyncEnabled, getCurrentDeviceId } from "../lib/cloud-sync-prefs";
 
 const DEFAULT_TARGETS = ["claude", "codex"];
 const SOURCE_POPULAR = "popular";
@@ -191,7 +185,7 @@ function AgentDot({ target, state, busy, disabled, disabledLabel, onToggle }) {
 
 function AgentDots({ skill, targets, onToggleTarget, busyKey }) {
   const activeTargetIds = new Set(skill.targets || []);
-  const readOnly = Boolean(skill.readOnly || skill.remote);
+  const readOnly = Boolean(skill.readOnly);
   const visibleTargets = [];
   for (const target of targets) {
     if (readOnly ? activeTargetIds.has(target.id) : isManageableTarget(target)) {
@@ -207,9 +201,7 @@ function AgentDots({ skill, targets, onToggleTarget, busyKey }) {
           state={skill.targetStates?.[target.id] || "off"}
           busy={busyKey === targetBusyKey(skillIdentity(skill), target.id)}
           disabled={readOnly || target.manageable === false}
-          disabledLabel={copy(
-            skill.remote ? "skills.inventory.read_only_remote" : "skills.inventory.read_only_managed",
-          )}
+          disabledLabel={copy("skills.inventory.read_only_managed")}
           onToggle={(targetId, enabled) => onToggleTarget?.(skill, targetId, enabled)}
         />
       ))}
@@ -221,9 +213,7 @@ function SkillRow({ skill, targets, selected, onSelect, selectable, checked, onT
   const sourceLabel =
     skill.repoOwner && skill.repoName ? `${skill.repoOwner}/${skill.repoName}` : null;
   const titleAttr = [skill.directory, sourceLabel, skill.sourceName].filter(Boolean).join(" · ");
-  const deviceSources = Array.isArray(skill.deviceSources) ? skill.deviceSources : [];
   const inventoryBadges = [
-    skill.remote ? copy("skills.inventory.remote") : null,
     skill.scope === "plugin" ? copy("skills.inventory.plugin") : null,
   ].filter(Boolean);
 
@@ -301,7 +291,7 @@ function SkillRow({ skill, targets, selected, onSelect, selectable, checked, onT
           {skill.description}
         </p>
       ) : null}
-      {skill.sourceName || deviceSources.length ? (
+      {skill.sourceName ? (
         <div
           className={cn(
             "mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-oai-gray-400 dark:text-oai-gray-500",
@@ -309,19 +299,6 @@ function SkillRow({ skill, targets, selected, onSelect, selectable, checked, onT
           )}
         >
           {skill.sourceName ? <span className="truncate">{skill.sourceName}</span> : null}
-          {deviceSources.length ? (
-            <span
-              className="inline-flex min-w-0 items-center gap-1"
-              title={deviceSources.map((device) => device.name).join(", ")}
-            >
-              <MonitorSmartphone className="h-3 w-3 shrink-0" aria-hidden />
-              <span className="truncate">
-                {copy("skills.inventory.on_devices", {
-                  devices: deviceSources.map((device) => device.name).join(", "),
-                })}
-              </span>
-            </span>
-          ) : null}
         </div>
       ) : null}
     </div>
@@ -594,7 +571,7 @@ function MySkillsView({
               targets={targets}
               selected={selectedId === (skill.id || skill.directory)}
               onSelect={onSelect}
-              selectable={!skill.readOnly && !skill.remote}
+              selectable={!skill.readOnly}
               checked={selectedIds.has(skillIdentity(skill))}
               onToggleSelect={onToggleSelect}
               onToggleTarget={onToggleTarget}
@@ -834,9 +811,6 @@ function readTabFromUrl() {
 }
 
 export function SkillsPage() {
-  const auth = useInsforgeAuth() || {};
-  const signedIn = Boolean(auth.signedIn);
-  const getAccessToken = auth.getAccessToken;
   const [tab, setTab] = useState(readTabFromUrl);
   const [installedData, setInstalledData] = useState({ skills: [], targets: [] });
   const [discoverData, setDiscoverData] = useState([]);
@@ -865,43 +839,15 @@ export function SkillsPage() {
   const [popularData, setPopularData] = useState([]);
   const [popularLoading, setPopularLoading] = useState(false);
   const appliedSkillParam = useRef(false);
-  const cloudInventoryRequest = useRef(0);
 
   const installedKeys = useMemo(() => {
     return buildLocallyInstalledKeys(installedData.skills);
   }, [installedData.skills]);
 
   const loadInstalled = useCallback(async () => {
-    const requestId = ++cloudInventoryRequest.current;
     const data = await getInstalledSkills();
-    if (cloudInventoryRequest.current !== requestId) return;
-    const localData = { skills: data.skills || [], targets: data.targets || [] };
-    setInstalledData(localData);
-
-    const deviceId = getCurrentDeviceId();
-    if (!signedIn || !getCloudSyncEnabled() || !deviceId || typeof getAccessToken !== "function") return;
-    // Cloud inventory is a best-effort enrichment. Local Skills render
-    // immediately and remain usable if auth/network/backend sync is unavailable.
-    void (async () => {
-      try {
-        const accessToken = await getAccessToken();
-        if (!accessToken || cloudInventoryRequest.current !== requestId) return;
-        const [cloudResult] = await Promise.allSettled([
-          getAccountSkillInventories(accessToken),
-          publishSkillInventory({ accessToken, deviceId, skills: localData.skills }),
-        ]);
-        if (cloudResult.status !== "fulfilled") return;
-        const cloud = cloudResult.value;
-        if (cloudInventoryRequest.current !== requestId) return;
-        setInstalledData({
-          targets: localData.targets,
-          skills: mergeSkillInventories(localData.skills, cloud, deviceId),
-        });
-      } catch (_e) {
-        // Deliberately silent: a cloud outage must not break local management.
-      }
-    })();
-  }, [getAccessToken, signedIn]);
+    setInstalledData({ skills: data.skills || [], targets: data.targets || [] });
+  }, []);
 
   const loadRepos = useCallback(async () => {
     const data = await getSkillRepos();
@@ -1034,7 +980,7 @@ export function SkillsPage() {
     }
   }, [discoverData.length, loadDiscover, source, tab]);
 
-  // Popular = skills.sh search results aggregated by install count (no leaderboard
+  // Popular = skills.sh search results aggregated by install count
   // endpoint exists), loaded lazily on first switch to the Popular source.
   useEffect(() => {
     if (tab !== "browse" || source !== SOURCE_POPULAR) return;

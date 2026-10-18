@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   buildActivityHeatmap,
   computeActiveStreakDays,
@@ -8,8 +8,6 @@ import { isAccessTokenReady, resolveAuthAccessToken } from "../lib/auth-token";
 import { isMockEnabled } from "../lib/mock-data";
 import { getTimeZoneCacheKey } from "../lib/timezone";
 import {
-  fetchCloudUsageDaily,
-  fetchCloudUsageHeatmap,
   getUsageDaily,
   getUsageHeatmap,
 } from "../lib/api";
@@ -25,14 +23,9 @@ export function useActivityHeatmap({
   timeZone,
   tzOffsetMinutes,
   now,
-  accountView = false,
-  accountAccessToken = null,
-  accountRevision = 0,
-  accountViewResolving = false,
   deviceId = null,
 }: any = {}) {
-  const useCloud = Boolean(accountView && accountAccessToken);
-  const scopeKey = useCloud ? "cloud" : "local";
+  const scopeKey = "local";
   const range = useMemo(() => {
     return getHeatmapRangeLocal({ weeks, weekStartsOn, now });
   }, [now, weeks, weekStartsOn]);
@@ -61,15 +54,11 @@ export function useActivityHeatmap({
     weekStartsOn,
     scopeKey,
     accessToken,
-    accountAccessToken,
-    accountRevision,
-    accountViewResolving,
     deviceId,
     timeZone,
     tzOffsetMinutes,
     // Include source/rendering gates in the request identity. This prevents
-    // an old authenticated/local response from painting after a guest,
-    // mock, or cloud-scope transition.
+    // an old authenticated/local response from painting after a guest or mock transition.
     guestAllowed,
     mockEnabled,
     cacheAllowed,
@@ -117,34 +106,14 @@ export function useActivityHeatmap({
     }
   }, [storageKey]);
 
-  // Wipe state when the scope flips so cached local heatmap doesn't show
-  // through while the cloud fetch is in flight (and vice versa). Both
-  // heatmap and daily buffers feed the rendered grid, so both must clear.
-  const lastScopeRef = useRef(scopeKey);
-  useEffect(() => {
-    if (lastScopeRef.current === scopeKey) return;
-    lastScopeRef.current = scopeKey;
-    setDaily([]);
-    setHeatmap(null);
-    setSource("edge");
-    setError(null);
-    setLoading(true);
-  }, [scopeKey]);
-
   const refresh = useCallback(async () => {
     const isCurrent = beginRequest();
     const resolvedToken = await resolveAuthAccessToken(accessToken);
-    const cloudToken = useCloud ? await resolveAuthAccessToken(accountAccessToken) : null;
     if (!isCurrent()) return;
-    if (!resolvedToken && !mockEnabled && !isLocalMode && !useCloud) return;
-    if (useCloud && !cloudToken) {
-      setError("Your session expired. Please sign in again to view account data.");
-      setLoading(false);
-      return;
-    }
-    const tokenForFetch = useCloud ? cloudToken : resolvedToken;
-    const heatmapFetcher = useCloud ? fetchCloudUsageHeatmap : getUsageHeatmap;
-    const dailyFetcher = useCloud ? fetchCloudUsageDaily : getUsageDaily;
+    if (!resolvedToken && !mockEnabled && !isLocalMode) return;
+    const tokenForFetch = resolvedToken;
+    const heatmapFetcher = getUsageHeatmap;
+    const dailyFetcher = getUsageDaily;
     setLoading(true);
     setError(null);
     try {
@@ -344,19 +313,12 @@ export function useActivityHeatmap({
     clearCache,
     writeCache,
     isLocalMode,
-    useCloud,
-    accountAccessToken,
-    accountRevision,
     deviceId,
     beginRequest,
   ]);
 
   useEffect(() => {
-    if (accountViewResolving) {
-      setLoading(true);
-      return;
-    }
-    if (!tokenReady && !guestAllowed && !mockEnabled && !isLocalMode && !useCloud) {
+    if (!tokenReady && !guestAllowed && !mockEnabled && !isLocalMode) {
       setDaily([]);
       setLoading(false);
       setError(null);
@@ -389,7 +351,6 @@ export function useActivityHeatmap({
     cacheAllowed,
     clearCache,
     isLocalMode,
-    accountViewResolving,
   ]);
 
   const normalizedSource = mockEnabled ? "mock" : source === "client" ? "edge" : source;

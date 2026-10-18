@@ -86,7 +86,7 @@ export function ActivityHeatmap({
   // When `true`, the heatmap renders bare: no outer card chrome (rounded
   // border + bg + padding), no inner title row (heading + 2D/3D toggle +
   // timezone label). Use this when the host already provides a section
-  // wrapper (e.g. the leaderboard profile modal). Default keeps the
+  // wrapper . Default keeps the
   // standalone dashboard appearance.
   embedded = false,
 }) {
@@ -142,7 +142,7 @@ export function ActivityHeatmap({
     setHoveredCell(cell);
 
     // Tooltip is portaled to document.body with position: fixed, so use viewport
-    // coordinates directly. This keeps it visible inside the leaderboard
+    // coordinates directly. This keeps it visible inside embedded
     // profile modal, where the Dialog.Popup has both `overflow-hidden` and
     // a `transform` (from the open/close transition) — that combo clips any
     // absolute-positioned tooltip rendered inside the modal subtree.
@@ -245,7 +245,7 @@ export function ActivityHeatmap({
     : (isDark ? PALETTES.emerald.dark : PALETTES.emerald.light);
 
   const [view, setView] = useState(() => {
-    // Embedded hosts (e.g. the leaderboard profile modal) have no 2D/3D
+    // Embedded hosts  have no 2D/3D
     // toggle and must always render the compact 2D grid. Ignore the persisted
     // dashboard preference so a user who picked 3D on the dashboard doesn't
     // see 3D inside the modal.

@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useAccountView } from "../contexts/AccountViewContext.jsx";
 import { useActivityHeatmap } from "../hooks/use-activity-heatmap.js";
 import { useDashboardCardOrder } from "../hooks/use-dashboard-card-order.js";
 import { useProjectUsageSummary } from "../hooks/use-project-usage-summary";
@@ -7,11 +6,7 @@ import { useTrendData } from "../hooks/use-trend-data.js";
 import { useUsageData } from "../hooks/use-usage-data.js";
 import { useUsageLimits } from "../hooks/use-usage-limits.js";
 import { useUsageModelBreakdown } from "../hooks/use-usage-model-breakdown.js";
-import {
-  isAccessTokenReady,
-  normalizeAccessToken,
-  resolveAuthAccessToken,
-} from "../lib/auth-token";
+import { normalizeAccessToken } from "../lib/auth-token";
 import { copy } from "../lib/copy";
 import { useLocale } from "../hooks/useLocale.js";
 import { useCurrency } from "../hooks/useCurrency.js";
@@ -40,20 +35,9 @@ import {
   getBrowserTimeZoneOffsetMinutes,
   getLocalDayKey,
 } from "../lib/timezone";
-import {
-  getUserStatus,
-  invalidateAccountResponseCache,
-  invalidateSessionInsightsCache,
-  triggerLocalSync,
-  renameAccountDevice,
-} from "../lib/api";
+import { invalidateSessionInsightsCache, triggerLocalSync } from "../lib/api";
 import { ActivityHeatmap } from "../ui/dashboard/components/ActivityHeatmap.jsx";
 import { DashboardView } from "../ui/dashboard/views/DashboardView.jsx";
-import { useAccountDevices } from "../hooks/use-account-devices.js";
-import { DeviceUsageCard } from "../ui/dashboard/components/DeviceUsageCard.jsx";
-import { formatDeviceLabel } from "../lib/device-label.js";
-import { CLOUD_USAGE_SYNCED_EVENT, getCurrentDeviceId } from "../lib/cloud-sync-prefs";
-import { recordCloudPromptIntent } from "../lib/cloud-prompt-policy.js";
 import { ShareModal } from "../ui/share/ShareModal";
 import { useShareCardData } from "../ui/share/use-share-card-data";
 import { runSingleFlight } from "../lib/single-flight";
@@ -71,7 +55,6 @@ const LEFT_CARD_ORDER_DEFAULTS = [
   "statsPanel",
   "installCopy",
   "activityHeatmap",
-  "deviceUsage",
   "trendMonitor",
   "qualityPerDollar",
   "sessionInsights",
@@ -137,13 +120,6 @@ export function DashboardPage({
   const { currency, rate } = useCurrency();
   const { mode: tokenFormatMode, setMode: setTokenFormatMode, formatTokens, formatTokensTooltip } = useTokenFormat();
   const [costModalOpen, setCostModalOpen] = useState(false);
-  const [linkCode, setLinkCode] = useState(null);
-  const [linkCodeExpiresAt, setLinkCodeExpiresAt] = useState(null);
-  const [linkCodeLoading, setLinkCodeLoading] = useState(false);
-  const [linkCodeError, setLinkCodeError] = useState(null);
-  const [linkCodeExpiryTick, setLinkCodeExpiryTick] = useState(0);
-  const [linkCodeRefreshToken, setLinkCodeRefreshToken] = useState(0);
-  const [userStatus, setUserStatus] = useState(null);
   const screenshotMode = useMemo(() => {
     if (typeof window === "undefined") return false;
     return isScreenshotModeEnabled(window.location.search);
@@ -169,183 +145,15 @@ export function DashboardPage({
   const effectiveAuthToken = authTokenAllowed ? authAccessToken : null;
   const accessToken = publicMode ? normalizeAccessToken(publicToken) : effectiveAuthToken;
   const accessEnabled = signedIn || mockEnabled || publicMode;
-  const authTokenReady = authTokenAllowed && isAccessTokenReady(effectiveAuthToken);
   const guestAllowed = signedIn && sessionSoftExpired && !publicMode;
 
-  // Cloud (cross-device account view) — driven by Settings → Cloud sync toggle
-  // on localhost, mandatory on public hosts (www.tokentracker.cc et al.).
-  // publicMode (shared link) opts out of account view entirely.
-  const {
-    accountView: accountViewBase,
-    revision: accountRevision,
-    resolving: accountResolvingBase,
-  } = useAccountView();
-  const accountView = accountViewBase && !publicMode;
-  const accountAccessToken = accountView ? effectiveAuthToken : null;
-  // While the resolved scope is still unknown (auth loading + cloud likely),
-  // hooks hold a loading state instead of painting local data that would be
-  // wiped on the flip to cloud (the local→cloud "double flash").
-  const accountViewResolving = accountResolvingBase && !publicMode;
-
-
-  useEffect(() => {
-    if (!signedIn || mockEnabled) {
-      setLinkCode(null);
-      setLinkCodeExpiresAt(null);
-      setLinkCodeLoading(false);
-      setLinkCodeError(null);
-      return;
-    }
-    if (publicMode) return;
-    if (!authTokenReady) {
-      setLinkCode(null);
-      setLinkCodeExpiresAt(null);
-      setLinkCodeLoading(false);
-      setLinkCodeError(null);
-      return;
-    }
-    let active = true;
-    const resetLinkCode = () => {
-      setLinkCode(null);
-      setLinkCodeExpiresAt(null);
-      setLinkCodeLoading(false);
-      setLinkCodeError(null);
-    };
-    setLinkCodeLoading(true);
-    setLinkCodeError(null);
-    (async () => {
-      let resolvedToken = null;
-      try {
-        resolvedToken = await resolveAuthAccessToken(effectiveAuthToken);
-      } catch (_err) {
-        resolvedToken = null;
-      }
-      if (!active) return;
-      if (!resolvedToken) {
-        resetLinkCode();
-        return;
-      }
-      try {
-        const data = { link_code: null, expires_at: null };
-        if (!active) return;
-        setLinkCode(typeof data?.link_code === "string" ? data.link_code : null);
-        setLinkCodeExpiresAt(typeof data?.expires_at === "string" ? data.expires_at : null);
-      } catch (err) {
-        if (!active) return;
-        setLinkCode(null);
-        setLinkCodeExpiresAt(null);
-        setLinkCodeError(err?.message || "Failed to load link code");
-      } finally {
-        if (!active) return;
-        setLinkCodeLoading(false);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [
-    baseUrl,
-    mockEnabled,
-    signedIn,
-    publicMode,
-    authTokenReady,
-    effectiveAuthToken,
-    linkCodeRefreshToken,
-  ]);
-
-  // 本地模式判断
   const isLocalMode = typeof window !== "undefined" &&
     (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
-
-  useEffect(() => {
-    // 本地模式：跳过登录检查，直接获取 userStatus
-    if (!isLocalMode && (!signedIn || mockEnabled || publicMode)) {
-      setUserStatus(null);
-      return;
-    }
-    if (!isLocalMode && !authTokenReady) {
-      setUserStatus(null);
-      return;
-    }
-    let active = true;
-    (async () => {
-      let resolvedToken = null;
-      try {
-        resolvedToken = await resolveAuthAccessToken(effectiveAuthToken);
-      } catch (_err) {
-        resolvedToken = null;
-      }
-      if (!active) return;
-      // 本地模式允许空 token
-      if (!resolvedToken && !isLocalMode) {
-        setUserStatus(null);
-        return;
-      }
-      try {
-        const data = await getUserStatus({
-          baseUrl,
-          accessToken: resolvedToken,
-        });
-        if (!active) return;
-        setUserStatus(data && typeof data === "object" ? data : null);
-      } catch (_err) {
-        if (!active) return;
-        setUserStatus(null);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [authTokenReady, baseUrl, effectiveAuthToken, mockEnabled, publicMode, signedIn]);
-
-  const linkCodeExpired = useMemo(() => {
-    if (!linkCodeExpiresAt) return false;
-    const ts = Date.parse(linkCodeExpiresAt);
-    if (!Number.isFinite(ts)) return false;
-    const now = linkCodeExpiryTick || Date.now();
-    return ts <= now;
-  }, [linkCodeExpiresAt, linkCodeExpiryTick]);
-
-  useEffect(() => {
-    if (!signedIn || mockEnabled || publicMode) return;
-    if (!linkCodeExpiresAt || !linkCodeExpired) return;
-    if (linkCodeLoading) return;
-    setLinkCode(null);
-    setLinkCodeExpiresAt(null);
-    setLinkCodeError(null);
-    setLinkCodeRefreshToken((value) => value + 1);
-  }, [linkCodeExpired, linkCodeExpiresAt, linkCodeLoading, mockEnabled, signedIn]);
-
-  useEffect(() => {
-    if (!linkCodeExpiresAt || publicMode) return;
-    const ts = Date.parse(linkCodeExpiresAt);
-    if (!Number.isFinite(ts)) return;
-    const now = Date.now();
-    setLinkCodeExpiryTick(now);
-    if (ts <= now) return;
-    const timeoutId = window.setTimeout(() => setLinkCodeExpiryTick(Date.now()), ts - now);
-    const handleVisibilityChange = () => {
-      if (typeof document === "undefined") return;
-      if (document.visibilityState !== "visible") return;
-      setLinkCodeExpiryTick(Date.now());
-    };
-    if (typeof document !== "undefined") {
-      document.addEventListener("visibilitychange", handleVisibilityChange);
-    }
-    window.addEventListener("focus", handleVisibilityChange);
-    return () => {
-      window.clearTimeout(timeoutId);
-      if (typeof document !== "undefined") {
-        document.removeEventListener("visibilitychange", handleVisibilityChange);
-      }
-      window.removeEventListener("focus", handleVisibilityChange);
-    };
-  }, [linkCodeExpiresAt]);
 
   const timeZone = useMemo(() => getBrowserTimeZone(), []);
   const tzOffsetMinutes = useMemo(() => getBrowserTimeZoneOffsetMinutes(), []);
   const mockNow = useMemo(() => getMockNow(), []);
-  const cacheKey = publicMode ? null : auth?.userId || auth?.email || "default";
+  const cacheKey = "default";
   const [selectedPeriod, setSelectedPeriod] = useState("month");
   const [customFrom, setCustomFrom] = useState(null);
   const [customTo, setCustomTo] = useState(null);
@@ -363,82 +171,6 @@ export function DashboardPage({
   }, [mockNow, period, timeZone, tzOffsetMinutes, customFrom, customTo]);
   const from = range.from;
   const to = range.to;
-
-  const [selectedDevice, setSelectedDevice] = useState(null);
-  const [currentDeviceId, setCurrentDeviceId] = useState(() => getCurrentDeviceId());
-  useEffect(() => {
-    const refreshCurrentDevice = () => setCurrentDeviceId(getCurrentDeviceId());
-    window.addEventListener(CLOUD_USAGE_SYNCED_EVENT, refreshCurrentDevice);
-    window.addEventListener("storage", refreshCurrentDevice);
-    return () => {
-      window.removeEventListener(CLOUD_USAGE_SYNCED_EVENT, refreshCurrentDevice);
-      window.removeEventListener("storage", refreshCurrentDevice);
-    };
-  }, []);
-  const { devices: accountDevices, accountSources: accountDeviceSources, refresh: refreshAccountDevices } = useAccountDevices({
-    from,
-    to,
-    timeZone,
-    tzOffsetMinutes,
-    accountView,
-    accountAccessToken,
-    accountRevision,
-  });
-  // Only devices with usage in the selected range are shown anywhere — a
-  // zero-usage registration (typically a stale fingerprint-drift duplicate) is
-  // noise in both the filter dropdown and the breakdown card.
-  const activeDevices = useMemo(
-    () => accountDevices
-      .filter((d) => (Number(d.total_tokens) || 0) > 0)
-      .map((d) => ({ ...d, isCurrent: d.id === currentDeviceId })),
-    [accountDevices, currentDeviceId],
-  );
-  const accountSourceRows = useMemo(
-    () => accountDeviceSources.filter((s) => (Number(s.total_tokens) || 0) > 0),
-    [accountDeviceSources],
-  );
-  // Dropdown filter: choosing between devices needs 2+ of them.
-  const showDeviceFilter = accountView && activeDevices.length >= 2;
-  // Breakdown card: needs 2+ rows; account-level sources count as rows.
-  const showDeviceCard = accountView && activeDevices.length + accountSourceRows.length >= 2;
-  // Reset the filter when no selector is visible, or when the selected device
-  // disappears (revoked / idle in the new range / not in the latest list).
-  useEffect(() => {
-    if (!showDeviceFilter && !showDeviceCard) {
-      if (selectedDevice !== null) setSelectedDevice(null);
-      return;
-    }
-    if (selectedDevice && !activeDevices.some((d) => d.id === selectedDevice)) {
-      setSelectedDevice(null);
-    }
-  }, [showDeviceFilter, showDeviceCard, activeDevices, selectedDevice]);
-
-  const deviceOptions = useMemo(() => {
-    if (!showDeviceFilter) return [];
-    return [
-      { value: "", label: copy("dashboard.device_filter.all") },
-      ...activeDevices.map((d) => {
-        const deviceLabel = formatDeviceLabel(d) || copy("dashboard.device_card.unnamed");
-        const currentSuffix = d.isCurrent ? ` (${copy("dashboard.device_card.current")})` : "";
-        return { value: d.id, label: `${deviceLabel}${currentSuffix}` };
-      }),
-    ];
-  }, [showDeviceFilter, activeDevices, resolvedLocale]);
-
-  const deviceUsageBlock = showDeviceCard ? (
-    <DeviceUsageCard
-      devices={activeDevices}
-      accountSources={accountSourceRows}
-      currentDeviceId={currentDeviceId}
-      selectedDeviceId={selectedDevice || ""}
-      onSelectDevice={(id) => setSelectedDevice(id || null)}
-      onRenameDevice={async (id, name) => {
-        const token = await resolveAuthAccessToken(accountAccessToken);
-        await renameAccountDevice({ deviceId: id, name, accessToken: token });
-        await refreshAccountDevices();
-      }}
-    />
-  ) : null;
 
   const timeZoneLabel = useMemo(
     () => formatTimeZoneLabel({ timeZone, offsetMinutes: tzOffsetMinutes }),
@@ -492,11 +224,6 @@ export function DashboardPage({
     timeZone,
     tzOffsetMinutes,
     now: mockNow,
-    accountView,
-    accountAccessToken,
-    accountRevision,
-    accountViewResolving,
-    deviceId: selectedDevice,
   });
   const {
     daily: dailyBreakdownDaily,
@@ -509,21 +236,14 @@ export function DashboardPage({
     from: dailyBreakdownRange.from,
     to: dailyBreakdownRange.to,
     includeDaily: true,
-    // This card only renders daily rows. Avoid a second account-summary scan
+    // This card only renders daily rows. Avoid a second summary scan
     // whose totals/rolling payload was fetched and then discarded.
     includeSummary: false,
     cacheKey: cacheKey ? `${cacheKey}.daily-breakdown` : "daily-breakdown",
     timeZone,
     tzOffsetMinutes,
     now: mockNow,
-    accountView,
-    accountAccessToken,
-    accountRevision,
-    accountViewResolving,
-    // Keep the daily breakdown aligned with the selected device used by the
-    // main usage/detail cards. Without this, choosing a device only filtered
-    // some cards while the daily table continued to show account-wide rows.
-    deviceId: selectedDevice,
+    // Keep the daily breakdown aligned with the selected local device filter.
   });
 
   const {
@@ -539,11 +259,6 @@ export function DashboardPage({
     cacheKey,
     timeZone,
     tzOffsetMinutes,
-    accountView,
-    accountAccessToken,
-    accountRevision,
-    accountViewResolving,
-    deviceId: selectedDevice,
   });
 
   const [projectUsageLimit, setProjectUsageLimit] = useState(3);
@@ -589,11 +304,6 @@ export function DashboardPage({
     now: mockNow,
     sharedRows: shareDailyToTrend ? daily : null,
     sharedRange: shareDailyToTrend ? { from, to } : null,
-    accountView,
-    accountAccessToken,
-    accountRevision,
-    accountViewResolving,
-    deviceId: selectedDevice,
   });
 
   // Stable useTrendData config handed to the zoom modal so it can hold its OWN
@@ -608,19 +318,10 @@ export function DashboardPage({
       timeZone: trendTimeZone,
       tzOffsetMinutes: trendTzOffsetMinutes,
       now: mockNow,
-      // Carry the account (cross-device cloud) scope into the zoom modal so its
-      // granularity drill-down reads the SAME source as the main trend chart —
-      // otherwise the zoom silently shows local/default-scope data in account view.
-      accountView,
-      accountAccessToken,
-      accountRevision,
-      accountViewResolving,
-      deviceId: selectedDevice,
+      // Keep the zoom modal on the same local source as the main trend chart.
     }),
     [
       baseUrl, accessToken, guestAllowed, cacheKey, trendTimeZone, trendTzOffsetMinutes, mockNow,
-      accountView, accountAccessToken, accountRevision, accountViewResolving,
-      selectedDevice,
     ],
   );
 
@@ -638,11 +339,6 @@ export function DashboardPage({
     timeZone,
     tzOffsetMinutes,
     now: mockNow,
-    accountView,
-    accountAccessToken,
-    accountRevision,
-    accountViewResolving,
-    deviceId: selectedDevice,
   });
 
   const {
@@ -732,8 +428,7 @@ export function DashboardPage({
   }, [detailsPage, period, sortedDetails]);
 
   // Regular periods show the last 30 calendar days. Total view uses the
-  // selected history range and keeps the latest 30 observed days, so an idle
-  // account does not look erased behind a screenful of missing rows.
+  // selected history range and keeps the latest 30 observed days.
   const dailyBreakdownRows = useMemo(() => {
     return selectDailyBreakdownRows(dailyBreakdownDaily, { period });
   }, [dailyBreakdownDaily, period]);
@@ -851,7 +546,6 @@ export function DashboardPage({
 
   const [prevPeriod, setPrevPeriod] = useState("month");
   const handlePeriodChange = useCallback((p) => {
-    if (accountView && !publicMode) recordCloudPromptIntent(auth?.userId, "history");
     if (p === "custom") {
       setPrevPeriod((prev) => (prev === "custom" ? "month" : prev));
       setSelectedPeriod((cur) => {
@@ -865,15 +559,14 @@ export function DashboardPage({
       setPrevPeriod(p);
       setCustomRangeOpen(false);
     }
-  }, [customFrom, customTo, accountView, publicMode, auth?.userId]);
+  }, [customFrom, customTo]);
 
   const handleCustomRangeApply = useCallback((fromDate, toDate) => {
-    if (accountView && !publicMode) recordCloudPromptIntent(auth?.userId, "history");
     setCustomFrom(fromDate);
     setCustomTo(toDate);
     setSelectedPeriod("custom");
     setCustomRangeOpen(false);
-  }, [accountView, publicMode, auth?.userId]);
+  }, []);
 
   const handleCustomRangeOpenChange = useCallback((open) => {
     setCustomRangeOpen(open);
@@ -892,24 +585,19 @@ export function DashboardPage({
     () => [
       baseUrl || "",
       cacheKey || "",
-      accountView ? "cloud" : "local",
-      accountRevision ?? "",
+      "local",
       period || "",
       from || "",
       to || "",
       todayKey || "",
-      selectedDevice || "all",
       timeZone || "",
       tzOffsetMinutes ?? "",
     ].join("\u001f"),
     [
-      accountRevision,
-      accountView,
-      baseUrl,
+          baseUrl,
       cacheKey,
       from,
       period,
-      selectedDevice,
       timeZone,
       todayKey,
       to,
@@ -919,8 +607,7 @@ export function DashboardPage({
 
   const refreshUsageStats = useCallback(async () => {
     return runSingleFlight(usageStatsFlightRef, refreshContextKey, async () => {
-      if (accountView) invalidateAccountResponseCache();
-      if (!accountView) invalidateSessionInsightsCache();
+      invalidateSessionInsightsCache();
       await Promise.all([
         refreshUsage(),
         refreshHeatmap(),
@@ -931,7 +618,6 @@ export function DashboardPage({
       ]);
     });
   }, [
-    accountView,
     refreshDailyBreakdown,
     refreshHeatmap,
     refreshModelBreakdown,
@@ -971,7 +657,7 @@ export function DashboardPage({
   // request instead of starting a duplicate sync.
   const localReloadSyncPromiseRef = useRef(null);
   useEffect(() => {
-    if (!isLocalMode || mockEnabled || accountView) return undefined;
+    if (!isLocalMode || mockEnabled) return undefined;
     if (!localReloadSyncPromiseRef.current) {
       localReloadSyncPromiseRef.current = triggerLocalSync({
         auto: true,
@@ -991,21 +677,20 @@ export function DashboardPage({
     return () => {
       active = false;
     };
-  }, [isLocalMode, mockEnabled, accountView]);
+  }, [isLocalMode, mockEnabled]);
 
   // Provider hooks update the queue quickly, while the native server also
-  // performs a once-per-minute all-source fallback scan. Re-read the local
-  // aggregates while this dashboard remains visible so those queue updates
-  // appear without requiring a click or a page reload.
+  // performs a once-per-minute all-source fallback scan. Re-read local
+  // aggregates while this dashboard remains visible.
   useEffect(() => {
-    if (!isLocalMode || mockEnabled || accountView) return undefined;
+    if (!isLocalMode || mockEnabled) return undefined;
     const autoRefresh = startLocalUsageAutoRefresh({
       refresh: () => refreshUsageStatsRef.current(),
       onError: (error) =>
         console.warn("[DashboardPage] Automatic usage refresh failed:", error),
     });
     return () => autoRefresh.stop();
-  }, [isLocalMode, mockEnabled, accountView]);
+  }, [isLocalMode, mockEnabled]);
 
   const handleUsageRefresh = useCallback(async () => {
     setManualSyncLoading(true);
@@ -1029,14 +714,10 @@ export function DashboardPage({
     trendLoading ||
     modelBreakdownLoading ||
     projectUsageLoading;
-  // Show the dashboard skeleton only on the *initial* cloud (account-view)
-  // load — while auth/cloud is resolving, or while the first account fetch is
-  // in flight and no detail rows exist yet. A later refresh keeps the rendered
-  // data (no skeleton, no flash); local mode loads fast and is left untouched.
+  // Show the dashboard skeleton while the first local fetch is in flight and
+  // no detail rows exist yet. Later refreshes keep rendered data in place.
   const initialDashboardLoading =
-    !dashboardContentShown &&
-    (accountViewResolving ||
-      (accountView && usageLoadingState && !hasDetailsActual));
+    !dashboardContentShown && usageLoadingState && !hasDetailsActual;
   const usageSourceLabel = useMemo(
     () =>
       copy("shared.data_source", {
@@ -1096,38 +777,7 @@ export function DashboardPage({
 
     return earliest;
   }, [heatmap?.weeks, heatmapDaily]);
-  const identitySubscriptions = useMemo(() => {
-    if (publicMode) return [];
-    const rows = Array.isArray(userStatus?.subscriptions?.items)
-      ? userStatus.subscriptions.items
-      : [];
-    const normalized = rows
-      .map((row) => {
-        const tool = typeof row?.tool === "string" ? row.tool.trim() : "";
-        const planTypeRaw =
-          typeof row?.plan_type === "string"
-            ? row.plan_type
-            : typeof row?.planType === "string"
-              ? row.planType
-              : "";
-        const planType = planTypeRaw.trim();
-        if (!tool || !planType) return null;
-        return {
-          tool,
-          planType,
-          provider: typeof row?.provider === "string" ? row.provider.trim() : "",
-          product: typeof row?.product === "string" ? row.product.trim() : "",
-          rateLimitTier:
-            typeof row?.rate_limit_tier === "string"
-              ? row.rate_limit_tier.trim()
-              : typeof row?.rateLimitTier === "string"
-                ? row.rateLimitTier.trim()
-                : "",
-        };
-      })
-      .filter(Boolean);
-    return normalized.slice(0, 6);
-  }, [publicMode, userStatus]);
+  const identitySubscriptions = [];
 
   const activityHeatmapBlock = (
     <ActivityHeatmap
@@ -1295,23 +945,14 @@ export function DashboardPage({
   const costInfoEnabled = summaryCostValue && summaryCostValue !== "-" && fleetData.length > 0;
 
   const installInitCmdBase = copy("dashboard.install.cmd.init");
-  const resolvedLinkCode = !linkCodeExpired ? linkCode : null;
-  const installInitCmdCopy = resolvedLinkCode
-    ? copy("dashboard.install.cmd.init_link_code", {
-        link_code: resolvedLinkCode,
-      })
-    : installInitCmdBase;
+  const installInitCmdCopy = installInitCmdBase;
   const installInitCmdDisplay = installInitCmdBase;
   const installSyncCmd = copy("dashboard.install.cmd.sync");
-  const installCopyLabel = resolvedLinkCode
-    ? copy("dashboard.install.copy")
-    : copy("dashboard.install.copy_base");
+  const installCopyLabel = copy("dashboard.install.copy_base");
   const installCopiedLabel = copy("dashboard.install.copied");
   const sessionExpiredCopyLabel = copy("dashboard.session_expired.copy_label");
   const sessionExpiredCopiedLabel = copy("dashboard.session_expired.copied");
-  const hasActiveDeviceToken = Boolean(
-    userStatus?.install?.has_active_device_token ?? userStatus?.install?.hasActiveDeviceToken,
-  );
+  const hasActiveDeviceToken = false;
   const shouldShowInstall = shouldShowInstallCard({
     publicMode,
     screenshotMode,
@@ -1405,8 +1046,8 @@ export function DashboardPage({
       installCopiedLabel={installCopiedLabel}
       installCopyLabel={installCopyLabel}
       installInitCmdDisplay={installInitCmdDisplay}
-      linkCodeLoading={linkCodeLoading}
-      linkCodeError={linkCodeError}
+       linkCodeLoading={false}
+       linkCodeError={null}
       trendRowsForDisplay={trendRowsForDisplay}
       trendFromForDisplay={trendFromForDisplay}
       trendToForDisplay={trendToForDisplay}
@@ -1477,13 +1118,6 @@ export function DashboardPage({
       setDetailsPage={setDetailsPage}
       costModalOpen={costModalOpen}
       closeCostModal={closeCostModal}
-      deviceOptions={deviceOptions}
-      selectedDevice={selectedDevice || ""}
-      onDeviceChange={(v) => {
-        if (accountView && !publicMode) recordCloudPromptIntent(auth?.userId, "view");
-        setSelectedDevice(v || null);
-      }}
-      deviceUsageBlock={deviceUsageBlock}
       leftCardOrder={dashboardCardOrder.left.order}
       onLeftReorder={dashboardCardOrder.left.reorder}
       rightCardOrder={dashboardCardOrder.right.order}

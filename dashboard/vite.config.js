@@ -218,7 +218,7 @@ function richLinkMetaPlugin() {
 
 // Per-route static SEO/AEO pages. The dashboard is a single-page app that serves
 // one index.html for every route, with a canonical hardcoded to the homepage.
-// Google therefore collapses /ip-check and /leaderboard into "/" ("Page with
+// Google therefore collapses /ip-check into "/" ("Page with
 // redirect" / "Alternate page with canonical"), so those routes never rank on
 // their own. To fix indexability WITHOUT adding rollup inputs (which reshuffle
 // shared chunks and have historically broken the native OAuth callback — see
@@ -316,61 +316,6 @@ const ROUTE_SEO_PAGES = [
       <p>
         Token Tracker is a free, open-source, local-first dashboard that monitors AI token usage and cost
         across 27 AI coding tools including Claude Code. Install with <code>npx tokentracker-cli</code>.
-      </p>
-    </main>`,
-  },
-  {
-    file: "leaderboard.html",
-    url: "https://www.tokentracker.cc/leaderboard",
-    title: "AI Coding Token Usage Leaderboard — Claude, Codex, Cursor",
-    description:
-      "Public Token Tracker leaderboard ranking AI coding token usage across Claude Code, Codex, Cursor, Gemini and 27 tools. Opt-in, privacy-first — token counts only, never prompts.",
-    jsonld: {
-      "@context": "https://schema.org",
-      "@graph": [
-        {
-          "@type": "Organization",
-          "@id": "https://www.tokentracker.cc/#organization",
-          name: "Token Tracker",
-          url: "https://www.tokentracker.cc/",
-        },
-        {
-          "@type": "WebPage",
-          "@id": "https://www.tokentracker.cc/leaderboard#webpage",
-          url: "https://www.tokentracker.cc/leaderboard",
-          name: "AI Coding Token Usage Leaderboard",
-          isPartOf: { "@id": "https://www.tokentracker.cc/#website" },
-          description:
-            "Public leaderboard ranking opt-in AI coding token usage across Claude Code, Codex, Cursor, Gemini and 27 tools.",
-        },
-        {
-          "@type": "BreadcrumbList",
-          itemListElement: [
-            { "@type": "ListItem", position: 1, name: "Home", item: "https://www.tokentracker.cc/" },
-            { "@type": "ListItem", position: 2, name: "Leaderboard", item: "https://www.tokentracker.cc/leaderboard" },
-          ],
-        },
-      ],
-    },
-    seed: `<main class="aeo-seed-content" aria-label="AI Coding Token Usage Leaderboard AI-readable summary">
-      <h1>AI coding token usage leaderboard</h1>
-      <p>
-        The Token Tracker leaderboard ranks opt-in AI coding token usage across Claude Code, OpenAI Codex,
-        Cursor, Gemini CLI and 27 supported tools. It is privacy-first: entries are opt-in and expose token
-        counts only — never prompts or conversation content. See how your AI coding token consumption
-        compares with other developers by model, tool, and time window.
-      </p>
-      <h2>How the leaderboard works</h2>
-      <ul>
-        <li>Opt-in only — you choose whether to appear, using a public display name.</li>
-        <li>Token counts only — never prompts, code, or conversation content.</li>
-        <li>Ranks usage across Claude Code, Codex, Cursor, Gemini and 27 AI coding tools.</li>
-        <li>Powered by optional Token Tracker cloud sync; local-first by default.</li>
-      </ul>
-      <h2>Part of Token Tracker</h2>
-      <p>
-        Token Tracker is a free, open-source, local-first dashboard that monitors AI token usage and cost
-        across 27 AI coding tools. Install with <code>npx tokentracker-cli</code>.
       </p>
     </main>`,
   },
@@ -1219,10 +1164,7 @@ function localDataApiPlugin() {
         // app on :7680 would 404 the drill-down modal.
         const isRepoProjectUsageApi =
           url.pathname === "/functions/tokentracker-project-usage-summary"
-          || url.pathname === "/functions/tokentracker-project-usage-detail"
-          // Achievements ship with this checkout too — a stale packaged app
-          // on :7680 would 404 the local badges.
-          || url.pathname === "/functions/tokentracker-achievements";
+          || url.pathname === "/functions/tokentracker-project-usage-detail";
         // Session efficiency, context health, and automatic Git outcomes are
         // implemented together in this checkout. Keep them on the same code
         // version as the dashboard; an older app listening on :7680 does not

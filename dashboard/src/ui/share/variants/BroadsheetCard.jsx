@@ -392,7 +392,7 @@ export function BroadsheetCard({ data }) {
         )}
       </section>
 
-      {/* Footer — rank/streak on left, CTA watermark on right */}
+      {/* Footer activity summary on left, CTA watermark on right */}
       <footer
         style={{
           marginTop: 18,
@@ -408,18 +408,10 @@ export function BroadsheetCard({ data }) {
         }}
         >
           <div style={{ display: "flex", gap: 28 }}>
-          <span>
-            {copy("share.card.broadsheet.global_rank")}{" "}
-            <span style={{ color: VERMILLION }}>
-              № {data.rank != null ? data.rank : "—"}
-            </span>
-          </span>
-          <span>
             {copy("share.card.broadsheet.active_days")}{" "}
             <span style={{ color: VERMILLION }}>
               {copy("share.card.broadsheet.days_count", { days: data.activeDays })}
             </span>
-          </span>
         </div>
         <div>
           {copy("share.card.broadsheet.track_yours")}{" "}

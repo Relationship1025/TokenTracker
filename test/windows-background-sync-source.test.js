@@ -38,7 +38,7 @@ test("Windows background sync publishes through the authenticated local API", ()
   assert.match(publisher, /x-tokentracker-local-auth/);
   assert.match(
     publisher,
-    /"\{\\"auto\\":true,\\"background\\":true,\\"allLocalSources\\":true,\\"publishAccount\\":true,\\"nativeOnlyWsl\\":true\}"/,
+    /"\{\\"auto\\":true,\\"background\\":true,\\"allLocalSources\\":true,\\"nativeOnlyWsl\\":true\}"/,
     "Windows background sync should publish all local sources and request native-only WSL",
   );
   assert.match(

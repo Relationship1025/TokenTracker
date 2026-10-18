@@ -186,10 +186,6 @@ export function DashboardView(props) {
     detailsPageCount,
     detailsPage,
     setDetailsPage,
-    deviceOptions,
-    selectedDevice,
-    onDeviceChange,
-    deviceUsageBlock,
     leftCardOrder,
     onLeftReorder,
     rightCardOrder,
@@ -205,7 +201,6 @@ export function DashboardView(props) {
     statsPanel: true,
     installCopy: shouldShowInstall,
     activityHeatmap: Boolean(activityHeatmapBlock),
-    deviceUsage: Boolean(deviceUsageBlock),
     trendMonitor: !screenshotMode,
     qualityPerDollar: !screenshotMode,
     sessionInsights: isLocalMode && !screenshotMode,
@@ -269,9 +264,6 @@ export function DashboardView(props) {
       case "activityHeatmap": {
         return <FadeIn delay={delay}>{activityHeatmapBlock}</FadeIn>;
       }
-      case "deviceUsage": {
-        return <FadeIn delay={delay}>{deviceUsageBlock}</FadeIn>;
-      }
       case "trendMonitor": {
         return (
           <FadeIn delay={delay}>
@@ -292,7 +284,6 @@ export function DashboardView(props) {
           <QualityPerDollarCard
             from={usageFrom}
             to={usageTo}
-            deviceId={selectedDevice}
           />
         );
       }
@@ -335,9 +326,6 @@ export function DashboardView(props) {
               onCustomRangeOpenChange={onCustomRangeOpenChange}
               from={usageFrom}
               to={usageTo}
-              deviceOptions={deviceOptions}
-              selectedDevice={selectedDevice}
-              onDeviceChange={onDeviceChange}
             />
           </FadeIn>
         );

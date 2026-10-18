@@ -22,7 +22,7 @@ export function SortableColumnHeader({ id, thClassName, children }) {
   const transformStr = CSS.Transform.toString(transform) || "";
 
   useLayoutEffect(() => {
-    // `id` is always a safe snake_case identifier from LEADERBOARD_TOKEN_COLUMNS,
+    // `id` is always a safe snake_case identifier from usage columns,
     // so a raw attribute selector is fine — no escaping needed.
     const cells = document.querySelectorAll(`td[data-column-key="${id}"]`);
     const liftShadow =

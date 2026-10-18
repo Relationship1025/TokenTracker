@@ -1,10 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  Award,
   BarChart3,
   Gauge,
-  Trophy,
   History,
   LayoutGrid,
   PawPrint,
@@ -19,14 +17,12 @@ import {
   Sun,
   Moon,
   Monitor,
-  Cloud,
 } from "lucide-react";
 import { copy } from "../../lib/copy";
 import { cn } from "../../lib/cn";
 import { useTheme } from "../../hooks/useTheme.js";
 import { useLocale } from "../../hooks/useLocale.js";
 import { shouldFetchGithubStars } from "../dashboard/util/should-fetch-github-stars.js";
-import { InsforgeUserHeaderControls } from "../../components/InsforgeUserHeaderControls.jsx";
 import { isNativeApp, isNativeEmbed, isNativeLinuxApp, isNativeWindowsApp } from "../../lib/native-bridge.js";
 
 const STORAGE_KEY = "tt.sidebarCollapsed";
@@ -42,8 +38,6 @@ export function getNavGroups() {
         { id: "usage", to: "/dashboard", icon: BarChart3, label: copy("nav.usage") },
         { id: "sessions", to: "/sessions", icon: History, label: copy("nav.sessions") },
         { id: "limits", to: "/limits", icon: Gauge, label: copy("nav.limits") },
-        { id: "leaderboard", to: "/leaderboard", icon: Trophy, label: copy("nav.leaderboard") },
-        { id: "achievements", to: "/achievements", icon: Award, label: copy("nav.achievements") },
       ],
     },
     {
@@ -61,7 +55,6 @@ export function getNavGroups() {
       id: "account",
       label: copy("nav.group.account"),
       items: [
-        { id: "cloud", to: "/cloud", icon: Cloud, label: copy("cloud.nav") },
         { id: "settings", to: "/settings", icon: SettingsIcon, label: copy("nav.settings") },
       ],
     },
@@ -111,9 +104,6 @@ function isActive(pathname, to) {
   const normalized = pathname.replace(/\/+$/, "") || "/";
   if (to === "/dashboard") {
     return normalized === "/dashboard" || normalized === "/";
-  }
-  if (to === "/leaderboard") {
-    return normalized === "/leaderboard" || normalized.startsWith("/leaderboard/");
   }
   return normalized === to;
 }
@@ -341,11 +331,7 @@ function SidebarBody({
       {/* Keep navigation sizing beside the identity instead of mixing it with utility links. */}
       <div className={cn("tt-sidebar-header flex px-2 pt-2 pb-2", collapsed ? "flex-col items-center" : "items-center gap-1")}>
         <div className={cn("min-w-0", !collapsed && "flex-1")}>
-          <InsforgeUserHeaderControls
-            variant="sidebar"
-            collapsed={collapsed}
-            onAfterAction={onItemClick}
-          />
+          <Link to="/dashboard" onClick={onItemClick} className="truncate px-2 py-1 text-sm font-medium text-oai-black dark:text-white">{copy("shared.app_name")}</Link>
         </div>
         {showCloseButton ? (
             <button

@@ -1,13 +1,10 @@
 import React, { useState, useCallback } from "react";
 import { motion } from "motion/react";
-import { useLoginModal } from "../../../contexts/LoginModalContext.jsx";
-import { useInsforgeAuth } from "../../../contexts/InsforgeAuthContext.jsx";
 import { ClawdAnimated } from "../../foundation/ClawdAnimated.jsx";
 import { useClawdState } from "../../../hooks/useClawdState.js";
 import { isNativeLinuxApp } from "../../../lib/native-bridge.js";
 
 const DISMISS_KEY = "macAppBannerDismissed";
-const LOGIN_DISMISS_KEY = "leaderboardBannerDismissed";
 const RELEASE_URL = "https://github.com/xiufengsun/TokenTracker/releases/latest";
 
 /** True when loaded inside the native macOS app (WKWebView with ?app=1) */
@@ -25,15 +22,13 @@ const isNativeApp = (() => {
 
 /**
  * Context-aware banner:
- * - Native app + signed in → Leaderboard entry
+ * - Native app → local dashboard entry
  * - Native app + not signed in → Login CTA
  * - Browser → Download App CTA
  */
 export function MacAppBanner({ todayTokens = 0, isSyncing = false, enterDelay = 0 }) {
-  const { openLoginModal } = useLoginModal();
-  const { signedIn: cloudSignedIn } = useInsforgeAuth();
   const clawdState = useClawdState({ todayTokens, isSyncing });
-  const dismissKey = isNativeApp ? LOGIN_DISMISS_KEY : DISMISS_KEY;
+  const dismissKey = DISMISS_KEY;
 
   const [dismissed, setDismissed] = useState(() => {
     try {
@@ -64,26 +59,16 @@ export function MacAppBanner({ todayTokens = 0, isSyncing = false, enterDelay = 
   // Determine banner content based on context
   let title, subtitle, buttonLabel, buttonIcon, onButtonClick, buttonHref;
 
-  if (isNativeApp && cloudSignedIn) {
-    title = "View the Leaderboard";
-    subtitle = "Compare your usage globally";
-    buttonLabel = "Leaderboard";
+  if (isNativeApp) {
+    title = "Open Token Tracker";
+    subtitle = "View local usage and limits";
+    buttonLabel = "Open Dashboard";
     buttonIcon = (
       <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="opacity-70">
         <path d="M2 8.5V10h8V8.5M6 1.5v6m0 0L3.5 5M6 7.5l2.5-2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" transform="rotate(180 6 6)"/>
       </svg>
     );
-    onButtonClick = () => { window.location.pathname = "/leaderboard"; };
-  } else if (isNativeApp) {
-    title = "Join the Leaderboard";
-    subtitle = "Log in to compare your usage with others";
-    buttonLabel = "Log In";
-    buttonIcon = (
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="opacity-70">
-        <path d="M6.5 1.5h3a1 1 0 011 1v7a1 1 0 01-1 1h-3M5 8.5L7.5 6 5 3.5M7.5 6H1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
-    );
-    onButtonClick = openLoginModal;
+    onButtonClick = () => { window.location.pathname = "/dashboard"; };
   } else {
     title = "Try the Menu Bar App";
     subtitle = "Always-on stats with Clawd companion";

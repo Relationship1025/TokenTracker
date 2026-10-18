@@ -39,7 +39,7 @@ const SOURCE_FILTERS = [
   { id: "opencode", label: () => "OpenCode" },
   { id: "grok", label: () => "Grok" },
   { id: "zcode", label: () => "ZCode" },
-  { id: "kimi", label: () => copy("leaderboard.column.kimi") },
+  { id: "kimi", label: () => copy("limits.provider.kimi") },
 ];
 
 const DATE_RANGES = [

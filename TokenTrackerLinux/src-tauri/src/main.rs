@@ -1,6 +1,4 @@
-use tokentracker_linux::{
-    cloud_export, desktop, external, oauth, paths, pet, server, tray, ui_zoom,
-};
+use tokentracker_linux::{desktop, external, oauth, paths, pet, server, tray, ui_zoom};
 
 use std::sync::Mutex;
 
@@ -17,7 +15,6 @@ const NATIVE_OAUTH_BRIDGE: &str = r#"
 (() => {
   if (window.location.hostname !== '127.0.0.1') return;
   if (window !== window.top) return;
-  window.__TOKENTRACKER_CLOUD_EXPORT__ = true;
   const handler = {
     postMessage(url) {
       return window.__TAURI_INTERNALS__.invoke('open_oauth', { url });
@@ -229,19 +226,6 @@ fn start_dashboard(app: AppHandle, window: WebviewWindow, zoom: f64) {
         };
 
     let dashboard_url = server.url().to_string();
-    let Some(export_url) = cloud_export::capability_url(&dashboard_url) else {
-        report_startup_failure(&app, &window, "invalid cloud export origin");
-        return;
-    };
-    let export_capability = tauri::ipc::CapabilityBuilder::new("cloud-usage-export")
-        .window("main")
-        .local(false)
-        .remote(export_url)
-        .permission("allow-save-cloud-usage-export");
-    if app.add_capability(export_capability).is_err() {
-        report_startup_failure(&app, &window, "cloud export permission unavailable");
-        return;
-    }
     app.state::<DashboardBaseUrl>().store(dashboard_url.clone());
 
     if let Ok(mut guard) = SERVER.lock() {
@@ -406,7 +390,6 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             oauth::open_oauth,
             pet::pet_bridge,
-            cloud_export::save_cloud_usage_export,
             set_ui_zoom
         ])
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {

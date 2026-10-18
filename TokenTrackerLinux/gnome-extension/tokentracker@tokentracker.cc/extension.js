@@ -18,9 +18,6 @@ Gio._promisify(Soup.Session.prototype, 'send_and_read_async');
 // The Linux app pins its embedded server to this port (see server.rs).
 const BASE_URL = 'http://127.0.0.1:17680';
 const DESKTOP_ID = 'TokenTracker.desktop';
-// With account=1, a signed-in user's summary read goes through to the cloud,
-// so the background poll matches the macOS app. Opening the menu fetches
-// right away.
 const REFRESH_SECONDS = 300;
 // While the app isn't running nothing leaves the machine, so notice it
 // starting sooner.
@@ -28,8 +25,6 @@ const OFFLINE_RETRY_SECONDS = 30;
 // Limits hit provider APIs upstream; polling them as often as the summary
 // gets the user rate limited (Claude returns 429 within minutes).
 const LIMITS_REFRESH_SECONDS = 300;
-// Enough for every range the dropdown asks for in a day.
-const ACCOUNT_CACHE_SIZE = 32;
 const BLINK_EVERY_SECONDS = 5;
 const BLINK_MS = 140;
 const PLACEHOLDER = '–';
@@ -88,7 +83,7 @@ const EMPTY_TODAY_QUIPS = [
     '💤 Zzz... nothing to count', '🌅 The calm before the storm?',
     '✨ I\'m ready when you are!',
 ];
-const SYNCING_QUIPS = [
+const LOADING_QUIPS = [
     '⏳ Crunching numbers...', '📡 Fetching latest data!',
     '🔄 One moment, syncing...', '🧮 Counting your tokens~',
 ];
@@ -256,7 +251,7 @@ function parseResponse(status, text, path) {
     return json;
 }
 
-const LOAD_FAILED_MESSAGE = 'Couldn’t load the dashboard. Try Sync or open the app.';
+const LOAD_FAILED_MESSAGE = 'Couldn’t load the dashboard. Open the app to retry.';
 
 function isCancelled(error) {
     return Boolean(error?.matches?.(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED));
@@ -788,7 +783,6 @@ class TokenTrackerIndicator extends PanelMenu.Button {
         this._limitsFetchedAt = 0;
         this._limitsLoading = false;
         this._lastRefreshAt = 0;
-        this._accountCache = new Map();
         this._period = 'month';
         this._data = null;
         this._quipIndex = 0;
@@ -892,17 +886,6 @@ class TokenTrackerIndicator extends PanelMenu.Button {
         });
         headerBox.add_child(this._bubble);
         headerBox.add_child(new St.Widget({x_expand: true}));
-        this._syncIcon = new St.Icon({icon_name: 'view-refresh-symbolic', icon_size: 14});
-        this._syncIcon.set_pivot_point(0.5, 0.5);
-        const sync = new St.Button({
-            style_class: 'tokentracker-icon-button',
-            child: this._syncIcon,
-            can_focus: true,
-            y_align: Clutter.ActorAlign.CENTER,
-            accessible_name: 'Sync usage data',
-        });
-        sync.connect('clicked', () => this._sync());
-        headerBox.add_child(sync);
         header.add_child(headerBox);
         this.menu.addMenuItem(header);
 
@@ -987,56 +970,11 @@ class TokenTrackerIndicator extends PanelMenu.Button {
         return json;
     }
 
-    // When the cloud read behind account=1 fails, the server still answers 200
-    // with this machine's data and marks it `transient-*`. Showing that would
-    // flip the numbers between account-wide and single-device totals, so keep
-    // the last account-wide answer for the same request (APIClient.swift and
-    // AccountViewSource.swift do the same on macOS).
     async _getJson(path, params) {
         const {tz, offset} = localTimeZoneQuery();
-        const url = `${BASE_URL}${path}${queryString({...params, tz, tz_offset_minutes: offset, account: 1})}`;
-        const {message, json} = await this._send('GET', url);
-        const fallback = message.response_headers.get_one('X-TokenTracker-Account-Fallback') ?? '';
-        // Never cache a fallback itself, or it would freeze until the cloud
-        // read recovers.
-        if (fallback.trim().startsWith('transient'))
-            return this._accountCache.get(url) ?? json;
-        this._accountCache.delete(url);
-        this._accountCache.set(url, json);
-        if (this._accountCache.size > ACCOUNT_CACHE_SIZE)
-            this._accountCache.delete(this._accountCache.keys().next().value);
+        const url = `${BASE_URL}${path}${queryString({...params, tz, tz_offset_minutes: offset})}`;
+        const {json} = await this._send('GET', url);
         return json;
-    }
-
-    // The header button runs a real sync, like the macOS popover's: the server
-    // only accepts it with the per-launch token it hands out on /api/local-auth.
-    async _sync() {
-        if (this._syncing) return;
-        this._syncing = true;
-        this._bubble.text = SYNCING_QUIPS[this._quipIndex % SYNCING_QUIPS.length];
-        this._syncIcon.ease({
-            rotation_angle_z: 360,
-            duration: 900,
-            mode: Clutter.AnimationMode.LINEAR,
-            repeatCount: -1,
-        });
-        try {
-            const {token} = await this._request('GET', '/api/local-auth');
-            await this._request('POST', '/functions/tokentracker-local-sync', {
-                headers: {'x-tokentracker-local-auth': token},
-                body: '{}',
-            });
-        } catch (e) {
-            if (!isCancelled(e))
-                console.warn(`TokenTracker: sync failed: ${e}`);
-        }
-        this._syncing = false;
-        // Disabling the extension mid-sync destroys the icon under us.
-        if (this._destroyed) return;
-        this._syncIcon.remove_all_transitions();
-        this._syncIcon.rotation_angle_z = 0;
-        this._quipIndex++;
-        await this._refresh({forceLimits: true});
     }
 
     async _fetchPeriodData(period) {
@@ -1056,8 +994,8 @@ class TokenTrackerIndicator extends PanelMenu.Button {
 
     async _refresh({forceLimits = false} = {}) {
         if (this._destroyed) return;
-        // A background poll may be mid-flight when the menu opens or Sync is
-        // clicked; rerun after it, keeping any forced limits read.
+        // A background poll may be mid-flight when the menu opens; rerun after
+        // it, keeping any forced limits read.
         if (this._refreshing) {
             this._refreshAgain = true;
             this._pendingForceLimits ||= forceLimits;
@@ -1192,7 +1130,7 @@ class TokenTrackerIndicator extends PanelMenu.Button {
     }
 
     _renderMessage(text) {
-        this._bubble.text = SYNCING_QUIPS[this._quipIndex % SYNCING_QUIPS.length];
+        this._bubble.text = LOADING_QUIPS[this._quipIndex % LOADING_QUIPS.length];
         this._content.destroy_all_children();
         this._content.add_child(new St.Label({text, style_class: 'tokentracker-message'}));
     }

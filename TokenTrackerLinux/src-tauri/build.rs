@@ -9,12 +9,7 @@ fn main() {
     // commands for the LOCAL origin, which is why `capabilities/default.json`
     // grants `allow-open-oauth` as well.
     tauri_build::try_build(tauri_build::Attributes::new().app_manifest(
-        tauri_build::AppManifest::new().commands(&[
-            "open_oauth",
-            "pet_bridge",
-            "set_ui_zoom",
-            "save_cloud_usage_export",
-        ]),
+        tauri_build::AppManifest::new().commands(&["open_oauth", "pet_bridge", "set_ui_zoom"]),
     ))
     .expect("failed to run tauri-build");
 }

@@ -3,11 +3,9 @@ import { functionUrlFor } from "./function-url";
 import { validateInsforgeDeployment } from "./insforge-deployment-config.mjs";
 
 /**
- * Production InsForge cloud — hardcoded fallback so deployments that don't
+ * Production InsForge origin — hardcoded fallback so deployments that don't
  * inject `VITE_INSFORGE_*` at build time (notably the Vercel build for
- * tokentracker.cc) still reach the cloud. Without this, `getInsforgeRemoteUrl`
- * returns "" and every cloud call (leaderboard list, profile modal, OAuth
- * login) silently fails on the public site.
+ * tokentracker.cc) still reach the authentication service.
  *
  * Both values are public by design: the anon key is a JWT (role=anon) meant to
  * ship in the browser bundle and also appears in `.github/workflows/*.yml`.

@@ -12,8 +12,6 @@ const LABELS = {
   "nav.usage": "Usage",
   "nav.sessions": "Sessions",
   "nav.limits": "Limits",
-  "nav.leaderboard": "Leaderboard",
-  "nav.achievements": "Achievements",
   "nav.widgets": "Widgets",
   "nav.pet": "Desktop pet",
   "nav.skills": "Skills",
@@ -50,10 +48,6 @@ vi.mock("../../lib/native-bridge.js", () => ({
 
 vi.mock("../dashboard/util/should-fetch-github-stars.js", () => ({
   shouldFetchGithubStars: () => false,
-}));
-
-vi.mock("../../components/InsforgeUserHeaderControls.jsx", () => ({
-  InsforgeUserHeaderControls: () => <button type="button" aria-label="Account control" />,
 }));
 
 let desktopMatches = false;

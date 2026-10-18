@@ -13,7 +13,7 @@ internal sealed class LocalSyncPublisher
 {
     private const string LocalAuthHeader = "x-tokentracker-local-auth";
     private const string BackgroundSyncBody =
-        "{\"auto\":true,\"background\":true,\"allLocalSources\":true,\"publishAccount\":true,\"nativeOnlyWsl\":true}";
+        "{\"auto\":true,\"background\":true,\"allLocalSources\":true,\"nativeOnlyWsl\":true}";
 
     private readonly HttpClient _httpClient;
     private readonly string _baseUrl;

@@ -39,25 +39,10 @@ internal sealed class UsagePoller : IDisposable
     private static readonly HttpClient Http =
         new(new HttpClientHandler { UseProxy = false }) { Timeout = TimeSpan.FromSeconds(6) };
     private static readonly IReadOnlyList<TopModelStat> NoModels = Array.Empty<TopModelStat>();
-    // Cross-device ("account") aggregate request flag; the local server decides
-    // whether to serve it (signed in + cloud sync on) or local data, keeping the
-    // tray/pet figures aligned with the dashboard. Joined with an explicit '&'.
-    private const string AccountQuery = "account=1";
     private readonly Func<string> _baseUrl;
     private CancellationTokenSource? _cts;
     private int _refreshInFlight;
     private int _refreshRequested;
-    private int _forceRefreshRequested;
-    /// <summary>
-    /// Whether the figures currently on the tray/pet came from the cross-device
-    /// account aggregate. Guards against a temporary cloud failure replacing them
-    /// with this-machine data; see <see cref="ReadAccountSource"/>.
-    /// </summary>
-    private volatile bool _showingAccountData;
-
-    // The loopback CLI caches account reads by authenticated user: summaries
-    // for two minutes and charts for five. Local data and limits keep this
-    // poller's one-minute cadence without repeated cloud transfers.
 
     /// <summary>
     /// When true, each poll also gathers the heatmap + model-breakdown stats the pet's
@@ -114,7 +99,7 @@ internal sealed class UsagePoller : IDisposable
 
     public void RefreshNow(bool forceAccount = true)
     {
-        if (forceAccount) Interlocked.Exchange(ref _forceRefreshRequested, 1);
+        _ = forceAccount;
         var token = _cts?.Token ?? CancellationToken.None;
         // Do not pass the token to Task.Run itself. A manual refresh can be
         // requested just as Start() replaces the CTS; scheduling with the old
@@ -142,8 +127,7 @@ internal sealed class UsagePoller : IDisposable
                 // requests together so a slow provider quota reader cannot add
                 // another full network round-trip to the visible refresh.
                 var includeLimits = IncludeLimits;
-                var forceAccount = Interlocked.Exchange(ref _forceRefreshRequested, 0) == 1;
-                var statsTask = FetchAsync(token, forceAccount);
+                var statsTask = FetchAsync(token);
                 var limitsTask = includeLimits ? FetchLimitsAsync(token) : null;
                 var stats = await statsTask;
                 if (stats is { } s && !token.IsCancellationRequested) RaiseStatsUpdated(s);
@@ -194,57 +178,18 @@ internal sealed class UsagePoller : IDisposable
         }
     }
 
-    /// <summary>Why the local server served what it served on an <c>account=1</c> request.</summary>
-    private enum AccountSource
-    {
-        /// <summary>Cross-device account aggregate.</summary>
-        Account,
-        /// <summary>This-machine data, and that is the correct scope (signed out / cloud sync off).</summary>
-        LocalAuthoritative,
-        /// <summary>This-machine data only because the cloud read failed.</summary>
-        LocalTransient,
-    }
-
-    /// <summary>
-    /// Read the pair of account-view headers. A server too old to send the reason
-    /// header reports no reason, which stays <see cref="AccountSource.LocalAuthoritative"/>.
-    /// </summary>
-    private static AccountSource ReadAccountSource(HttpResponseMessage resp)
-    {
-        if (resp.Headers.TryGetValues("X-TokenTracker-Account-View", out var view)
-            && view.FirstOrDefault() == "1")
-            return AccountSource.Account;
-
-        var reason = resp.Headers.TryGetValues("X-TokenTracker-Account-Fallback", out var fallback)
-            ? fallback.FirstOrDefault() ?? string.Empty
-            : string.Empty;
-        return reason.StartsWith("transient", StringComparison.Ordinal)
-            ? AccountSource.LocalTransient
-            : AccountSource.LocalAuthoritative;
-    }
-
-    private async Task<UsageStats?> FetchAsync(CancellationToken cancellationToken = default, bool forceAccount = false)
+    private async Task<UsageStats?> FetchAsync(CancellationToken cancellationToken = default)
     {
         try
         {
             var today = DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             var tzQuery = TimeZoneQuery();
-            var refreshQuery = forceAccount ? "&refresh=1" : string.Empty;
 
-            // account=1 → the server serves the same cross-device aggregate the
-            // dashboard shows when the user is signed in with cloud sync on, and
-            // otherwise falls back to local single-machine data. Same response
-            // schema either way, so parsing below is unchanged.
             var summaryUrl = $"{_baseUrl()}/functions/tokentracker-usage-summary"
-                             + $"?from={today}&to={today}{tzQuery}&{AccountQuery}{refreshQuery}";
+                             + $"?from={today}&to={today}{tzQuery}";
 
             using var resp = await Http.GetAsync(summaryUrl, cancellationToken);
             if (!resp.IsSuccessStatusCode) return null;
-
-            // A transient cloud failure must not replace an already-visible
-            // cross-device snapshot with this-machine data.
-            var summarySource = ReadAccountSource(resp);
-            if (summarySource == AccountSource.LocalTransient && _showingAccountData) return null;
 
             await using var stream = await resp.Content.ReadAsStreamAsync(cancellationToken);
             using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
@@ -286,9 +231,8 @@ internal sealed class UsagePoller : IDisposable
                 // Guard each dataset using the authority of this poll, not only
                 // the previously published one, so a cold account snapshot
                 // cannot be mixed with transient local rich stats.
-                var retainAccount = summarySource == AccountSource.Account || _showingAccountData;
-                var heatmapTask = FetchHeatmapAsync(tzQuery, retainAccount, refreshQuery, cancellationToken);
-                var modelsTask = FetchTopModelsAsync(today, tzQuery, retainAccount, refreshQuery, cancellationToken);
+                var heatmapTask = FetchHeatmapAsync(tzQuery, cancellationToken);
+                var modelsTask = FetchTopModelsAsync(today, tzQuery, cancellationToken);
                 await Task.WhenAll(heatmapTask, modelsTask);
                 var heatmap = await heatmapTask;
                 var topModels = await modelsTask;
@@ -297,7 +241,6 @@ internal sealed class UsagePoller : IDisposable
                 models = topModels;
             }
 
-            _showingAccountData = summarySource == AccountSource.Account;
             return new UsageStats(
                 tokens, cost, convos,
                 l7Tokens, l7Active,
@@ -314,14 +257,13 @@ internal sealed class UsagePoller : IDisposable
     /// <summary>Heatmap: all-time active days + current streak (streak is server-computed; the
     /// local server returns 0, matching how the macOS pet reads it against the same backend).</summary>
     private async Task<(int Streak, int ActiveDays)?> FetchHeatmapAsync(
-        string tzQuery, bool retainAccount, string refreshQuery, CancellationToken cancellationToken = default)
+        string tzQuery, CancellationToken cancellationToken = default)
     {
         try
         {
-            var url = $"{_baseUrl()}/functions/tokentracker-usage-heatmap?weeks=52{tzQuery}&{AccountQuery}{refreshQuery}";
+            var url = $"{_baseUrl()}/functions/tokentracker-usage-heatmap?weeks=52{tzQuery}";
             using var resp = await Http.GetAsync(url, cancellationToken);
             if (!resp.IsSuccessStatusCode) return (0, 0);
-            if (ReadAccountSource(resp) == AccountSource.LocalTransient && retainAccount) return null;
             await using var stream = await resp.Content.ReadAsStreamAsync(cancellationToken);
             using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
             var root = doc.RootElement;
@@ -338,16 +280,15 @@ internal sealed class UsagePoller : IDisposable
     /// (one decimal), sort by tokens desc then name asc, top 5.
     /// </summary>
     private async Task<IReadOnlyList<TopModelStat>?> FetchTopModelsAsync(
-        string today, string tzQuery, bool retainAccount, string refreshQuery, CancellationToken cancellationToken = default)
+        string today, string tzQuery, CancellationToken cancellationToken = default)
     {
         try
         {
             var from = DateTime.Now.AddDays(-29).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             var url = $"{_baseUrl()}/functions/tokentracker-usage-model-breakdown"
-                      + $"?from={from}&to={today}{tzQuery}&{AccountQuery}{refreshQuery}";
+                      + $"?from={from}&to={today}{tzQuery}";
             using var resp = await Http.GetAsync(url, cancellationToken);
             if (!resp.IsSuccessStatusCode) return NoModels;
-            if (ReadAccountSource(resp) == AccountSource.LocalTransient && retainAccount) return null;
             await using var stream = await resp.Content.ReadAsStreamAsync(cancellationToken);
             using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
             if (!doc.RootElement.TryGetProperty("sources", out var sources)

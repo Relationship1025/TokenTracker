@@ -59,11 +59,6 @@ class DashboardViewModel: ObservableObject {
     @Published var serverOnline = false
     @Published var lastRefreshed: Date?
     @Published private(set) var isPopoverVisible = false
-    /// True while the Activity heatmap is showing this-machine data purely
-    /// because the cross-device read failed and there was no account snapshot
-    /// to keep. Drives the "This Mac only" hint in the section header.
-    @Published private(set) var activityShowsTransientLocalData = false
-
     // Derived (cached) data
     @Published private(set) var fleetData: [FleetEntry] = []
     @Published private(set) var topModels: [TopModel] = []
@@ -83,17 +78,6 @@ class DashboardViewModel: ObservableObject {
     private var pendingFullRefreshAfterHiddenRefresh = false
     private var pendingUsagePublications = PendingUsagePublicationQueue()
     private var needsFullRefreshOnPopoverOpen = false
-    private var summaryPublicationState = SummaryPublicationState()
-    /// Tracks, per dataset, whether what we show came from the cross-device
-    /// account aggregate — so a transient cloud failure can't silently replace
-    /// it with this-machine data.
-    private var accountViewState = AccountViewStateStore()
-    private var accountRecoveryTask: Task<Void, Never>?
-    private var accountRecoveryAttempt = 0
-    /// Backoff for re-reading the account view after a transient cloud failure.
-    /// Short first hop because the common trigger is a wake-from-sleep where
-    /// Wi-Fi/VPN comes back a second or two after the app starts refreshing.
-    private static let accountRecoveryDelays: [TimeInterval] = [1, 3, 10]
     private let resetDetector = WeeklyLimitResetDetector()
     /// Publication authority for usage-limits refreshes: only the newest
     /// request may update the published record, disk cache, reset detection
@@ -214,30 +198,8 @@ class DashboardViewModel: ObservableObject {
                         from: rollingTo,
                         to: rollingTo
                     )
-                    var adoptedSummaries = MenuBarSummarySelection()
-                    if self.shouldPublish(
-                        result.accountSource,
-                        for: .todaySummary,
-                        scope: AccountViewStateStore.Scope.day(rollingTo),
-                        hasExistingValue: self.todaySummary != nil
-                    ) {
-                        self.todaySummary = result.summary
-                        adoptedSummaries.formUnion(.today)
-                    }
-                    if self.shouldPublish(
-                        result.accountSource,
-                        for: .rollingSummary,
-                        scope: AccountViewStateStore.Scope.rolling30,
-                        hasExistingValue: self.rollingSummary != nil
-                    ) {
-                        self.rollingSummary = result.summary
-                        adoptedSummaries.formUnion(.rolling)
-                    }
-                    self.summaryPublicationState.record(
-                        source: result.source,
-                        completedAt: result.completedAt,
-                        for: adoptedSummaries
-                    )
+                    self.todaySummary = result.summary
+                    self.rollingSummary = result.summary
                 } catch {
                     errorCount += 1
                     if firstError == nil { firstError = error.localizedDescription }
@@ -250,14 +212,7 @@ class DashboardViewModel: ObservableObject {
                         from: range.from,
                         to: range.to
                     )
-                    if self.shouldPublish(
-                        result.accountSource,
-                        for: .periodSummary,
-                        scope: AccountViewStateStore.Scope.range(range.from, range.to),
-                        hasExistingValue: self.summary != nil
-                    ) {
-                        self.summary = result.summary
-                    }
+                    self.summary = result.summary
                 } catch {
                     errorCount += 1
                     if firstError == nil { firstError = error.localizedDescription }
@@ -270,18 +225,7 @@ class DashboardViewModel: ObservableObject {
                         from: totalRange.from,
                         to: totalRange.to
                     )
-                    guard self.shouldPublish(
-                        result.accountSource,
-                        for: .totalSummary,
-                        scope: AccountViewStateStore.Scope.total,
-                        hasExistingValue: self.totalSummary != nil
-                    ) else { return }
                     self.totalSummary = result.summary
-                    self.summaryPublicationState.record(
-                        source: result.source,
-                        completedAt: result.completedAt,
-                        for: .total
-                    )
                 } catch {
                     errorCount += 1
                     if firstError == nil { firstError = error.localizedDescription }
@@ -292,14 +236,7 @@ class DashboardViewModel: ObservableObject {
                 do {
                     // Always fetch 30-day daily for week/month chart
                     let result = try await APIClient.shared.fetchDaily(from: rollingFrom, to: rollingTo)
-                    if self.shouldPublish(
-                        result.source,
-                        for: .daily,
-                        scope: AccountViewStateStore.Scope.daily30,
-                        hasExistingValue: !self.daily.isEmpty
-                    ) {
-                        self.daily = result.value.data
-                    }
+                    self.daily = result.data
                 } catch {
                     errorCount += 1
                     if firstError == nil { firstError = error.localizedDescription }
@@ -309,33 +246,15 @@ class DashboardViewModel: ObservableObject {
                 do {
                     if self.period == .day {
                         let result = try await APIClient.shared.fetchHourly(day: rollingTo)
-                        if self.shouldPublish(
-                            result.source,
-                            for: .hourly,
-                            scope: AccountViewStateStore.Scope.day(rollingTo),
-                            hasExistingValue: !self.hourly.isEmpty
-                        ) {
-                            self.hourly = result.value.data
-                        }
+                        self.hourly = result.data
                         self.monthly = []
-                        self.accountViewState.clear(.monthly)
                     } else if self.period == .total {
                         let result = try await APIClient.shared.fetchMonthly(from: range.from, to: range.to)
-                        if self.shouldPublish(
-                            result.source,
-                            for: .monthly,
-                            scope: AccountViewStateStore.Scope.range(range.from, range.to),
-                            hasExistingValue: !self.monthly.isEmpty
-                        ) {
-                            self.monthly = result.value.data
-                        }
+                        self.monthly = result.data
                         self.hourly = []
-                        self.accountViewState.clear(.hourly)
                     } else {
                         self.hourly = []
                         self.monthly = []
-                        self.accountViewState.clear(.hourly)
-                        self.accountViewState.clear(.monthly)
                     }
                 } catch {
                     errorCount += 1
@@ -346,14 +265,7 @@ class DashboardViewModel: ObservableObject {
             group.addTask { @MainActor in
                 do {
                     let result = try await APIClient.shared.fetchHeatmap()
-                    if self.shouldPublish(
-                        result.source,
-                        for: .heatmap,
-                        scope: AccountViewStateStore.Scope.heatmap,
-                        hasExistingValue: self.heatmap != nil
-                    ) {
-                        self.heatmap = result.value
-                    }
+                    self.heatmap = result
                 } catch {
                     errorCount += 1
                     if firstError == nil { firstError = error.localizedDescription }
@@ -363,14 +275,7 @@ class DashboardViewModel: ObservableObject {
             group.addTask { @MainActor in
                 do {
                     let result = try await APIClient.shared.fetchModelBreakdown(from: range.from, to: range.to)
-                    if self.shouldPublish(
-                        result.source,
-                        for: .modelBreakdown,
-                        scope: AccountViewStateStore.Scope.range(range.from, range.to),
-                        hasExistingValue: self.modelBreakdown != nil
-                    ) {
-                        self.modelBreakdown = result.value
-                    }
+                    self.modelBreakdown = result
                 } catch {
                     errorCount += 1
                     if firstError == nil { firstError = error.localizedDescription }
@@ -417,17 +322,6 @@ class DashboardViewModel: ObservableObject {
             self.lastRefreshed = Date()
         }
 
-        // A transient cloud fallback is not a refresh failure — the panel still
-        // holds the account snapshot — but it does mean the data is stale, so
-        // retry the account read on a short backoff instead of waiting for the
-        // next five-minute tick or a manual sync.
-        activityShowsTransientLocalData = accountViewState.showsTransientLocalData(.heatmap)
-        if accountViewState.isDegraded {
-            scheduleAccountRecoveryRetry()
-        } else {
-            cancelAccountRecovery()
-        }
-
         updateDerivedData()
         isLoading = false
 
@@ -435,55 +329,6 @@ class DashboardViewModel: ObservableObject {
         // widgets pick it up on their next timeline reload.
         await WidgetSnapshotWriter.update(from: self, capturedAt: capturedAt)
         await finishDataLoad(allowPendingRefresh: errorCount == 0)
-    }
-
-    // MARK: - Account View Authority
-
-    /// Decide whether a freshly fetched payload may replace what is on screen.
-    ///
-    /// The local server answers `?account=1` with this-machine data both when
-    /// that is the user's real scope and when a cloud read just failed. Only
-    /// the first is allowed to replace an account (cross-device) snapshot;
-    /// otherwise one timed-out request would shrink the popover to a single
-    /// device until the next manual sync.
-    private func shouldPublish(
-        _ source: AccountViewSource,
-        for dataset: AccountViewStateStore.Dataset,
-        scope: String,
-        hasExistingValue: Bool
-    ) -> Bool {
-        let adopt = accountViewState.shouldAdopt(
-            source,
-            for: dataset,
-            scope: scope,
-            hasExistingValue: hasExistingValue
-        )
-        if source.isTransientFallback {
-            // Reason only — never tokens, cookies, or usage figures.
-            Self.logger.notice(
-                "Account view fallback: dataset=\(String(describing: dataset), privacy: .public) reason=\(source.reason, privacy: .public) retainedAccountSnapshot=\(!adopt, privacy: .public)"
-            )
-        }
-        return adopt
-    }
-
-    private func scheduleAccountRecoveryRetry() {
-        guard accountRecoveryTask == nil else { return }
-        guard accountRecoveryAttempt < Self.accountRecoveryDelays.count else { return }
-        let delay = Self.accountRecoveryDelays[accountRecoveryAttempt]
-        accountRecoveryAttempt += 1
-        accountRecoveryTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
-            guard let self, !Task.isCancelled else { return }
-            self.accountRecoveryTask = nil
-            await self.loadAll()
-        }
-    }
-
-    private func cancelAccountRecovery() {
-        accountRecoveryTask?.cancel()
-        accountRecoveryTask = nil
-        accountRecoveryAttempt = 0
     }
 
     private func finishDataLoad(allowPendingRefresh: Bool = true) async {
@@ -522,43 +367,6 @@ class DashboardViewModel: ObservableObject {
         await refreshAfterUsagePublication(.localQueue, menuBarSummaries: summaries)
     }
 
-    /// Account summaries become authoritative only after this machine's queue
-    /// offset advances. This avoids re-reading an old cloud aggregate merely
-    /// because the local parser wrote its queue first.
-    func refreshAfterAccountUpload(menuBarSummaries summaries: MenuBarSummarySelection) async {
-        let relevantSummaries = isPopoverVisible ? .all : summaries
-        await waitForAccountCacheVisibility(for: relevantSummaries)
-        await refreshAfterUsagePublication(.accountUpload, menuBarSummaries: summaries)
-    }
-
-    private func waitForAccountCacheVisibility(
-        for summaries: MenuBarSummarySelection
-    ) async {
-        while !Task.isCancelled {
-            let slotDelay: TimeInterval = summaries.isEmpty
-                ? 0
-                : UsagePublicationPolicy.remainingAccountCacheDelay(
-                    state: summaryPublicationState,
-                    summaries: summaries,
-                    now: Date()
-                )
-            let latestAccountRead = await APIClient.shared.latestAccountSummaryReadCompletedAt
-            let globalDelay = UsagePublicationPolicy.remainingAccountCacheDelay(
-                latestReadCompletedAt: latestAccountRead,
-                now: Date()
-            )
-            let delay = max(slotDelay, globalDelay)
-            guard delay > 0 else { return }
-            do {
-                try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
-            } catch {
-                return
-            }
-            // Re-evaluate after sleeping because another account read may have
-            // populated the edge cache while this publication was waiting.
-        }
-    }
-
     private func refreshAfterUsagePublication(
         _ source: UsagePublicationSource,
         menuBarSummaries summaries: MenuBarSummarySelection
@@ -573,7 +381,6 @@ class DashboardViewModel: ObservableObject {
         }
 
         let affectedSummaries = UsagePublicationPolicy.summariesToRefresh(
-            state: summaryPublicationState,
             sources: source,
             requested: .all
         )
@@ -619,36 +426,14 @@ class DashboardViewModel: ObservableObject {
                             from: today,
                             to: today
                         )
-                        // Same rule as the full load: a transient cloud
-                        // fallback must not replace account totals in the menu
-                        // bar. The response still counts as a success — the
-                        // server answered — so `serverOnline` stays accurate.
-                        var adoptedSummaries = MenuBarSummarySelection()
-                        if summaries.contains(.today), self.shouldPublish(
-                            result.accountSource,
-                            for: .todaySummary,
-                            scope: AccountViewStateStore.Scope.day(today),
-                            hasExistingValue: self.todaySummary != nil
-                        ) {
+                        if summaries.contains(.today) {
                             self.todaySummary = result.summary
-                            adoptedSummaries.formUnion(.today)
                         }
                         // Rolling windows are identical on every summary
                         // response, so today + 7d needs only one request.
-                        if summaries.contains(.rolling), self.shouldPublish(
-                            result.accountSource,
-                            for: .rollingSummary,
-                            scope: AccountViewStateStore.Scope.rolling30,
-                            hasExistingValue: self.rollingSummary != nil
-                        ) {
+                        if summaries.contains(.rolling) {
                             self.rollingSummary = result.summary
-                            adoptedSummaries.formUnion(.rolling)
                         }
-                        self.summaryPublicationState.record(
-                            source: result.source,
-                            completedAt: result.completedAt,
-                            for: adoptedSummaries
-                        )
                         successfulFetches += 1
                     } catch {
                         if firstError == nil { firstError = error }
@@ -664,19 +449,7 @@ class DashboardViewModel: ObservableObject {
                             from: range.from,
                             to: range.to
                         )
-                        if self.shouldPublish(
-                            result.accountSource,
-                            for: .totalSummary,
-                            scope: AccountViewStateStore.Scope.total,
-                            hasExistingValue: self.totalSummary != nil
-                        ) {
-                            self.totalSummary = result.summary
-                            self.summaryPublicationState.record(
-                                source: result.source,
-                                completedAt: result.completedAt,
-                                for: .total
-                            )
-                        }
+                        self.totalSummary = result.summary
                         successfulFetches += 1
                     } catch {
                         if firstError == nil { firstError = error }

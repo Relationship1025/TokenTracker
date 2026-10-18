@@ -2,7 +2,6 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { InsforgeAuthProvider } from "./contexts/InsforgeAuthContext.jsx";
-import { AccountViewProvider } from "./contexts/AccountViewContext.jsx";
 import { LocaleProvider } from "./ui/foundation/LocaleProvider.jsx";
 import { CurrencyProvider } from "./ui/foundation/CurrencyProvider.jsx";
 import { TokenFormatProvider } from "./ui/foundation/TokenFormatProvider.jsx";
@@ -26,9 +25,7 @@ createRoot(document.getElementById("root")).render(
       <TokenFormatProvider>
         <CurrencyProvider>
           <InsforgeAuthProvider>
-            <AccountViewProvider>
-              <RouterProvider router={router} />
-            </AccountViewProvider>
+            <RouterProvider router={router} />
           </InsforgeAuthProvider>
         </CurrencyProvider>
       </TokenFormatProvider>

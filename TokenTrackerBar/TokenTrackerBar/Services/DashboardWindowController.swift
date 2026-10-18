@@ -102,7 +102,6 @@ final class DashboardWindowController: NSObject, NSWindowDelegate, WKNavigationD
         // Earliest paint: transparent root so NSVisualEffectView is visible (index.html also sets native-app via nativeBridge).
         let transparencyBootstrap = """
         (function(){
-          window.__TOKENTRACKER_CLOUD_EXPORT__ = true;
           document.documentElement.classList.add('native-app');
           var s=document.createElement('style');
           s.textContent='html,html.dark{background:transparent!important}body{background:transparent!important}';
@@ -554,14 +553,6 @@ final class DashboardWindowController: NSObject, NSWindowDelegate, WKNavigationD
     }
 
     private func handleScriptMessage(name: String, body: Any, sourceURL: URL?, mainFrame: Bool, sender: WKWebView?) {
-        if name == "nativeBridge", let message = body as? [String: Any],
-           message["type"] as? String == "saveCloudUsageExport", let sender {
-            let expected = NativeQAProfile.current?.baseURL ?? URL(string: Constants.serverBaseURL)!
-            let permitted = CloudUsageExport.permitsSource(sourceURL, current: webView?.url, expected: expected,
-                                                          mainFrame: mainFrame, ownWebView: sender === webView)
-            NativeBridge.shared.saveCloudUsageExport(message: message, source: sender, permitted: permitted)
-            return
-        }
         if let profile = NativeQAProfile.current {
             guard name == "nativeBridge", mainFrame, let sourceURL, isLocalDashboardURL(sourceURL),
                   let message = body as? [String: Any], profile.permitsNativeMessage(message) else {
@@ -623,21 +614,6 @@ final class DashboardWindowController: NSObject, NSWindowDelegate, WKNavigationD
         if let url = URL(string: callbackUrl) {
             loadDashboard(url)
         }
-    }
-
-    func handleNativeQABillingReturn(order: String) {
-        guard let profile = NativeQAProfile.current, profile.ownedOrderIDs.contains(order) else {
-            fatalError("Native QA billing return rejected")
-        }
-        handleBillingReturn(order: order)
-    }
-
-    func handleBillingReturn(order: String) {
-        guard NativeBillingReturn.canonicalOrderID(order) == order else { return }
-        DashboardPresentationCoordinator.shared.showDashboard()
-        var components = URLComponents(string: Constants.serverBaseURL + "/billing/checkout")!
-        components.queryItems = [URLQueryItem(name: "order", value: order), URLQueryItem(name: "app", value: "1")]
-        loadDashboard(components.url!)
     }
 
     private func openExternalURL(_ url: URL) {

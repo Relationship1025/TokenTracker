@@ -59,10 +59,10 @@ export function resolveDisplayTokens(totals: any, fallback = 0) {
 
 // Deprecated source names folded into their canonical spelling at display
 // time. "deepseek" was the first dsh-integration source name; it was renamed
-// to "dsh", but a cloud upload from before the rename still carries the old
+// to "dsh". Keep both labels readable so local history remains stable and
 // name. Folding it back keeps one "DeepSeek Harness" provider instead of two
 // ("DEEPSEEK" + "DeepSeek Harness"). This only changes presentation; the
-// underlying cloud rows are not rewritten.
+// underlying local rows are not rewritten.
 const SOURCE_ALIASES: Record<string, string> = {
   deepseek: "dsh",
 };

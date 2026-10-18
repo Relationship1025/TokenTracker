@@ -11,7 +11,6 @@ function parseNext(search) {
   if (!raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
   return raw;
 }
-
 export function LoginPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -22,16 +21,9 @@ export function LoginPage() {
     signedIn,
     refreshUser,
   } = useInsforgeAuth();
-
   const nextPath = useMemo(() => parseNext(searchParams.toString()), [searchParams]);
-  const cloudLogin = /^\/(cloud|billing\/checkout)(\?|$)/.test(nextPath);
-  const trialLogin = cloudLogin && new URLSearchParams(nextPath.split("?")[1]).get("intent") === "trial";
   const [banner, setBanner] = useState(null);
-
-  useEffect(() => {
-    if (!/^\/(cloud|billing\/checkout)(\?|$)/.test(nextPath)) return;
-    try { window.sessionStorage.setItem("tt.cloud.return", nextPath); } catch { /* next query still survives password sign-in. */ }
-  }, [nextPath]);
+  const isNativeLogin = useMemo(() => searchParams.get("native") === "1", [searchParams]);
 
   useEffect(() => {
     const status = searchParams.get("insforge_status");
@@ -44,10 +36,6 @@ export function LoginPage() {
     }
   }, [searchParams]);
 
-  const isNativeLogin = useMemo(() => {
-    return searchParams.get("native") === "1";
-  }, [searchParams]);
-
   useEffect(() => {
     if (!enabled || authLoading) return;
     if (signedIn) {
@@ -55,7 +43,6 @@ export function LoginPage() {
         window.location.href = "/auth/native-callback";
         return;
       }
-      try { window.sessionStorage.removeItem("tt.cloud.return"); } catch { /* ignore */ }
       navigate(nextPath, { replace: true });
     }
   }, [enabled, authLoading, signedIn, navigate, nextPath, isNativeLogin]);
@@ -65,13 +52,12 @@ export function LoginPage() {
     refreshUser();
   }, [enabled, refreshUser]);
 
-  // Mark native login in sessionStorage so /auth/callback knows to redirect to app
   useEffect(() => {
     if (isNativeLogin && typeof window !== "undefined") {
       try {
         window.sessionStorage.setItem("tokentracker_native_login", "1");
       } catch {
-        // Ignore storage failures
+        // Ignore storage failures.
       }
     }
   }, [isNativeLogin]);
@@ -111,10 +97,10 @@ export function LoginPage() {
     <div className="min-h-screen bg-oai-gray-950 text-oai-white font-oai antialiased dark flex flex-col">
       <header className="border-b border-oai-gray-900 px-4 sm:px-6 h-16 flex items-center justify-between">
         <Link
-          to={cloudLogin ? "/cloud" : "/"}
+          to="/"
           className="text-sm font-medium text-oai-gray-400 hover:text-white no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oai-brand-500 rounded"
         >
-          {copy(cloudLogin ? "cloud.checkout.back" : "login.back_home")}
+          {copy("login.back_home")}
         </Link>
       </header>
 
@@ -126,11 +112,7 @@ export function LoginPage() {
               role="status"
             >
               <span>{banner}</span>
-              <button
-                type="button"
-                onClick={clearVerifyQuery}
-                className="shrink-0 text-oai-gray-500 hover:text-white text-xs"
-              >
+              <button type="button" onClick={clearVerifyQuery} className="shrink-0 text-oai-gray-500 hover:text-white text-xs">
                 {copy("login.dismiss")}
               </button>
             </div>
@@ -140,13 +122,12 @@ export function LoginPage() {
             <LoginCard
               hideLogo
               title={copy("login.title")}
-              subtitle={copy(cloudLogin ? trialLogin ? "cloud.login.trial_context" : "cloud.login.purchase_context" : "login.subtitle")}
+              subtitle={copy("login.subtitle")}
               className="p-8 bg-transparent"
               onSuccess={() => {
                 if (isNativeLogin) {
                   window.location.href = "/auth/native-callback";
                 } else {
-                  try { window.sessionStorage.removeItem("tt.cloud.return"); } catch { /* ignore */ }
                   navigate(nextPath, { replace: true });
                 }
               }}

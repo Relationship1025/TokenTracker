@@ -331,7 +331,6 @@ test("total leaderboard shards the model-granular response without changing pric
 
 test("signed-in users cannot trigger expensive month, total, or all-period leaderboard refreshes", () => {
   const source = read("dashboard/edge-patches/tokentracker-leaderboard-refresh.ts");
-  const clientSource = read("dashboard/src/lib/cloud-sync.ts");
   assert.match(
     source,
     /type RefreshAuthorization = "privileged" \| "signed-in" \| "public";/u,
@@ -340,7 +339,6 @@ test("signed-in users cannot trigger expensive month, total, or all-period leade
     source,
     /if \(authorization === "signed-in" && body\.period !== "week"\)\s*return json\(\{ error: "signed-in users may only refresh week" \}, 403\);/u,
   );
-  assert.doesNotMatch(clientSource, /tokentracker-leaderboard-refresh/u, "ordinary synchronization must leave public refresh scheduling to the server");
 });
 
 test("the unauthenticated public reads cannot reach any refresh write path", () => {
@@ -574,15 +572,10 @@ test("leaderboard bans block token issuance and usage ingestion", () => {
 
 test("leaderboard reads expose snapshot freshness and disable response caching", () => {
   const edgeSource = read("dashboard/edge-patches/tokentracker-leaderboard.ts");
-  const clientSource = read("dashboard/src/lib/api.ts");
   assert.match(edgeSource, /const snapshotGeneratedAt =/u);
   assert.match(edgeSource, /generated_at: snapshotGeneratedAt/u);
   assert.doesNotMatch(edgeSource, /generated_at: new Date\(\)\.toISOString\(\)/u);
   assert.match(edgeSource, /"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"/u);
-  assert.match(
-    clientSource,
-    /fetchInsforgeFunction\("tokentracker-leaderboard", \{\s*cache: "no-store"/u,
-  );
 });
 
 test("telemetry heartbeat uses one atomic database upsert RPC", () => {
@@ -605,11 +598,6 @@ test("device creation absorbs concurrent unique-key races without database error
   }
   assert.match(migration,/pg_advisory_xact_lock/u);
   assert.match(migration,/INSERT INTO public\.tokentracker_devices[\s\S]{0,450}ON CONFLICT DO NOTHING/u);
-});
-
-test("desktop auto refresh does not poll cloud account aggregates every 30 seconds", () => {
-  const source = read("dashboard/src/pages/DashboardPage.jsx");
-  assert.match(source, /if \(!isLocalMode \|\| mockEnabled \|\| accountView\) return undefined;/u);
 });
 
 test("backend hardening migration adds hot-path RPCs, index, and execute ACLs", () => {

@@ -228,9 +228,6 @@ export function UsageOverview({
   onOpenShare,
   from,
   to,
-  deviceOptions = [],
-  selectedDevice = "",
-  onDeviceChange,
 }) {
   const tabs = normalizePeriods(periods);
   const dateLocale = getDateFnsLocale(getCopyLocale());
@@ -291,7 +288,7 @@ export function UsageOverview({
   // stays an explicit user action rather than a forced default.
   useEffect(() => {
     setExpandedProvider(null);
-  }, [period, from, to, selectedDevice]);
+  }, [period, from, to]);
 
   const handleTablistKeyDown = (event) => {
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
@@ -346,8 +343,7 @@ export function UsageOverview({
       String(provider?.source || provider?.label || "").trim().toLowerCase() === "kiro",
   );
   // TRAE cost leaves out input without a cache split (docs/trae.md). Keep the
-  // caveat visible with the combined totals, including cloud data, which has
-  // no per-bucket marker.
+  // caveat visible with the combined totals, which have no per-bucket marker.
   const traeContributes = providers.some(
     (provider) =>
       String(provider?.source || provider?.label || "").trim().toLowerCase() === "trae",
@@ -443,16 +439,6 @@ export function UsageOverview({
             })}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            {deviceOptions.length > 1 ? (
-              <Select
-                value={selectedDevice}
-                onValueChange={onDeviceChange}
-                options={deviceOptions}
-                ariaLabel={copy("dashboard.device_filter.aria")}
-                matchTriggerWidth
-                className="h-8 px-3 text-xs font-medium rounded-md border-oai-gray-300 dark:border-oai-gray-700 bg-oai-white dark:bg-oai-gray-900 text-oai-black dark:text-oai-white hover:border-oai-brand hover:text-oai-brand hover:[&_svg]:text-oai-brand transition-colors duration-200"
-              />
-            ) : null}
             {onOpenShare ? (
               <button
                 type="button"

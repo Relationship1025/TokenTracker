@@ -1,6 +1,6 @@
 // Local-only session browser client. The backing endpoint retains the raw
 // session id and local project path so the dashboard can offer one-click
-// resume; it is never served from the cloud account view.
+// resume.
 import { copy } from "./copy";
 
 const SLUG = "tokentracker-sessions";

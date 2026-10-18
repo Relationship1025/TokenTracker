@@ -31,11 +31,4 @@ describe("Skills cloud inventory guardrails", () => {
     assert.doesNotMatch(source, /input\.description|input\.prompt|input\.content|input\.readmeUrl|input\.targetPaths/);
   });
 
-  it("bounds cloud requests so the local inventory remains usable", () => {
-    const source = read("dashboard/src/lib/skills-api.ts");
-    assert.match(source, /CLOUD_REQUEST_TIMEOUT_MS/);
-    assert.match(source, /new AbortController\(\)/);
-    assert.match(source, /signal: controller\.signal/);
-    assert.match(source, /finally[\s\S]*clearTimeout\(timeout\)/);
-  });
 });

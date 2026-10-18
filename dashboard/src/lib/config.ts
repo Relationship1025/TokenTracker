@@ -22,18 +22,7 @@ export function getBackendBaseUrl() {
     (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
   if (isLocalhost) return "";
 
-  // Non-localhost (tokentracker.cc): dashboard usage data comes from the
-  // cloud. Delegate to getInsforgeRemoteUrl so the hardcoded prod fallback
-  // applies when VITE_* env wasn't injected at build time — otherwise this
-  // returned "" and usage API calls hit the Vercel host (no edge functions
-  // there) → 404 → an empty dashboard after login.
-  return getInsforgeRemoteUrl();
-}
-
-/**
- * 排行榜专用：`tokentracker-leaderboard`、公开可见性等 InsForge Edge Functions。
- * 与 `getInsforgeBaseUrl()` 相同；在 localhost 只要配置了 `VITE_INSFORGE_BASE_URL` 仍会请求云端。
- */
-export function getLeaderboardBaseUrl() {
+  // Public pages use the configured InsForge origin for authentication and
+  // other protected site flows. Local usage data remains on the loopback API.
   return getInsforgeRemoteUrl();
 }

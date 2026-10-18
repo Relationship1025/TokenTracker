@@ -156,7 +156,7 @@ describe("startLinuxPetHost", () => {
     await vi.waitFor(() => expect(window.__ttPetLimits).toEqual({ claude: {} }));
     const summaryUrl = fetchImpl.mock.calls.map(([url]) => url).find((u) => u.includes("usage-summary"));
     expect(summaryUrl).toContain("from=2026-09-26&to=2026-09-26");
-    expect(summaryUrl).toContain("account=1");
+    expect(summaryUrl).not.toContain("account=1");
   });
 
   it("reports increases without a hardcoded model name", async () => {

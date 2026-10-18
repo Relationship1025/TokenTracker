@@ -15,7 +15,6 @@ export interface InsforgeAuthValue {
   loading: boolean;
   displayName: string;
   refreshUser: () => Promise<void>;
-  refreshDisplayName: () => Promise<void>;
   signInWithOAuth: (provider: string, redirectToOverride?: string) => Promise<any>;
   signInWithPassword: (request: any) => Promise<any>;
   signUp: (request: any) => Promise<any>;

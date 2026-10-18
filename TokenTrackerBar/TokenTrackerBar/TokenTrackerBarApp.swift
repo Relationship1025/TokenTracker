@@ -244,23 +244,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
-        if let profile = NativeQAProfile.current {
-            for url in urls {
-                guard let order = try? profile.billingReturnOrder(url) else {
-                    fatalError("Native QA billing return rejected")
-                }
-                Task { @MainActor in
-                    guard await profile.approveOwnedOrder(order) else { fatalError("Native QA order ownership rejected") }
-                    DashboardWindowController.shared.handleNativeQABillingReturn(order: order)
-                }
-            }
-            return
-        }
         for url in urls {
             guard url.scheme == "tokentracker" else { continue }
-            if let order = NativeBillingReturn.orderID(from: url) {
-                DashboardWindowController.shared.handleBillingReturn(order: order)
-            } else if url.host == "auth" && url.path.hasPrefix("/done") {
+            if url.host == "auth" && url.path.hasPrefix("/done") {
                 DashboardWindowController.shared.handleAuthDone()
             } else if url.host == "auth" && url.path.hasPrefix("/callback") {
                 // Browser relays OAuth code back via tokentracker://auth/callback?insforge_code=xxx

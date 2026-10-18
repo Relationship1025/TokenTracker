@@ -30,7 +30,6 @@ export interface ShareCardData {
   periodFrom: string | null;
   periodTo: string | null;
   topModels: ShareCardModel[];
-  rank: number | null;
   heatmapWeeks: ShareCardHeatmapCell[][];
   heatmapTotalDays: number;
   heatmapActiveDays: number;
@@ -90,7 +89,6 @@ export function buildShareCardData(params: {
   activeDays: number;
   summary: AnyRec | null;
   topModels: ShareCardModel[] | null | undefined;
-  rank: number | null;
   period: ShareCardPeriod;
   periodFrom: string | null;
   periodTo: string | null;
@@ -105,7 +103,6 @@ export function buildShareCardData(params: {
     activeDays,
     summary,
     topModels,
-    rank,
     period,
     periodFrom,
     periodTo,
@@ -140,7 +137,6 @@ export function buildShareCardData(params: {
     periodFrom,
     periodTo,
     topModels: normalizedModels,
-    rank: typeof rank === "number" && Number.isFinite(rank) && rank > 0 ? Math.floor(rank) : null,
     heatmapWeeks: hm.weeks,
     heatmapTotalDays: hm.totalDays,
     heatmapActiveDays: hm.activeDays,

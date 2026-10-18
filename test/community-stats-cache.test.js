@@ -78,20 +78,6 @@ test("community insights refresh exposes useful aggregates without adding locati
   assert.doesNotMatch(migration, /\bcountry\b|ip_address|geo_/i);
 });
 
-test("community insights frontend reuses the dashboard trend chart and caps rankings at ten", () => {
-  const source = read("dashboard/src/components/leaderboard/CommunityStatsModal.jsx");
-
-  // The overview chart is the shared TrendMonitor (tooltip included), not a
-  // bespoke SVG chart local to this modal.
-  assert.match(source, /from "\.\.\/\.\.\/ui\/dashboard\/components\/TrendMonitor"/);
-  assert.doesNotMatch(source, /tokens_7d_avg/);
-  assert.match(source, /const TOP_ROWS_LIMIT = 10/);
-  assert.match(source, /\.slice\(0, TOP_ROWS_LIMIT\)/);
-  assert.match(source, /community-metrics-tab-underline/);
-  assert.match(source, /"data-provider-rank": index \+ 1/);
-  assert.doesNotMatch(source, /md:grid-cols-2[\s\S]{0,1200}providers\.map/);
-});
-
 test("community growth compares complete UTC weeks instead of a partial current day", () => {
   const migration = read("migrations/20260718082000_use-completed-days-for-community-growth.sql");
 

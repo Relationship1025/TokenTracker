@@ -1,9 +1,8 @@
 import React from "react";
-import { Cloud, FileDown, FlaskConical, Gauge, Globe, Monitor, Palette, Settings, UserRound } from "lucide-react";
+import { FileDown, FlaskConical, Gauge, Globe, Monitor, Palette, Settings, UserRound } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { LimitsSettingsPanel } from "../components/LimitsSettingsPanel.jsx";
 import { AccountSection } from "../components/settings/AccountSection.jsx";
-import { CloudSection } from "../components/settings/CloudSection.jsx";
 import { DataTransferSection } from "../components/settings/DataTransferSection.jsx";
 import { useAccountProfileSettings } from "../components/settings/useAccountProfileSettings.js";
 import { AppearanceSection } from "../components/settings/AppearanceSection.jsx";
@@ -30,7 +29,6 @@ const SETTINGS_SECTION_IDS = {
   NATIVE_APP: "native-app",
   NETWORK: "network",
   ACCOUNT: "account",
-  CLOUD: "cloud",
   LIMITS: "limits",
   LABS: "labs",
   TRANSFER: "transfer",
@@ -128,14 +126,6 @@ export function SettingsPage() {
       group: SETTINGS_GROUP_IDS.PERSONAL,
       Icon: UserRound,
       content: <AccountSection settings={accountSettings} />,
-    },
-    {
-      id: SETTINGS_SECTION_IDS.CLOUD,
-      label: copy("settings.section.cloud"),
-      description: copy("settings.section.cloud.description"),
-      group: SETTINGS_GROUP_IDS.PERSONAL,
-      Icon: Cloud,
-      content: <CloudSection settings={accountSettings} active={activeSection === SETTINGS_SECTION_IDS.CLOUD} />,
     },
     {
       id: SETTINGS_SECTION_IDS.LIMITS,
@@ -253,7 +243,7 @@ export function SettingsPage() {
 
 
   return (
-    <div className={cn("flex flex-1 flex-col font-oai text-oai-black antialiased dark:text-oai-white", activeSection === SETTINGS_SECTION_IDS.CLOUD && "tt-cloud-settings")}>
+    <div className="flex flex-1 flex-col font-oai text-oai-black antialiased dark:text-oai-white">
       <main className="flex-1 pb-12 pt-8 sm:pb-16 sm:pt-10">
         <div className="mx-auto w-full max-w-5xl px-4 sm:px-6">
           <div className="mb-7 max-w-2xl">

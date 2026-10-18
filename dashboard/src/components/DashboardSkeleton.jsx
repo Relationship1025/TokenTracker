@@ -3,9 +3,8 @@ import { Card } from "../ui/components";
 import { cn } from "../lib/cn";
 
 /**
- * Loading placeholder for the main dashboard, shown only on the *initial*
- * cloud (account-view) load — `accountViewResolving || (accountView &&
- * usageLoadingState && !hasDetailsActual)`. A subsequent refresh keeps the
+ * Loading placeholder for the main dashboard, shown only on the initial local
+ * data load. A subsequent refresh keeps the
  * already-rendered data (no skeleton, no flash). Mirrors DashboardView's
  * 12-col grid so the swap to real content doesn't shift layout. Reuses the
  * `Bone` animate-pulse idiom from LimitsPageSkeleton.

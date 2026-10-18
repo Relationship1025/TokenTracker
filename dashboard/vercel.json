@@ -18,10 +18,9 @@
     },
     { "handle": "filesystem" },
     { "src": "^/ip-check/?$", "dest": "/ip-check.html", "caseSensitive": true },
-    { "src": "^/leaderboard/?$", "dest": "/leaderboard.html", "caseSensitive": true },
     { "src": "^/share/(.*)$", "dest": "/share.html", "caseSensitive": true },
     {
-      "src": "^/((?!assets/|brand-logos/|clawd/|pets/|achievements/.|api/|functions/|.*\\.).*)$",
+      "src": "^/((?!assets/|brand-logos/|clawd/|pets/|api/|functions/|.*\\.).*)$",
       "dest": "/index.html",
       "caseSensitive": true
     },

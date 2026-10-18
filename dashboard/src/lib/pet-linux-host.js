@@ -29,7 +29,6 @@ const POLL_INTERVAL_MS = 60_000;
 // (~40 KB), so hold them for five minutes like the Windows poller does.
 const HEATMAP_TTL_MS = 5 * 60_000;
 const THEME_STORAGE_KEY = "tokentracker-theme";
-const ACCOUNT_QUERY = "account=1";
 
 function toNumber(value) {
   const n = Number(value);
@@ -161,7 +160,6 @@ export function startLinuxPetHost({
   };
 
   let heatmapCache = null; // { key, at, value }
-  let showingAccount = false;
   let lastStats = null;
   let timer = null;
   let stopped = false;
@@ -169,9 +167,7 @@ export function startLinuxPetHost({
   const getJson = async (path) => {
     const resp = await fetchImpl(path, { cache: "no-store" });
     if (!resp.ok) return { ok: false };
-    const view = resp.headers?.get?.("X-TokenTracker-Account-View") === "1";
-    const fallback = resp.headers?.get?.("X-TokenTracker-Account-Fallback") || "";
-    return { ok: true, account: view, transient: !view && fallback.startsWith("transient"), body: await resp.json() };
+    return { ok: true, body: await resp.json() };
   };
 
   const pushContext = () => {
@@ -185,33 +181,30 @@ export function startLinuxPetHost({
     emit("pet:dark");
   };
 
-  const fetchHeatmap = async (tz, retainAccount) => {
-    const key = `${tz}|${retainAccount}`;
-    if (heatmapCache && heatmapCache.key === key && Date.now() - heatmapCache.at < HEATMAP_TTL_MS) {
+  const fetchHeatmap = async (tz) => {
+    if (heatmapCache && heatmapCache.key === tz && Date.now() - heatmapCache.at < HEATMAP_TTL_MS) {
       return heatmapCache.value;
     }
     try {
-      const r = await getJson(`/functions/tokentracker-usage-heatmap?weeks=52${tz}&${ACCOUNT_QUERY}`);
+      const r = await getJson(`/functions/tokentracker-usage-heatmap?weeks=52${tz}`);
       if (!r.ok) return { streak: 0, activeDays: 0 };
-      if (r.transient && retainAccount) return null;
       const value = {
         streak: toNumber(r.body?.streak_days) ?? 0,
         activeDays: toNumber(r.body?.active_days) ?? 0,
       };
-      heatmapCache = { key, at: Date.now(), value };
+      heatmapCache = { key: tz, at: Date.now(), value };
       return value;
     } catch {
       return { streak: 0, activeDays: 0 };
     }
   };
 
-  const fetchTopModels = async (from, to, tz, retainAccount) => {
+  const fetchTopModels = async (from, to, tz) => {
     try {
       const r = await getJson(
-        `/functions/tokentracker-usage-model-breakdown?from=${from}&to=${to}${tz}&${ACCOUNT_QUERY}`,
+        `/functions/tokentracker-usage-model-breakdown?from=${from}&to=${to}${tz}`,
       );
       if (!r.ok) return [];
-      if (r.transient && retainAccount) return null;
       return buildTopModels(r.body);
     } catch {
       return [];
@@ -234,23 +227,18 @@ export function startLinuxPetHost({
     const tz = tzQuery(date);
     let summary;
     try {
-      summary = await getJson(`/functions/tokentracker-usage-summary?from=${today}&to=${today}${tz}&${ACCOUNT_QUERY}`);
+      summary = await getJson(`/functions/tokentracker-usage-summary?from=${today}&to=${today}${tz}`);
     } catch {
       summary = { ok: false };
     }
     win.__ttPetConnected = summary.ok;
     emit("pet:connected");
     if (!summary.ok || !summary.body?.totals) return;
-    // A transient cloud failure must not replace a visible cross-device snapshot.
-    if (summary.transient && showingAccount) return;
-
-    const retainAccount = summary.account || showingAccount;
     const [heatmap, topModels] = await Promise.all([
-      fetchHeatmap(tz, retainAccount),
-      fetchTopModels(from, today, tz, retainAccount),
+      fetchHeatmap(tz),
+      fetchTopModels(from, today, tz),
     ]);
     if (heatmap == null || topModels == null) return;
-    showingAccount = summary.account;
 
     const stats = buildStats(summary.body, heatmap, topModels);
     if (lastStats && lastStats.todayTokens > 0 && stats.todayTokens > lastStats.todayTokens) {

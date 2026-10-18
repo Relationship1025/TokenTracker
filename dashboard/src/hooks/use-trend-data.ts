@@ -4,9 +4,6 @@ import { formatDateLocal, formatDateUTC } from "../lib/date-range";
 import { isMockEnabled } from "../lib/mock-data";
 import { getLocalDayKey, getTimeZoneCacheKey } from "../lib/timezone";
 import {
-  fetchCloudUsageDaily,
-  fetchCloudUsageHourly,
-  fetchCloudUsageMonthly,
   getUsageDaily,
   getUsageHourly,
   getUsageMonthly,
@@ -35,14 +32,9 @@ export function useTrendData({
   now,
   sharedRows,
   sharedRange,
-  accountView = false,
-  accountAccessToken = null,
-  accountRevision = 0,
-  accountViewResolving = false,
   deviceId = null,
 }: any = {}) {
-  const useCloud = Boolean(accountView && accountAccessToken);
-  const scopeKey = useCloud ? "cloud" : "local";
+  const scopeKey = "local";
   const [rows, setRows] = useState<any[]>([]);
   const [range, setRange] = useState<{ from?: any; to?: any }>(() => ({ from, to }));
   const [source, setSource] = useState<string>("edge");
@@ -135,8 +127,6 @@ export function useTrendData({
     months,
     scopeKey,
     accessToken,
-    accountAccessToken,
-    accountRevision,
     deviceId,
     timeZone,
     tzOffsetMinutes,
@@ -146,30 +136,13 @@ export function useTrendData({
     sharedTo,
     // Rendering gates are part of the request context. A response started
     // for the local/authenticated view must not commit after the dashboard
-    // switches to guest, mock, or a still-resolving cloud scope.
+    // switches to guest or mock.
     guestAllowed,
     mockEnabled,
     cacheAllowed,
-    accountViewResolving,
     tokenReady,
     isLocalMode,
   ]);
-
-  // Wipe state when the scope flips so the previously-rendered local data
-  // doesn't visually persist while the cloud fetch is in flight (and vice
-  // versa). Covers all three trend grains (daily/hourly/monthly) since rows
-  // is the shared buffer for whichever mode is active.
-  const lastScopeRef = useRef(scopeKey);
-  useEffect(() => {
-    if (lastScopeRef.current === scopeKey) return;
-    lastScopeRef.current = scopeKey;
-    setRows([]);
-    setRange({ from, to });
-    setSource("edge");
-    setFetchedAt(null);
-    setError(null);
-    setLoading(true);
-  }, [scopeKey]);
 
   const refresh = useCallback(async () => {
     const isCurrent = beginRequest();
@@ -189,18 +162,12 @@ export function useTrendData({
       return;
     }
     const resolvedToken = await resolveAuthAccessToken(accessToken);
-    const cloudToken = useCloud ? await resolveAuthAccessToken(accountAccessToken) : null;
     if (!isCurrent()) return;
-    if (!resolvedToken && !mockEnabled && !isLocalMode && !useCloud) return;
-    if (useCloud && !cloudToken) {
-      setError("Your session expired. Please sign in again to view account data.");
-      setLoading(false);
-      return;
-    }
-    const tokenForFetch = useCloud ? cloudToken : resolvedToken;
-    const hourlyFetcher = useCloud ? fetchCloudUsageHourly : getUsageHourly;
-    const monthlyFetcher = useCloud ? fetchCloudUsageMonthly : getUsageMonthly;
-    const dailyFetcher = useCloud ? fetchCloudUsageDaily : getUsageDaily;
+    if (!resolvedToken && !mockEnabled && !isLocalMode) return;
+    const tokenForFetch = resolvedToken;
+    const hourlyFetcher = getUsageHourly;
+    const monthlyFetcher = getUsageMonthly;
+    const dailyFetcher = getUsageDaily;
     setLoading(true);
     setError(null);
     try {
@@ -366,20 +333,11 @@ export function useTrendData({
     clearCache,
     writeCache,
     isLocalMode,
-    useCloud,
-    accountAccessToken,
-    accountRevision,
     deviceId,
     beginRequest,
   ]);
 
   useEffect(() => {
-    if (accountViewResolving) {
-      // Auth still resolving, cloud likely — hold loading instead of painting
-      // local (or shared-local) data that the cloud flip would wipe.
-      setLoading(true);
-      return;
-    }
     if (sharedEnabled) {
       setRows(Array.isArray(sharedRows) ? sharedRows : []);
       setRange({ from: sharedFrom, to: sharedTo });
@@ -389,7 +347,7 @@ export function useTrendData({
       setError(null);
       return;
     }
-    if (!tokenReady && !guestAllowed && !mockEnabled && !isLocalMode && !useCloud) {
+    if (!tokenReady && !guestAllowed && !mockEnabled && !isLocalMode) {
       setRows([]);
       setRange({ from, to });
       setError(null);
@@ -470,7 +428,6 @@ export function useTrendData({
     cacheAllowed,
     clearCache,
     isLocalMode,
-    accountViewResolving,
   ]);
 
   const normalizedSource = mockEnabled ? "mock" : source;

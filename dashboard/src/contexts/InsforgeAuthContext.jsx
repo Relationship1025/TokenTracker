@@ -7,17 +7,13 @@ import {
   INSFORGE_INSTANCE_CHANGED_EVENT,
   isCloudInsforgeConfigured,
   isCurrentInsforgeClient,
-  isOfficialInsforgeInstance,
   shouldRestoreInsforgeSession,
 } from "../lib/insforge-config";
-import { clearCloudDeviceSession, setCloudUsageReady } from "../lib/cloud-sync-prefs";
 import { isLikelyExpiredAccessToken } from "../lib/auth-token";
-import { getPublicVisibility, invalidateAccountResponseCache } from "../lib/api";
 import { clearLocalApiAuthToken } from "../lib/local-api-auth";
 import { copy } from "../lib/copy";
 import { getNativeOAuthBridge, isNativeApp, isNativeEmbed, isNativeLinuxApp, isNativeWindowsApp } from "../lib/native-bridge.js";
 import { restoreInsforgeUser } from "../lib/insforge-session-recovery.mjs";
-import { clearCloudPromptBackendState, cloudPromptOwnerFromToken } from "../lib/cloud-prompt-policy.js";
 
 const InsforgeAuthContext = createContext(null);
 
@@ -87,18 +83,11 @@ export function InsforgeAuthProvider({ children }) {
       setUser(null);
       setClient(null);
       setLoading(false);
-      invalidateAccountResponseCache();
-      clearCloudDeviceSession();
       clearLocalApiAuthToken();
-      clearCloudPromptBackendState();
     };
     window.addEventListener(INSFORGE_INSTANCE_CHANGED_EVENT, changed);
     return () => window.removeEventListener(INSFORGE_INSTANCE_CHANGED_EVENT, changed);
   }, []);
-
-  useEffect(() => {
-    invalidateAccountResponseCache();
-  }, [user?.id]);
 
   useEffect(() => {
     if (!isCloudInsforgeConfigured()) {
@@ -257,15 +246,7 @@ export function InsforgeAuthProvider({ children }) {
 
   const signOut = useCallback(async () => {
     if (!client) return;
-    invalidateAccountResponseCache();
     await client.auth.signOut();
-    clearCloudDeviceSession();
-    // Sign-out clears session readiness, while the explicit sync preference
-    // survives for the next login. Local views stay immediate without a session.
-    setCloudUsageReady(false);
-    // Refresh same-tab account scope after clearing readiness. This does not
-    // change or mirror the saved preference.
-    window.dispatchEvent(new Event("tt.cloudSyncChanged"));
     clearLocalApiAuthToken();
     setUser(null);
   }, [client]);
@@ -274,49 +255,11 @@ export function InsforgeAuthProvider({ children }) {
     if (!client || !isCurrentInsforgeClient(client)) return null;
     const token = await resolveInsforgeClientAccessToken(client);
     if (!isCurrentInsforgeClient(client)) return null;
-    if (user?.id && cloudPromptOwnerFromToken(token) !== user.id) return null;
     return token;
   }, [client, user?.id]);
 
-  // Unified display name: cloud custom name > OAuth provider name.
-  // Fetched once when user signs in; updated via refreshDisplayName().
-  const [cloudDisplayName, setCloudDisplayName] = useState(null);
-  const [displayNameResolved, setDisplayNameResolved] = useState(false);
   const authDisplayName = useMemo(() => pickDisplayNameFromUser(user), [user]);
-
-  useEffect(() => {
-    if (!user || !client || !isOfficialInsforgeInstance()) {
-      setCloudDisplayName(null);
-      setDisplayNameResolved(false);
-      return;
-    }
-    let active = true;
-    (async () => {
-      try {
-        const token = await resolveInsforgeClientAccessToken(client);
-        if (!active || !token) { if (active) setDisplayNameResolved(true); return; }
-        const data = await getPublicVisibility({ accessToken: token });
-        if (active && data?.display_name) setCloudDisplayName(data.display_name);
-      } catch { /* ignore */ }
-      if (active) setDisplayNameResolved(true);
-    })();
-    return () => { active = false; };
-  }, [user, client]);
-
-  // Don't flash the OAuth name before cloud name resolves
-  const displayName = displayNameResolved
-    ? (cloudDisplayName || authDisplayName)
-    : "";
-
-  const refreshDisplayName = useCallback(async () => {
-    if (!client) return;
-    try {
-      const token = await resolveInsforgeClientAccessToken(client);
-      if (!token) return;
-      const data = await getPublicVisibility({ accessToken: token });
-      if (data?.display_name) setCloudDisplayName(data.display_name);
-    } catch { /* ignore */ }
-  }, [client]);
+  const displayName = authDisplayName;
 
   const value = useMemo(() => {
     if (!isCloudInsforgeConfigured() || !client) {
@@ -330,7 +273,6 @@ export function InsforgeAuthProvider({ children }) {
         loading: isCloudInsforgeConfigured() && loading,
         displayName: "",
         refreshUser: async () => {},
-        refreshDisplayName: async () => {},
         signInWithOAuth: async () => ({ error: new Error("InsForge not configured") }),
         signInWithPassword: async () => ({ data: null, error: new Error("InsForge not configured") }),
         signUp: async () => ({ data: null, error: new Error("InsForge not configured") }),
@@ -352,7 +294,6 @@ export function InsforgeAuthProvider({ children }) {
       loading,
       displayName,
       refreshUser,
-      refreshDisplayName,
       signInWithOAuth,
       signInWithPassword,
       signUp,
@@ -369,7 +310,6 @@ export function InsforgeAuthProvider({ children }) {
     loading,
     displayName,
     refreshUser,
-    refreshDisplayName,
     signInWithOAuth,
     signInWithPassword,
     signUp,

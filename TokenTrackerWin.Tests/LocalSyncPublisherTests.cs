@@ -39,16 +39,15 @@ public sealed class LocalSyncPublisherTests
         Assert.Equal(baseUrl + "/functions/tokentracker-local-sync", requests[1].Uri.ToString());
         Assert.Equal("local-secret", requests[1].LocalAuth);
         Assert.Equal(
-            "{\"auto\":true,\"background\":true,\"allLocalSources\":true,\"publishAccount\":true,\"nativeOnlyWsl\":true}",
+            "{\"auto\":true,\"background\":true,\"allLocalSources\":true,\"nativeOnlyWsl\":true}",
             requests[1].Body);
 
         using var document = JsonDocument.Parse(requests[1].Body);
         var payload = document.RootElement;
-        Assert.Equal(5, payload.EnumerateObject().Count());
+        Assert.Equal(4, payload.EnumerateObject().Count());
         Assert.True(payload.GetProperty("auto").GetBoolean());
         Assert.True(payload.GetProperty("background").GetBoolean());
         Assert.True(payload.GetProperty("allLocalSources").GetBoolean());
-        Assert.True(payload.GetProperty("publishAccount").GetBoolean());
         Assert.True(payload.GetProperty("nativeOnlyWsl").GetBoolean());
     }
 

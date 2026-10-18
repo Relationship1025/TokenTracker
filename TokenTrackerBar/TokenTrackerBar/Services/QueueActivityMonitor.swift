@@ -1,8 +1,7 @@
 import Foundation
 
 /// Watches a TokenTracker state file (queue.jsonl by default) for writes and
-/// atomic replacements. Queue writes drive real-time activity; a second
-/// instance watches queue.state.json to publish completed account uploads.
+/// atomic replacements. Queue writes drive real-time activity updates.
 @MainActor
 final class QueueActivityMonitor {
 
