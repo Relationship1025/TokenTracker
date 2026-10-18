@@ -67,6 +67,9 @@ const WidgetsPage = lazy(() =>
 const PetPage = lazy(() =>
   import("./pages/PetPage.jsx").then((m) => ({ default: m.PetPage })),
 );
+const DataTransferPage = lazy(() =>
+  import("./pages/DataTransferPage.jsx").then((m) => ({ default: m.DataTransferPage })),
+);
 
 export default function App() {
   // Subscribing to locale here makes App rerender on language switch, which
@@ -130,7 +133,8 @@ export default function App() {
   const isPetPath = normalizedPath === "/pet-settings";
   const isIpCheckPath = normalizedPath === "/ip-check";
   const isServiceStatusPath = normalizedPath === "/service-status";
-  if (isLimitsPath || isSettingsPath || isSkillsPath || isSessionsPath || isWidgetsPath || isPetPath || isIpCheckPath || isServiceStatusPath) gate = "dashboard";
+  const isDataTransferPath = normalizedPath === "/data-transfer" && isLocalMode;
+  if (isLimitsPath || isSettingsPath || isSkillsPath || isSessionsPath || isWidgetsPath || isPetPath || isIpCheckPath || isServiceStatusPath || isDataTransferPath) gate = "dashboard";
 
   let PageComponent = DashboardPage;
   if (isLimitsPath) {
@@ -149,6 +153,8 @@ export default function App() {
     PageComponent = IpCheckPage;
   } else if (isServiceStatusPath) {
     PageComponent = ServiceStatusPage;
+  } else if (isDataTransferPath) {
+    PageComponent = DataTransferPage;
   }
 
   const showSidebar =
@@ -162,7 +168,8 @@ export default function App() {
       isWidgetsPath ||
       isPetPath ||
       isIpCheckPath ||
-      isServiceStatusPath);
+      isServiceStatusPath ||
+      isDataTransferPath);
 
   let content = null;
   let hasLandingFooter = false;

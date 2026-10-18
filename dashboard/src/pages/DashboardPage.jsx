@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useActivityHeatmap } from "../hooks/use-activity-heatmap.js";
+import { useActivityHeatmap } from "../hooks/use-activity-heatmap.ts";
 import { useDashboardCardOrder } from "../hooks/use-dashboard-card-order.js";
 import { useProjectUsageSummary } from "../hooks/use-project-usage-summary";
-import { useTrendData } from "../hooks/use-trend-data.js";
-import { useUsageData } from "../hooks/use-usage-data.js";
-import { useUsageLimits } from "../hooks/use-usage-limits.js";
-import { useUsageModelBreakdown } from "../hooks/use-usage-model-breakdown.js";
+import { useTrendData } from "../hooks/use-trend-data.ts";
+import { useUsageData } from "../hooks/use-usage-data.ts";
+import { useUsageLimits } from "../hooks/use-usage-limits.ts";
+import { useUsageModelBreakdown } from "../hooks/use-usage-model-breakdown.ts";
 import { normalizeAccessToken } from "../lib/auth-token";
 import { copy } from "../lib/copy";
 import { useLocale } from "../hooks/useLocale.js";
@@ -51,10 +51,11 @@ const DETAILS_DATE_KEYS = new Set(["day", "hour", "month"]);
 const DETAILS_PAGED_PERIODS = new Set(["day", "total", "custom"]);
 
 // Default Overview card order — each column is dragged/persisted independently.
-const LEFT_CARD_ORDER_DEFAULTS = [
+export const LEFT_CARD_ORDER_DEFAULTS = [
   "statsPanel",
   "installCopy",
   "activityHeatmap",
+  "deviceUsage",
   "trendMonitor",
   "qualityPerDollar",
   "sessionInsights",
@@ -153,6 +154,7 @@ export function DashboardPage({
   const mockNow = useMemo(() => getMockNow(), []);
   const cacheKey = "default";
   const [selectedPeriod, setSelectedPeriod] = useState("month");
+  const [selectedDeviceId, setSelectedDeviceId] = useState(null);
   const [customFrom, setCustomFrom] = useState(null);
   const [customTo, setCustomTo] = useState(null);
   const [customRangeOpen, setCustomRangeOpen] = useState(false);
@@ -222,6 +224,7 @@ export function DashboardPage({
     timeZone,
     tzOffsetMinutes,
     now: mockNow,
+    deviceId: selectedDeviceId,
   });
   const {
     daily: dailyBreakdownDaily,
@@ -241,6 +244,7 @@ export function DashboardPage({
     timeZone,
     tzOffsetMinutes,
     now: mockNow,
+    deviceId: selectedDeviceId,
     // Keep the daily breakdown aligned with the selected local device filter.
   });
 
@@ -257,6 +261,7 @@ export function DashboardPage({
     cacheKey,
     timeZone,
     tzOffsetMinutes,
+    deviceId: selectedDeviceId,
   });
 
   const [projectUsageLimit, setProjectUsageLimit] = useState(3);
@@ -302,6 +307,7 @@ export function DashboardPage({
     now: mockNow,
     sharedRows: shareDailyToTrend ? daily : null,
     sharedRange: shareDailyToTrend ? { from, to } : null,
+    deviceId: selectedDeviceId,
   });
 
   // Stable useTrendData config handed to the zoom modal so it can hold its OWN
@@ -316,10 +322,11 @@ export function DashboardPage({
       timeZone: trendTimeZone,
       tzOffsetMinutes: trendTzOffsetMinutes,
       now: mockNow,
+      deviceId: selectedDeviceId,
       // Keep the zoom modal on the same local source as the main trend chart.
     }),
     [
-      baseUrl, accessToken, guestAllowed, cacheKey, trendTimeZone, trendTzOffsetMinutes, mockNow,
+      baseUrl, accessToken, guestAllowed, cacheKey, trendTimeZone, trendTzOffsetMinutes, mockNow, selectedDeviceId,
     ],
   );
 
@@ -337,6 +344,7 @@ export function DashboardPage({
     timeZone,
     tzOffsetMinutes,
     now: mockNow,
+    deviceId: selectedDeviceId,
   });
 
   const {
@@ -590,6 +598,7 @@ export function DashboardPage({
       todayKey || "",
       timeZone || "",
       tzOffsetMinutes ?? "",
+      selectedDeviceId || "",
     ].join("\u001f"),
     [
           baseUrl,
@@ -600,6 +609,7 @@ export function DashboardPage({
       todayKey,
       to,
       tzOffsetMinutes,
+      selectedDeviceId,
     ],
   );
 
@@ -978,6 +988,11 @@ export function DashboardPage({
     window.setTimeout(() => setSessionExpiredCopied(false), 2000);
   }, [installInitCmdBase]);
 
+  const handleDeviceSelect = useCallback((deviceId) => {
+    const normalized = typeof deviceId === "string" && deviceId.trim() ? deviceId.trim() : null;
+    setSelectedDeviceId((current) => current === normalized ? null : normalized);
+  }, []);
+
   const dailyEmptyTemplate = useMemo(
     () => copy("dashboard.daily.empty", { cmd: "{{cmd}}" }),
     [resolvedLocale],
@@ -1046,6 +1061,10 @@ export function DashboardPage({
       trendZoomConfig={trendZoomConfig}
       usageFrom={from}
       usageTo={to}
+      deviceId={selectedDeviceId}
+      onDeviceSelect={handleDeviceSelect}
+      timeZone={timeZone}
+      tzOffsetMinutes={tzOffsetMinutes}
       period={period}
       trendTimeZoneLabel={trendTimeZoneLabel}
       activityHeatmapBlock={activityHeatmapBlock}

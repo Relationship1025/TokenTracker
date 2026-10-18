@@ -98,3 +98,25 @@ test("local device usage is read-only and only accepts GET", async () => {
     assert.equal(result.status, 405);
   } finally { await fs.promises.rm(h.dir, { recursive: true, force: true }); }
 });
+
+test("usage endpoints scope local totals to the requested device", async () => {
+  const h = await harness([row({ total_tokens: 10, billable_total_tokens: 8 })]);
+  try {
+    await importSnapshot(h, snapshot("origin-secondary", "Laptop", 1, [
+      row({ total_tokens: 20, billable_total_tokens: 15 }),
+    ]));
+    const result = await h.call(
+      "/functions/tokentracker-usage-summary?from=2026-10-16&to=2026-10-16&tz=UTC&device_id=origin-secondary",
+    );
+    assert.equal(result.status, 200);
+    assert.equal(result.body.totals.total_tokens, 20);
+    assert.equal(result.body.totals.billable_total_tokens, 15);
+
+    const localId = getOrCreateMachineId(h.queuePath);
+    const localResult = await h.call(
+      `/functions/tokentracker-usage-summary?from=2026-10-16&to=2026-10-16&tz=UTC&device_id=${encodeURIComponent(localId)}`,
+    );
+    assert.equal(localResult.body.totals.total_tokens, 10);
+    assert.equal(localResult.body.totals.billable_total_tokens, 8);
+  } finally { await fs.promises.rm(h.dir, { recursive: true, force: true }); }
+});

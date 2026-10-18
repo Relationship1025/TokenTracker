@@ -587,4 +587,5 @@
   "sessions.storage.allocated": "分配空间",
   "sessions.storage.logical": "逻辑文件大小",
   "sessions.storage.size": "{{value}} MiB"
+  ,"dashboard.device_usage.title":"设备用量","dashboard.device_usage.subtitle":"按本地和导入设备查看用量","dashboard.device_usage.loading":"正在加载设备用量","dashboard.device_usage.empty":"此时间范围内没有设备用量","dashboard.device_usage.error":"设备用量暂不可用","dashboard.device_usage.local":"本地","dashboard.device_usage.imported":"已导入","dashboard.device_usage.bar_aria":"{{name}}：{{percent}}%"
 }

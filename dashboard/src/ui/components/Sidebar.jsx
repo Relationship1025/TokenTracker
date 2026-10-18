@@ -9,6 +9,7 @@ import {
   Globe,
   Puzzle,
   Activity,
+  FileDown,
   Settings as SettingsIcon,
   ChevronLeft,
   ChevronRight,
@@ -24,6 +25,7 @@ import { useTheme } from "../../hooks/useTheme.js";
 import { useLocale } from "../../hooks/useLocale.js";
 import { shouldFetchGithubStars } from "../dashboard/util/should-fetch-github-stars.js";
 import { isNativeApp, isNativeEmbed, isNativeLinuxApp, isNativeWindowsApp } from "../../lib/native-bridge.js";
+import { isLocalDashboardHost } from "../../lib/host-mode";
 
 const STORAGE_KEY = "tt.sidebarCollapsed";
 
@@ -49,6 +51,9 @@ export function getNavGroups() {
         { id: "skills", to: "/skills", icon: Puzzle, label: copy("nav.skills") },
         { id: "ip-check", to: "/ip-check", icon: Globe, label: copy("nav.ip_check") },
         { id: "service-status", to: "/service-status", icon: Activity, label: copy("nav.service_status") },
+        ...(isLocalDashboardHost()
+          ? [{ id: "data-transfer", to: "/data-transfer", icon: FileDown, label: copy("settings.section.transfer") }]
+          : []),
       ],
     },
     {

@@ -579,4 +579,5 @@
   "sessions.storage.allocated": "配置空間",
   "sessions.storage.logical": "邏輯檔案大小",
   "sessions.storage.size": "{{value}} MiB"
+  ,"dashboard.device_usage.title":"裝置用量","dashboard.device_usage.subtitle":"依本機與匯入裝置查看用量","dashboard.device_usage.loading":"正在載入裝置用量","dashboard.device_usage.empty":"此時間範圍內沒有裝置用量","dashboard.device_usage.error":"裝置用量暫時無法使用","dashboard.device_usage.local":"本機","dashboard.device_usage.imported":"已匯入","dashboard.device_usage.bar_aria":"{{name}}：{{percent}}%"
 }

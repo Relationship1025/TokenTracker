@@ -432,4 +432,5 @@
   "sessions.detail.local_path": "ローカルパス",
   "sessions.detail.resume_command": "再開コマンド",
   "sessions.performance.first_response_value_single": "{{seconds}}秒 · {{count}} サンプル"
+  ,"dashboard.device_usage.title":"��?��","dashboard.device_usage.subtitle":"���?��?��?���?��","dashboard.device_usage.loading":"��?��?��","dashboard.device_usage.empty":"��?��?��?��?��","dashboard.device_usage.error":"��?��?��?��","dashboard.device_usage.local":"��?","dashboard.device_usage.imported":"��?��","dashboard.device_usage.bar_aria":"{{name}}: {{percent}}%"
 }

@@ -2,14 +2,20 @@ import React from "react";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { copy } from "../../../lib/copy";
+import { LEFT_CARD_ORDER_DEFAULTS } from "../../../pages/DashboardPage.jsx";
 import { DashboardView } from "./DashboardView.jsx";
 
 const loadingCard = vi.hoisted(() => ({ pending: true, mounts: 0, unmounts: 0 }));
+const deviceUsageCard = vi.hoisted(() => ({ calls: [] }));
 
 vi.mock("../../components", () => ({ Shell: ({ children }) => <>{children}</>, Card: ({ children }) => <>{children}</> }));
 vi.mock("../../foundation/FadeIn.jsx", () => ({ FadeIn: ({ children }) => <>{children}</> }));
 vi.mock("../components/StatsPanel.jsx", () => ({ StatsPanel: () => <section data-testid="stats" /> }));
 vi.mock("../components/UsageOverview.jsx", () => ({ UsageOverview: () => <section data-testid="usage" /> }));
+vi.mock("../components/DeviceUsageCard.jsx", () => ({ DeviceUsageCard: (props) => {
+  deviceUsageCard.calls.push(props);
+  return <section data-testid="device-usage" />;
+} }));
 vi.mock("../components/CostAnalysisModal.jsx", () => ({ CostAnalysisModal: () => null }));
 vi.mock("../components/QualityPerDollarCard.jsx", async () => {
   const { useEffect } = await import("react");
@@ -24,6 +30,38 @@ vi.mock("../components/QualityPerDollarCard.jsx", async () => {
 });
 
 afterEach(cleanup);
+
+it("registers device usage in the default left-column order", () => {
+  expect(LEFT_CARD_ORDER_DEFAULTS).toContain("deviceUsage");
+});
+
+it("renders device usage and propagates the active range and timezone", () => {
+  deviceUsageCard.calls = [];
+  render(<DashboardView copy={copy} isLocalMode
+    leftCardOrder={["deviceUsage"]} rightCardOrder={["usageOverview"]}
+    usageFrom="2026-10-01" usageTo="2026-10-07"
+    timeZone="America/New_York" tzOffsetMinutes={-240} />);
+  expect(screen.getByTestId("device-usage")).toBeInTheDocument();
+  expect(deviceUsageCard.calls[0]).toMatchObject({
+    from: "2026-10-01",
+    to: "2026-10-07",
+    timeZone: "America/New_York",
+    tzOffsetMinutes: -240,
+  });
+});
+
+it("passes the active device filter and selection callback to device usage", () => {
+  const onDeviceSelect = vi.fn();
+  deviceUsageCard.calls = [];
+  render(<DashboardView copy={copy} isLocalMode
+    leftCardOrder={["deviceUsage"]} rightCardOrder={["usageOverview"]}
+    deviceId="local-1" onDeviceSelect={onDeviceSelect} />);
+
+  expect(deviceUsageCard.calls[0]).toMatchObject({
+    deviceId: "local-1",
+    onDeviceSelect,
+  });
+});
 
 it("ignores removed promotional cards in saved layouts without leaving draggable empty slots", () => {
   render(<DashboardView copy={copy} isLocalMode

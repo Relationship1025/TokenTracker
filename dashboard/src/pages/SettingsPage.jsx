@@ -1,8 +1,7 @@
 import React from "react";
-import { FileDown, FlaskConical, Gauge, Globe, Monitor, Palette, Settings } from "lucide-react";
+import { FlaskConical, Gauge, Globe, Monitor, Palette, Settings } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { LimitsSettingsPanel } from "../components/LimitsSettingsPanel.jsx";
-import { DataTransferSection } from "../components/settings/DataTransferSection.jsx";
 import { AppearanceSection } from "../components/settings/AppearanceSection.jsx";
 import { LabsSection } from "../components/settings/LabsSection.jsx";
 import {
@@ -19,7 +18,6 @@ import { useProxySettings } from "../hooks/use-proxy-settings.js";
 import { cn } from "../lib/cn";
 import { copy } from "../lib/copy";
 import { isNativeWindowsApp } from "../lib/native-bridge.js";
-import { isLocalDashboardHost } from "../lib/host-mode";
 import { Button } from "../ui/components/Button.jsx";
 
 const SETTINGS_SECTION_IDS = {
@@ -29,7 +27,6 @@ const SETTINGS_SECTION_IDS = {
   ACCOUNT: "account",
   LIMITS: "limits",
   LABS: "labs",
-  TRANSFER: "transfer",
 };
 
 const SETTINGS_GROUP_IDS = {
@@ -67,12 +64,10 @@ export function SettingsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const requestedSection = searchParams.get("section");
-  const localDashboardHost = isLocalDashboardHost();
   const requestedSectionAvailable =
     Object.values(SETTINGS_SECTION_IDS).includes(requestedSection) &&
     (requestedSection !== SETTINGS_SECTION_IDS.NATIVE_APP || nativeSettingsAvailable) &&
-    (requestedSection !== SETTINGS_SECTION_IDS.NETWORK || proxySettingsAvailable) &&
-    (requestedSection !== SETTINGS_SECTION_IDS.TRANSFER || localDashboardHost);
+    (requestedSection !== SETTINGS_SECTION_IDS.NETWORK || proxySettingsAvailable);
   const activeSection = requestedSectionAvailable
     ? requestedSection
     : SETTINGS_SECTION_IDS.APPEARANCE;
@@ -187,16 +182,6 @@ export function SettingsPage() {
         </div>
       ),
     },
-    ...(localDashboardHost
-      ? [{
-          id: SETTINGS_SECTION_IDS.TRANSFER,
-          label: copy("settings.section.transfer"),
-          description: copy("settings.section.transfer.description"),
-          group: SETTINGS_GROUP_IDS.PERSONAL,
-          Icon: FileDown,
-          content: <DataTransferSection />,
-        }]
-      : []),
     {
       id: SETTINGS_SECTION_IDS.LABS,
       label: copy("settings.section.labs"),

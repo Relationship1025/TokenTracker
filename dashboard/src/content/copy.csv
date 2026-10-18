@@ -1513,3 +1513,11 @@ settings.transfer.unknown_source,ui,SettingsPage,DataTransferSection,unknown_sou
 settings.transfer.unknown_date,ui,SettingsPage,DataTransferSection,unknown_date,"Unknown date",,active
 settings.transfer.request_failed,ui,SettingsPage,DataTransferSection,request_failed,"Transfer request failed",,active
 settings.transfer.invalid_file,ui,SettingsPage,DataTransferSection,invalid_file,"This file could not be previewed.",,active
+dashboard.device_usage.title,ui,DashboardPage,DeviceUsageCard,title,"Device usage",,active
+dashboard.device_usage.subtitle,ui,DashboardPage,DeviceUsageCard,subtitle,"Usage by local and imported device",,active
+dashboard.device_usage.loading,ui,DashboardPage,DeviceUsageCard,loading,"Loading device usage",,active
+dashboard.device_usage.empty,ui,DashboardPage,DeviceUsageCard,empty,"No device usage in this range",,active
+dashboard.device_usage.error,ui,DashboardPage,DeviceUsageCard,error,"Device usage is unavailable",,active
+dashboard.device_usage.local,ui,DashboardPage,DeviceUsageCard,local,"Local",,active
+dashboard.device_usage.imported,ui,DashboardPage,DeviceUsageCard,imported,"Imported",,active
+dashboard.device_usage.bar_aria,ui,DashboardPage,DeviceUsageCard,bar_aria,"{{name}}: {{percent}}%",,active

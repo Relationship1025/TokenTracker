@@ -436,7 +436,8 @@ function queueRowsSignature(rows) {
 
 async function scopedQueueRows(queuePath, url, readRows = readQueueData) {
   const scope = getRequestedUsageScope(url);
-  const allRows = await readRows(queuePath);
+  const deviceId = String(url.searchParams.get("device_id") || "").trim();
+  const allRows = await readRows(queuePath, deviceId);
   return {
     scope,
     allRows,
@@ -1114,8 +1115,22 @@ function createLocalApiHandler({ queuePath, serverVersion = null, trackerDataDir
     writeJsonAtomicSync(localTransferExportStatePath, state);
   }
 
-  async function readMergedQueueData() {
+  async function readMergedQueueData(_queuePath, requestedDeviceId = "") {
     const localRows = await readQueueData(qp);
+    const deviceId = String(requestedDeviceId || "").trim();
+    if (deviceId) {
+      const localOriginId = getOrCreateMachineId(qp);
+      if (deviceId === localOriginId) return localRows;
+
+      const state = readLocalTransferImportState();
+      const importedSnapshot = findImportedSnapshot(state, deviceId);
+      if (!importedSnapshot) return [];
+
+      // Keep the same account-level source exclusion used by the merged view
+      // while retaining only the selected imported device's rows.
+      return mergeTransferredRows([], [importedSnapshot]).rows;
+    }
+
     const projectedLocalRows = localRows.map(projectQueueRowToTransfer).filter(Boolean);
     const state = readLocalTransferImportState();
     if (state.snapshots.length === 0) return localRows;

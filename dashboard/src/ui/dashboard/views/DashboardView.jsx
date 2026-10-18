@@ -18,6 +18,7 @@ import { DataDetails } from "../components/DataDetails.jsx";
 import { StatsPanel } from "../components/StatsPanel.jsx";
 import { UsageOverview } from "../components/UsageOverview.jsx";
 import { TrendMonitor } from "../components/TrendMonitor.jsx";
+import { DeviceUsageCard } from "../components/DeviceUsageCard.jsx";
 import { SortableCard } from "../components/SortableCard.jsx";
 import { FadeIn } from "../../foundation/FadeIn.jsx";
 import { QualityPerDollarCard } from "../components/QualityPerDollarCard.jsx";
@@ -61,6 +62,8 @@ export function DashboardView(props) {
     trendZoomConfig,
     usageFrom,
     usageTo,
+    timeZone,
+    tzOffsetMinutes,
     period,
     trendTimeZoneLabel,
     activityHeatmapBlock,
@@ -118,6 +121,8 @@ export function DashboardView(props) {
     onLeftReorder,
     rightCardOrder,
     onRightReorder,
+    deviceId,
+    onDeviceSelect,
   } = props;
 
   // Header 和 Footer 已简化
@@ -129,6 +134,7 @@ export function DashboardView(props) {
     statsPanel: true,
     installCopy: shouldShowInstall,
     activityHeatmap: Boolean(activityHeatmapBlock),
+    deviceUsage: isLocalMode,
     trendMonitor: !screenshotMode,
     qualityPerDollar: !screenshotMode,
     sessionInsights: isLocalMode && !screenshotMode,
@@ -192,6 +198,20 @@ export function DashboardView(props) {
       case "activityHeatmap": {
         return <FadeIn delay={delay}>{activityHeatmapBlock}</FadeIn>;
       }
+      case "deviceUsage": {
+        return (
+          <FadeIn delay={delay}>
+            <DeviceUsageCard
+              from={usageFrom}
+              to={usageTo}
+              timeZone={timeZone}
+              tzOffsetMinutes={tzOffsetMinutes}
+              deviceId={deviceId}
+              onDeviceSelect={onDeviceSelect}
+            />
+          </FadeIn>
+        );
+      }
       case "trendMonitor": {
         return (
           <FadeIn delay={delay}>
@@ -212,6 +232,7 @@ export function DashboardView(props) {
           <QualityPerDollarCard
             from={usageFrom}
             to={usageTo}
+            deviceId={deviceId}
           />
         );
       }

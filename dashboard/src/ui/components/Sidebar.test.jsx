@@ -17,6 +17,7 @@ const LABELS = {
   "nav.skills": "Skills",
   "nav.ip_check": "IP check",
   "nav.service_status": "Service status",
+  "settings.section.transfer": "Data transfer",
   "nav.settings": "Settings",
   "nav.expand": "Expand sidebar",
   "nav.collapse": "Collapse sidebar",
@@ -46,6 +47,12 @@ vi.mock("../../lib/native-bridge.js", () => ({
   isNativeLinuxApp: () => false,
 }));
 
+let localDashboardHost = true;
+
+vi.mock("../../lib/host-mode", () => ({
+  isLocalDashboardHost: () => localDashboardHost,
+}));
+
 vi.mock("../dashboard/util/should-fetch-github-stars.js", () => ({
   shouldFetchGithubStars: () => false,
 }));
@@ -66,6 +73,7 @@ function renderLayout() {
 describe("AppLayout sidebar controls", () => {
   beforeEach(() => {
     window.localStorage.clear();
+    localDashboardHost = true;
     desktopMatches = false;
     mediaListeners = new Set();
     window.matchMedia = vi.fn((query) => ({
@@ -100,6 +108,19 @@ describe("AppLayout sidebar controls", () => {
 
     expect(sidebar).toHaveAttribute("data-sidebar-state", "expanded");
     expect(window.localStorage.getItem("tt.sidebarCollapsed")).toBe("0");
+  });
+
+  it("shows data transfer in the tools directory for local dashboards", () => {
+    renderLayout();
+
+    expect(screen.getByRole("link", { name: "Data transfer" })).toHaveAttribute("href", "/data-transfer");
+  });
+
+  it("hides data transfer outside the local dashboard host", () => {
+    localDashboardHost = false;
+    renderLayout();
+
+    expect(screen.queryByRole("link", { name: "Data transfer" })).not.toBeInTheDocument();
   });
 
   it("moves focus into the mobile drawer and closes it with the dedicated button", async () => {
