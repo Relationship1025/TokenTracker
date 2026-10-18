@@ -54,6 +54,7 @@ const PATHS = {
   outcomes: "tokentracker-outcomes",
   sessionInsights: "tokentracker-session-insights",
   contextHealth: "tokentracker-context-health",
+  localDeviceUsage: "tokentracker-local-device-usage",
 };
 
 export function isLocalhostHost() {
@@ -61,6 +62,14 @@ export function isLocalhostHost() {
     typeof window !== "undefined" &&
     (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
   );
+}
+
+export function getDeviceUsage({ from, to, timeZone, tzOffsetMinutes }: AnyRecord = {}) {
+  return fetchLocalJson(PATHS.localDeviceUsage, {
+    from,
+    to,
+    ...buildTimeZoneParams({ timeZone, tzOffsetMinutes }),
+  });
 }
 
 async function fetchLocalJson(slug: string, params?: AnyRecord, options?: AnyRecord) {
