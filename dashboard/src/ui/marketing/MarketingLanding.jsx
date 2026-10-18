@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { cn } from "../../lib/cn";
 import { getDashboardEntryPath } from "../../lib/host-mode";
 import { HeaderGithubStar } from "../components/HeaderGithubStar.jsx";
-import { useInsforgeAuth } from "../../contexts/InsforgeAuthContext.jsx";
 import { STATUSPAGE_URL } from "../../lib/config";
 import { LV3_CSS_VARS } from "./v3/palette.js";
 import { REPO_URL } from "../../lib/config";
@@ -26,8 +25,6 @@ export function MarketingLanding({
   reduceMotion,
   screenshotMode,
   effectsReady,
-  signInUrl,
-  signUpUrl,
   installCommand,
   installCopied,
   onCopyInstallCommand,
@@ -42,11 +39,6 @@ export function MarketingLanding({
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  const isLocalMode =
-    typeof window !== "undefined" &&
-    (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
-  const { signedIn, loading: authLoading } = useInsforgeAuth();
 
   const githubLabel = copy("landing.cta.secondary");
 
@@ -66,7 +58,7 @@ export function MarketingLanding({
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3 sm:gap-5">
             <Link
-              to={signUpUrl || "/"}
+              to="/"
               className="flex items-center gap-3 no-underline outline-none rounded focus-visible:ring-2 focus-visible:ring-oai-brand-500 focus-visible:ring-offset-2 dark:ring-offset-oai-gray-950 transition-opacity hover:opacity-80"
             >
               <img src="/app-icon.png" alt="" width={24} height={24} className="rounded-md" />
@@ -79,40 +71,12 @@ export function MarketingLanding({
             </div>
           </div>
           <div className="flex items-center justify-end gap-3 sm:gap-5 md:gap-6">
-            {/* 未登录场景下，Open Dashboard 应该作为次级文字导航链接并排展示 */}
-            {!signedIn && !authLoading && (
-              <Link
-                to={getDashboardEntryPath()}
-                className="hidden select-none text-sm font-medium text-oai-gray-400 outline-none transition-colors duration-200 hover:text-white focus-visible:underline sm:inline"
-              >
-                {copy("landing.v2.cta.primary")}
-              </Link>
-            )}
-
-            {/* Dashboard / Sign In 按钮及头像区 */}
-            <div className="flex items-center gap-2.5 sm:gap-3.5">
-              {authLoading ? (
-                <div className="h-8 w-16 animate-pulse rounded-[8px] bg-white/10" aria-hidden />
-              ) : signedIn ? (
-                // 已登录：Open Dashboard 升级为主行动实色按钮
-                <>
-                  <Link
-                    to={getDashboardEntryPath()}
-                    className="inline-flex h-8 select-none items-center justify-center rounded-[8px] bg-white px-3.5 text-xs font-bold text-oai-gray-950 shadow-sm transition-all duration-200 hover:bg-oai-gray-100 active:scale-[0.98]"
-                  >
-                    {copy("landing.v2.cta.primary")}
-                  </Link>
-                  {/* 已登录时，优雅挂载头像控件 */}
-                </>
-              ) : (
-                <Link
-                  to={signInUrl || "/login"}
-                  className="inline-flex h-8 min-w-[80px] select-none items-center justify-center rounded-[8px] bg-white px-3.5 text-xs font-bold text-oai-gray-950 shadow-sm transition-all duration-200 hover:bg-oai-gray-100 active:scale-[0.98]"
-                >
-                  {copy("header.auth.sign_in_aria")}
-                </Link>
-              )}
-            </div>
+            <Link
+              to={getDashboardEntryPath()}
+              className="inline-flex h-8 select-none items-center justify-center rounded-[8px] bg-white px-3.5 text-xs font-bold text-oai-gray-950 shadow-sm transition-all duration-200 hover:bg-oai-gray-100 active:scale-[0.98]"
+            >
+              {copy("landing.v2.cta.primary")}
+            </Link>
           </div>
         </div>
       </header>
@@ -169,14 +133,6 @@ export function MarketingLanding({
               {copy("landing.v2.nav.github")}
             </a>
             <LegalLinks />
-            {isLocalMode && (
-              <Link
-                to={signInUrl}
-                className="font-medium text-[color:var(--lv3-accent-soft)] transition-colors hover:text-white"
-              >
-                {copy("landing.cta.primary")} &rarr;
-              </Link>
-            )}
           </div>
         </div>
       </footer>

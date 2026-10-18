@@ -26,6 +26,20 @@ test("local-only dashboard removes cloud, leaderboard, profile, and achievements
   ]) {
     assert.equal(app.includes(marker), false, marker);
   }
+  const dashboardView = read("dashboard", "src", "ui", "dashboard", "views", "DashboardView.jsx");
+  const marketing = read("dashboard", "src", "ui", "marketing", "MarketingLanding.jsx");
+  for (const marker of [
+    "LoginPage",
+    "ResetPasswordPage",
+    "LoginCard",
+    "publicHostNeedsLogin",
+    "signInUrl",
+    "signUpUrl",
+    'copy(\"header.auth.sign_in_aria\")',
+    'to=\"/login\"',
+  ]) {
+    assert.equal((app + "\n" + dashboardView + "\n" + marketing).includes(marker), false, marker);
+  }
   assert.equal(/SETTINGS_SECTION_IDS\.CLOUD|<CloudSection\b/.test(settings), false);
   for (const marker of [
     "getAccountSkillInventories",

@@ -1,10 +1,8 @@
 import React from "react";
-import { FileDown, FlaskConical, Gauge, Globe, Monitor, Palette, Settings, UserRound } from "lucide-react";
+import { FileDown, FlaskConical, Gauge, Globe, Monitor, Palette, Settings } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { LimitsSettingsPanel } from "../components/LimitsSettingsPanel.jsx";
-import { AccountSection } from "../components/settings/AccountSection.jsx";
 import { DataTransferSection } from "../components/settings/DataTransferSection.jsx";
-import { useAccountProfileSettings } from "../components/settings/useAccountProfileSettings.js";
 import { AppearanceSection } from "../components/settings/AppearanceSection.jsx";
 import { LabsSection } from "../components/settings/LabsSection.jsx";
 import {
@@ -54,7 +52,6 @@ function LimitsDisplayModeControl({ prefs }) {
 }
 
 export function SettingsPage() {
-  const accountSettings = useAccountProfileSettings();
   const limitsPrefs = useLimitsDisplayPrefs();
   const {
     available: nativeSettingsAvailable,
@@ -119,14 +116,6 @@ export function SettingsPage() {
           content: <NetworkSection proxySettings={proxySettings} />,
         }]
       : []),
-    {
-      id: SETTINGS_SECTION_IDS.ACCOUNT,
-      label: copy("settings.section.account"),
-      description: copy("settings.section.account.description"),
-      group: SETTINGS_GROUP_IDS.PERSONAL,
-      Icon: UserRound,
-      content: <AccountSection settings={accountSettings} />,
-    },
     {
       id: SETTINGS_SECTION_IDS.LIMITS,
       label: copy("settings.section.limits"),

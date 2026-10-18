@@ -112,8 +112,6 @@ export function DashboardPage({
   signOut,
   publicMode = false,
   publicToken = null,
-  signInUrl = "/sign-in",
-  signUpUrl = "/sign-up",
   onMainContentVisible,
 }) {
   const { resolvedLocale } = useLocale();
@@ -995,15 +993,12 @@ export function DashboardPage({
   const headerRight = null;
   const footerLeftContent = null;
 
-  const showExpiredGate = sessionSoftExpired && !publicMode;
   // 使用上面定义的 isLocalMode
-  const requireAuthGate = !signedIn && !mockEnabled && !sessionSoftExpired && !isLocalMode;
-  const showAuthGate = requireAuthGate && !publicMode;
 
   useEffect(() => {
-    if (showExpiredGate || showAuthGate || initialDashboardLoading) return;
+    if (initialDashboardLoading) return;
     setDashboardContentShown(true);
-  }, [initialDashboardLoading, showAuthGate, showExpiredGate]);
+  }, [initialDashboardLoading]);
 
   const dashboardCardOrder = useDashboardCardOrder(
     LEFT_CARD_ORDER_DEFAULTS,
@@ -1012,11 +1007,10 @@ export function DashboardPage({
 
   useEffect(() => {
     if (mainContentVisibleNotifiedRef.current) return;
-    if (showExpiredGate || showAuthGate) return;
     if (usageLoadingState) return;
     mainContentVisibleNotifiedRef.current = true;
     onMainContentVisible?.();
-  }, [onMainContentVisible, showAuthGate, showExpiredGate, usageLoadingState]);
+  }, [onMainContentVisible, usageLoadingState]);
 
   return (
     <>
@@ -1024,8 +1018,6 @@ export function DashboardPage({
       copy={copy}
       onOpenShare={openShareModal}
       screenshotMode={screenshotMode}
-      showExpiredGate={showExpiredGate}
-      showAuthGate={showAuthGate}
       identityDisplayName={identityDisplayName}
       identityStartDate={identityStartDate}
       activeDays={activeDays}

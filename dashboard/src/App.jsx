@@ -2,9 +2,7 @@ import React, { lazy, Suspense, useCallback, useMemo, useRef } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
 import { useLocale } from "./hooks/useLocale.js";
-import { copy } from "./lib/copy";
 import { ThemeProvider } from "./ui/foundation/ThemeProvider.jsx";
-import { useInsforgeAuth } from "./contexts/InsforgeAuthContext.jsx";
 import { getBackendBaseUrl } from "./lib/config";
 import { isMockEnabled } from "./lib/mock-mode";
 import { isScreenshotModeEnabled } from "./lib/screenshot-mode";
@@ -38,14 +36,6 @@ const CommandPalette = lazy(() =>
     .then((m) => ({ default: m.CommandPalette }))
     .catch(() => ({ default: nullComponent })),
 );
-// NativeAuthCallbackPage must be eager-imported: its module-level code
-// captures the OAuth `insforge_code` query param synchronously at app
-// boot, BEFORE the InsForge SDK's detectAuthCallback() strips it. Lazy
-// loading delays the module until route render, by which point the
-// param has already been removed — the page then falls through to the
-// "Sign-in incomplete" failure state.
-import { NativeAuthCallbackPage } from "./pages/NativeAuthCallbackPage.jsx";
-
 // Pages are lazy-loaded so each route ships in its own chunk; keeps the
 // initial main bundle small (was 1.9 MB before splitting, all 11 pages
 // were bundled together). Routes are mutually exclusive, so only one
@@ -61,13 +51,6 @@ const LandingPage = lazy(() =>
 const LimitsPage = lazy(() =>
   import("./pages/LimitsPage.jsx").then((m) => ({ default: m.LimitsPage })),
 );
-const LoginPage = lazy(() =>
-  import("./pages/LoginPage.jsx").then((m) => ({ default: m.LoginPage })),
-);
-const ResetPasswordPage = lazy(() =>
-  import("./pages/ResetPasswordPage.jsx").then((m) => ({ default: m.ResetPasswordPage })),
-);
-const DevicePage = lazy(() => import("./pages/DevicePage.jsx"));
 const WrappedPage = lazy(() => import("./pages/WrappedPage.jsx"));
 const SettingsPage = lazy(() =>
   import("./pages/SettingsPage.jsx").then((m) => ({ default: m.SettingsPage })),
@@ -91,7 +74,6 @@ export default function App() {
   // across the tree — without unmounting lazy-loaded pages.
   const { resolvedLocale } = useLocale();
   const location = useLocation();
-  const insforge = useInsforgeAuth();
   const dashboardMainContentVisibleRef = useRef(false);
   const dashboardResourcePreloadStartedRef = useRef(false);
   const mockEnabled = isMockEnabled();
@@ -118,11 +100,9 @@ export default function App() {
   const normalizedPath = pathname.replace(/\/+$/, "") || "/";
   const isDashboardDefaultPath = normalizedPath === "/" || normalizedPath === "/dashboard";
 
-  const cloudAuthSignedIn = Boolean(insforge.enabled && insforge.signedIn);
-  const signedIn = isLocalMode || cloudAuthSignedIn;
+  const signedIn = isLocalMode || mockEnabled || screenshotMode;
   const sessionSoftExpired = false;
   const baseUrl = getBackendBaseUrl();
-  const isAuthGateTriggered = !signedIn && !mockEnabled && !isLocalMode;
 
   const handleDashboardMainContentVisible = useCallback(() => {
     if (!isDashboardDefaultPath) return;
@@ -136,14 +116,7 @@ export default function App() {
     }
   }, [isDashboardDefaultPath]);
 
-  const authObject = useMemo(() => {
-    if (!insforge.enabled || !cloudAuthSignedIn) return null;
-    return {
-      getAccessToken: () => insforge.getAccessToken(),
-      name: insforge.displayName || "",
-      userId: insforge.user?.id || null,
-    };
-  }, [cloudAuthSignedIn, insforge]);
+  const authObject = null;
 
   let gate = isLocalMode || mockEnabled || screenshotMode ? "dashboard" : "landing";
   if (normalizedPath === "/landing") gate = "landing";
@@ -180,7 +153,6 @@ export default function App() {
 
   const showSidebar =
     !publicMode &&
-    !isAuthGateTriggered &&
     (normalizedPath === "/dashboard" ||
       normalizedPath === "/" ||
       isLimitsPath ||
@@ -192,67 +164,27 @@ export default function App() {
       isIpCheckPath ||
       isServiceStatusPath);
 
-  // Public-host gating: on www.tokentracker.cc et al. there is no local
-  // CLI :7680 to fall back to, so dashboard / settings / etc. require a
-  // signed-in user. publicMode (shared link) and the loading state are
-  // exceptions that handle themselves.
-  const publicHostNeedsLogin =
-    !isLocalMode &&
-    !cloudAuthSignedIn &&
-    !publicMode &&
-    !insforge.loading &&
-    gate === "dashboard" &&
-    normalizedPath !== "/login" &&
-    normalizedPath !== "/reset-password" &&
-    normalizedPath !== "/landing" &&
-    normalizedPath !== "/auth/callback" &&
-    normalizedPath !== "/auth/native-callback";
-  if (publicHostNeedsLogin) {
-    const params = new URLSearchParams(location.search);
-    for (const key of ["insforge_code", "code", "state", "access_token", "refresh_token"]) params.delete(key);
-    const query = params.toString();
-    const next = encodeURIComponent(location.pathname + (query ? `?${query}` : ""));
-    return <Navigate to={`/login?next=${next}`} replace />;
-  }
-
   let content = null;
   let hasLandingFooter = false;
-  if (normalizedPath === "/auth/callback" || normalizedPath === "/auth/native-callback") {
-    content = <NativeAuthCallbackPage />;
-  } else if (normalizedPath === "/login") {
-    content = <LoginPage />;
-  } else if (normalizedPath === "/reset-password") {
-    content = <ResetPasswordPage />;
-  } else if (normalizedPath === "/device") {
-    // Headless-CLI device-flow approval page. Standalone (no sidebar) so
-    // unsigned visitors hit the embedded sign-in CTA without sidebar nav
-    // confusion. Auth check happens inside DevicePage itself.
-    content = <DevicePage />;
+  if (normalizedPath === "/login" || normalizedPath === "/reset-password" || normalizedPath === "/auth/callback" || normalizedPath === "/auth/native-callback") {
+    content = <Navigate to="/dashboard" replace />;
   } else if (normalizedPath === "/wrapped") {
     // Year-end Wrapped page. Reads from /functions/tokentracker-wrapped
     // (provided by the local CLI server) — no auth required.
     content = <WrappedPage />;
   } else if (gate === "landing") {
-    content = <LandingPage signInUrl="/login" signUpUrl="/login" />;
+    content = <LandingPage />;
     hasLandingFooter = true;
   } else {
     const pageNode = (<>
-      {insforge.configurationError ? (
-        <p role="alert" className="mx-auto w-full max-w-7xl px-4 py-4 text-sm leading-6 text-oai-gray-700 dark:text-oai-gray-300 sm:px-6">
-          {copy("instance.configuration.invalid")}
-        </p>
-      ) : null}
       <PageComponent
         key={resolvedLocale}
         baseUrl={baseUrl}
         auth={authObject}
         signedIn={signedIn}
         sessionSoftExpired={sessionSoftExpired}
-        signOut={() => (insforge.enabled ? insforge.signOut() : Promise.resolve())}
         publicMode={publicMode}
         publicToken={publicToken}
-        signInUrl="/login"
-        signUpUrl="/login"
         onMainContentVisible={handleDashboardMainContentVisible}
       />
     </>);

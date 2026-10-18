@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { AnimatePresence, motion } from "motion/react";
 import { copy } from "../../lib/copy";
 import { safeWriteClipboardImage } from "../../lib/safe-browser";
-import { useInsforgeAuth } from "../../contexts/InsforgeAuthContext.jsx";
 import {
   saveShareImageToDownloads,
   copyShareImageToClipboard,
@@ -75,16 +74,7 @@ export function ShareModal({ open, onClose, data, twitterText }: any) {
   const cardRef = useRef<HTMLDivElement | null>(null);
   const { toast, push } = useToast();
 
-  // Grab avatar URL from auth context for share card
-  const insforge = useInsforgeAuth();
-  const avatarUrl = useMemo(() => {
-    const user = insforge?.user;
-    if (!user || typeof user !== "object") return null;
-    const meta = (user as any).user_metadata || {};
-    const prof = (user as any).profile || {};
-    const u = meta.avatar_url || meta.picture || prof.avatar_url || (user as any).avatar_url;
-    return typeof u === "string" && u.trim() ? u.trim() : null;
-  }, [insforge?.user]);
+  const avatarUrl = null;
 
   // Reset state on open
   useEffect(() => {
