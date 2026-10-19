@@ -945,19 +945,20 @@ html.native-windows-app .tt-native-glass-shell aside[data-native-sidebar] {
 
 /* ========================================
    Aurora Theme (html.tt-aurora)
-   深色底 + 极光渐变的氛围主题：应用外壳铺彩色极光背景，卡片半透明
-   轻磨砂、白色发丝描边。选择器覆盖卡片/弹层使用的 Tailwind dark:
-   工具类（未分层规则优先于 @layer utilities，且 html.tt-aurora 前缀
-   将特异性提高到 `.dark .dark\:…` 之上）。
+   深夜空底色 + 高饱和极光层：shell 的 ::before 铺绿/青/紫径向渐变并做
+   缓慢漂移（纯 transform 合成器动画，不触发重绘；prefers-reduced-motion
+   禁用）。卡片半透明轻磨砂，透出下层色彩。选择器覆盖卡片/弹层使用的
+   Tailwind dark: 工具类（未分层规则优先于 @layer utilities，且
+   html.tt-aurora 前缀将特异性提高到 `.dark .dark\:…` 之上）。
    ======================================== */
 
 html.tt-aurora body {
-  background-color: #090d12;
+  background-color: #070b14;
 }
 
 /* 主要表面：主内容卡、各数据卡、弹层。 */
 html.tt-aurora .dark\:bg-oai-gray-900 {
-  background-color: rgba(19, 25, 35, 0.44);
+  background-color: rgba(17, 24, 36, 0.52);
   backdrop-filter: blur(14px) saturate(160%);
   -webkit-backdrop-filter: blur(14px) saturate(160%);
 }
@@ -968,19 +969,37 @@ html.tt-aurora .dark\:bg-oai-gray-950 {
   background-color: rgba(10, 13, 18, 0.78);
 }
 
-/* App shell (AppLayout root, .tt-app-shell): aurora backdrop. Must come after
-   the 950 override above — the shell also carries dark:bg-oai-gray-950 and
-   both selectors are (0,2,1), so source order decides. Saturated blobs sit
-   behind the main content card area too, so the translucent panels actually
-   pick up color instead of a flat dark wash. */
-html.tt-aurora .tt-app-shell {
+/* 极光层：shell 是 fixed（自带 stacking context），::before 取 z-index:-1
+   绘制在内容之下、shell 自身背景之上；负 inset + 常驻 scale>1 保证漂移
+   旋转时边缘永不露底。 */
+html.tt-aurora .tt-app-shell::before {
+  content: "";
+  position: absolute;
+  inset: -35%;
+  z-index: -1;
   background:
-    radial-gradient(52rem 36rem at 6% -6%, rgba(16, 185, 129, 0.34), transparent 58%),
-    radial-gradient(46rem 32rem at 106% 10%, rgba(59, 130, 246, 0.32), transparent 55%),
-    radial-gradient(40rem 34rem at 52% 116%, rgba(139, 92, 246, 0.30), transparent 58%),
-    radial-gradient(38rem 26rem at 38% 44%, rgba(20, 184, 166, 0.30), transparent 60%),
-    radial-gradient(34rem 24rem at 78% 66%, rgba(99, 102, 241, 0.32), transparent 62%),
-    linear-gradient(180deg, #0b1018, #080c12);
+    radial-gradient(ellipse 68rem 20rem at 28% 12%, rgba(52, 211, 153, 0.50), transparent 58%),
+    radial-gradient(ellipse 60rem 16rem at 45% 38%, rgba(45, 212, 191, 0.36), transparent 62%),
+    radial-gradient(ellipse 56rem 18rem at 78% 20%, rgba(56, 189, 248, 0.34), transparent 56%),
+    radial-gradient(ellipse 64rem 22rem at 52% 88%, rgba(167, 139, 250, 0.42), transparent 58%),
+    radial-gradient(ellipse 40rem 14rem at 68% 62%, rgba(232, 121, 249, 0.22), transparent 60%),
+    linear-gradient(180deg, #0a1322, #070b14);
+  animation: tt-aurora-drift 44s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes tt-aurora-drift {
+  from { transform: translate3d(-2.5%, -1.5%, 0) rotate(-1.2deg) scale(1.05); }
+  to   { transform: translate3d(2.5%, 2%, 0) rotate(1.2deg) scale(1.12); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.tt-aurora .tt-app-shell::before { animation: none; }
+}
+
+/* 侧栏文字可读性：左侧叠深色渐变压暗，避免高饱和色块直垫文字。 */
+html.tt-aurora aside#app-sidebar {
+  background: linear-gradient(90deg, rgba(6, 10, 18, 0.6), transparent 80%);
 }
 
 /* Elevated secondary surfaces: segmented controls, chips, active menu rows. */
@@ -1005,7 +1024,7 @@ html.tt-aurora .dark\:border-oai-gray-700 {
 /* Design-system panels follow the same translucent treatment. */
 html.tt-aurora .oai-panel,
 html.tt-aurora .oai-card {
-  background: rgba(19, 25, 35, 0.44);
+  background: rgba(17, 24, 36, 0.52);
   border-color: rgba(255, 255, 255, 0.10);
   backdrop-filter: blur(14px) saturate(160%);
   -webkit-backdrop-filter: blur(14px) saturate(160%);
