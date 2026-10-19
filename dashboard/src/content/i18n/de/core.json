@@ -197,6 +197,7 @@
   "settings.appearance.theme.hint": "Wähle, wie das TokenTracker-Dashboard dargestellt werden soll.",
   "settings.appearance.theme.light": "Hell",
   "settings.appearance.theme.dark": "Dunkel",
+  "settings.appearance.theme.glass": "Glas",
   "settings.appearance.theme.system": "System",
   "settings.appearance.language.label": "Sprache",
   "settings.appearance.language.hint": "Bei „System“ wird standardmäßig die Sprache des Terminals verwendet.",

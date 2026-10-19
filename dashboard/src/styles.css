@@ -942,3 +942,87 @@ html.native-windows-app .tt-native-glass-shell aside[data-native-sidebar] {
 
 /* Cloud purchase and membership surfaces use a neutral palette. The rest of
    the dashboard keeps its existing brand and provider colors. */
+
+/* ========================================
+   Glass Theme (html.tt-glass)
+   A frosted-glass style layered on the dark palette: a colorful aurora
+   backdrop on the app shell, translucent blurred surfaces, and white
+   hairline borders. Selectors override the Tailwind dark: utilities the
+   cards/popovers use (unlayered rules beat @layer utilities, and the
+   html.tt-glass prefix raises specificity above `.dark .dark\:…`).
+   ======================================== */
+
+html.tt-glass body {
+  background-color: #090d12;
+}
+
+/* Frosted primary surfaces: main content card, dashboard cards, popovers. */
+html.tt-glass .dark\:bg-oai-gray-900 {
+  background-color: rgba(19, 25, 35, 0.44);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+}
+
+/* Rare deep surfaces (share modal, login card, error boundary): keep them
+   darker but still slightly translucent. */
+html.tt-glass .dark\:bg-oai-gray-950 {
+  background-color: rgba(10, 13, 18, 0.78);
+}
+
+/* App shell (AppLayout root, .tt-app-shell): aurora backdrop. Must come after
+   the 950 override above — the shell also carries dark:bg-oai-gray-950 and
+   both selectors are (0,2,1), so source order decides. Saturated blobs sit
+   behind the main content card area too, so the frosted panels actually
+   refract color instead of a flat dark wash. */
+html.tt-glass .tt-app-shell {
+  background:
+    radial-gradient(52rem 36rem at 6% -6%, rgba(16, 185, 129, 0.34), transparent 58%),
+    radial-gradient(46rem 32rem at 106% 10%, rgba(59, 130, 246, 0.32), transparent 55%),
+    radial-gradient(40rem 34rem at 52% 116%, rgba(139, 92, 246, 0.30), transparent 58%),
+    radial-gradient(38rem 26rem at 38% 44%, rgba(20, 184, 166, 0.30), transparent 60%),
+    radial-gradient(34rem 24rem at 78% 66%, rgba(99, 102, 241, 0.32), transparent 62%),
+    linear-gradient(180deg, #0b1018, #080c12);
+}
+
+/* Elevated secondary surfaces: segmented controls, chips, active menu rows. */
+html.tt-glass .dark\:bg-oai-gray-800 {
+  background-color: rgba(255, 255, 255, 0.07);
+}
+html.tt-glass .dark\:bg-oai-gray-800\/60 {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+html.tt-glass .dark\:bg-oai-gray-800\/50 {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+/* Hairline borders → translucent white so edges catch the backdrop. */
+html.tt-glass .dark\:border-oai-gray-800 {
+  border-color: rgba(255, 255, 255, 0.09);
+}
+html.tt-glass .dark\:border-oai-gray-700 {
+  border-color: rgba(255, 255, 255, 0.13);
+}
+
+/* Design-system panels follow the same frosted treatment. */
+html.tt-glass .oai-panel,
+html.tt-glass .oai-card {
+  background: rgba(19, 25, 35, 0.44);
+  border-color: rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+}
+html.tt-glass .oai-panel--strong,
+html.tt-glass .oai-card--accent {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.13);
+}
+
+/* Glass sheen: cards catch a specular highlight along the top edge and cast a
+   soft shadow over the aurora. */
+html.tt-glass .dark\:bg-oai-gray-900,
+html.tt-glass .oai-panel,
+html.tt-glass .oai-card {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 8px 32px -12px rgba(0, 0, 0, 0.5);
+}

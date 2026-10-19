@@ -10,7 +10,7 @@ import {
 const THEME_STORAGE_KEY = "tokentracker-theme";
 
 /**
- * @typedef {"light" | "dark" | "system"} Theme
+ * @typedef {"light" | "dark" | "system" | "glass"} Theme
  * @typedef {{ theme: Theme, setTheme: (theme: Theme) => void, toggleTheme: () => void, resolvedTheme: "light" | "dark" }} ThemeContextValue
  */
 
@@ -25,7 +25,7 @@ function getInitialTheme() {
   if (typeof window === "undefined") return "system";
   try {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
-    if (stored === "light" || stored === "dark" || stored === "system") {
+    if (stored === "light" || stored === "dark" || stored === "system" || stored === "glass") {
       return stored;
     }
   } catch {
@@ -46,8 +46,9 @@ function getSystemTheme() {
 /**
  * Apply theme class to document element
  * @param {"light" | "dark"} resolvedTheme
+ * @param {Theme} theme
  */
-function applyThemeToDOM(resolvedTheme) {
+function applyThemeToDOM(resolvedTheme, theme) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
   if (resolvedTheme === "dark") {
@@ -55,6 +56,9 @@ function applyThemeToDOM(resolvedTheme) {
   } else {
     root.classList.remove("dark");
   }
+  // Glass is a dark-based frosted style: keep the dark palette and add the
+  // tt-glass hook for the aurora backdrop + translucent surfaces in styles.css.
+  root.classList.toggle("tt-glass", theme === "glass");
 }
 
 /**
@@ -80,11 +84,16 @@ export function ThemeProvider({ children }) {
 
   // Apply theme to DOM whenever resolvedTheme changes
   useEffect(() => {
-    applyThemeToDOM(resolvedTheme);
-  }, [resolvedTheme]);
+    applyThemeToDOM(resolvedTheme, theme);
+  }, [resolvedTheme, theme]);
 
   // theme 切换时先同步 resolved（避免 native push 还没到时停留在旧值一帧）
   useLayoutEffect(() => {
+    if (theme === "glass") {
+      // Glass 是固定风格（深色底 + 毛玻璃），不跟随系统外观。
+      setResolvedTheme("dark");
+      return;
+    }
     if (theme === "system") {
       if (isNativeEmbed()) {
         // 用模块级缓存立即得到当前系统外观；缓存空时再用 matchMedia 兜底
@@ -143,7 +152,8 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     const forNative =
       theme === "system" && !isNativeEmbed() ? getSystemTheme() : resolvedTheme;
-    syncNativeChromeAppearance(forNative, theme);
+    // 原生 chrome 只认 light/dark/system；glass 对原生窗口表现为深色。
+    syncNativeChromeAppearance(forNative, theme === "glass" ? "dark" : theme);
   }, [resolvedTheme, theme]);
 
   const setTheme = useCallback((newTheme) => {

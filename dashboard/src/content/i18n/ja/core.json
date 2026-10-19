@@ -282,6 +282,7 @@
   "settings.appearance.theme.hint": "Token Tracker のダッシュボードでの表示方法を選択します。",
   "settings.appearance.theme.light": "ライト",
   "settings.appearance.theme.dark": "ダーク",
+  "settings.appearance.theme.glass": "グラス",
   "settings.appearance.theme.system": "システム",
   "settings.account.displayName": "表示名",
   "settings.account.edit": "編集",

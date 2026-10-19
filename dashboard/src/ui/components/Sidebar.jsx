@@ -18,6 +18,7 @@ import {
   Sun,
   Moon,
   Monitor,
+  Sparkles,
 } from "lucide-react";
 import { copy } from "../../lib/copy";
 import { cn } from "../../lib/cn";
@@ -232,10 +233,11 @@ function StarPill({ repo = "xiufengsun/TokenTracker", glassChrome = false }) {
 function ThemePill({ theme, resolvedTheme, onSetTheme, glassChrome = false }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
-  const ActiveIcon = resolvedTheme === "dark" ? Moon : Sun;
+  const ActiveIcon = theme === "glass" ? Sparkles : resolvedTheme === "dark" ? Moon : Sun;
   const themeOptions = [
     { value: "light", label: copy("settings.appearance.theme.light"), Icon: Sun },
     { value: "dark", label: copy("settings.appearance.theme.dark"), Icon: Moon },
+    { value: "glass", label: copy("settings.appearance.theme.glass"), Icon: Sparkles },
     { value: "system", label: copy("settings.appearance.theme.system"), Icon: Monitor },
   ];
 
@@ -602,7 +604,7 @@ export function AppLayout({ children }) {
   return (
     <div
       className={cn(
-        "fixed inset-0 flex flex-col text-oai-black dark:text-oai-white font-sans overflow-hidden",
+        "tt-app-shell fixed inset-0 flex flex-col text-oai-black dark:text-oai-white font-sans overflow-hidden",
         isNativeWindowsApp() && "tt-native-glass-shell",
         nativeEmbed ? "bg-transparent" : "bg-oai-gray-100 dark:bg-oai-gray-950",
       )}

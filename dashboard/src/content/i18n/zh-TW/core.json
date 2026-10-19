@@ -362,6 +362,7 @@
   "settings.appearance.theme.hint": "選擇 Token Tracker 在儀表盤中的顯示方式。",
   "settings.appearance.theme.light": "淺色",
   "settings.appearance.theme.dark": "深色",
+  "settings.appearance.theme.glass": "玻璃",
   "settings.appearance.theme.system": "系統",
   "settings.account.displayName": "顯示名稱",
   "settings.account.edit": "編輯",
