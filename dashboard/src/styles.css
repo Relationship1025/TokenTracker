@@ -214,6 +214,38 @@
   color: var(--rainy-text);
 }
 
+.tt-rainy-static {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  align-self: center;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #0a1b27;
+  box-shadow:
+    0 30px 62px rgba(0, 7, 15, 0.35),
+    0 0 0 1px rgba(143, 229, 219, 0.08);
+}
+
+.tt-rainy-static::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 1px 0 rgba(221, 255, 249, 0.13),
+    inset 0 -32px 64px rgba(0, 8, 15, 0.22);
+}
+
+.tt-rainy-static img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+}
+
 :root.neon-store .tt-rainy-dashboard--wide {
   display: grid;
   grid-template-columns: minmax(280px, 38%) minmax(0, 1fr);

@@ -199,6 +199,7 @@
   "settings.appearance.theme.dark": "Dunkel",
   "settings.appearance.theme.system": "System",
   "settings.appearance.theme.neon_store": "Regnerischer Neonladen",
+  "dashboard.rainy_store.description": "Animationsstil-Miniatur eines warm beleuchteten Convenience Stores an einer regnerischen japanischen Straßenecke.",
   "settings.appearance.language.label": "Sprache",
   "settings.appearance.language.hint": "Bei „System“ wird standardmäßig die Sprache des Terminals verwendet.",
   "settings.appearance.language.system": "System",

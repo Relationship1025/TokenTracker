@@ -1,0 +1,258 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-hidden="true">
+  <defs>
+    <linearGradient id="night" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#101f34"/>
+      <stop offset=".56" stop-color="#17354a"/>
+      <stop offset="1" stop-color="#0d1f2d"/>
+    </linearGradient>
+    <linearGradient id="wetroad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#213c4c"/>
+      <stop offset=".45" stop-color="#142d3d"/>
+      <stop offset="1" stop-color="#0a202f"/>
+    </linearGradient>
+    <linearGradient id="wall" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e7dfcd"/>
+      <stop offset="1" stop-color="#c2c1ae"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8ec9ca" stop-opacity=".78"/>
+      <stop offset=".52" stop-color="#d5e6d9" stop-opacity=".58"/>
+      <stop offset="1" stop-color="#83b5b1" stop-opacity=".7"/>
+    </linearGradient>
+    <linearGradient id="warm" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f5bd81"/>
+      <stop offset="1" stop-color="#c57663"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8debd7"/>
+      <stop offset="1" stop-color="#42b5ca"/>
+    </linearGradient>
+    <linearGradient id="awning" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fa9974"/>
+      <stop offset=".5" stop-color="#f2c291"/>
+      <stop offset="1" stop-color="#ed7868"/>
+    </linearGradient>
+    <radialGradient id="puddle" cx=".4" cy=".35" r=".8">
+      <stop offset="0" stop-color="#acdcd0" stop-opacity=".56"/>
+      <stop offset=".45" stop-color="#4d9aaa" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#1f5267" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softglow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="14"/>
+    </filter>
+    <filter id="smallglow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+    <clipPath id="baseclip">
+      <path d="M512 951 137 775 512 596 888 775z"/>
+    </clipPath>
+    <pattern id="rain" width="72" height="104" patternUnits="userSpaceOnUse" patternTransform="rotate(-16)">
+      <path d="M12 7v30M47 31v20M64 -8v32M33 80v22" stroke="#bfe4eb" stroke-width="2" stroke-linecap="round" opacity=".32"/>
+    </pattern>
+    <pattern id="asphalt" width="26" height="22" patternUnits="userSpaceOnUse">
+      <path d="M2 3h1M16 9h2M9 19h1M23 18h1" stroke="#87aeba" opacity=".17" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#night)"/>
+  <circle cx="173" cy="178" r="94" fill="#76f2d9" opacity=".075" filter="url(#softglow)"/>
+  <circle cx="837" cy="346" r="120" fill="#e98382" opacity=".07" filter="url(#softglow)"/>
+
+  <!-- Square plinth, outer edge and inset stage -->
+  <path d="M512 976 82 778V755L512 634 930 776v27z" fill="#071923"/>
+  <path d="M512 952 137 790v-18l375-136 368 151v21z" fill="#102b39"/>
+  <path d="M144 765 512 938 887 766 516 593z" fill="#233e4c"/>
+  <path d="M156 759 513 920 873 757 512 606z" fill="url(#wetroad)"/>
+  <path d="M156 759 513 920 873 757 512 606z" fill="url(#asphalt)" opacity=".8"/>
+
+  <!-- Corner street split / sidewalk plane -->
+  <path d="M156 759 418 727 512 825 513 920z" fill="#3b4e57"/>
+  <path d="M156 759 418 727 512 825 513 920z" fill="#203d4d" opacity=".22"/>
+  <path d="M418 727 512 671 873 757 512 825z" fill="url(#wetroad)"/>
+  <path d="M418 727 512 671 873 757 512 825z" fill="#1e5368" opacity=".15"/>
+  <path d="M418 727 512 825M512 671 512 825" stroke="#5b8f98" stroke-width="2" opacity=".45"/>
+
+  <!-- curb and crossing -->
+  <path d="M241 761 396 716 470 773 322 823z" fill="#8f9995"/>
+  <path d="M241 761 396 716 405 728 249 778z" fill="#c0c7bc"/>
+  <g opacity=".65">
+    <path d="M361 821 425 791" stroke="#d6d8c9" stroke-width="12"/>
+    <path d="M386 842 451 811" stroke="#d6d8c9" stroke-width="12"/>
+    <path d="M415 861 479 832" stroke="#d6d8c9" stroke-width="12"/>
+    <path d="M442 884 506 853" stroke="#d6d8c9" stroke-width="12"/>
+  </g>
+  <path d="M516 689 583 713M539 695 612 726" stroke="#8fc6be" stroke-width="3" opacity=".42"/>
+
+  <!-- The store: volume, side wall and roof -->
+  <path d="M295 660 364 688 364 375 295 348z" fill="#6d817a"/>
+  <path d="M364 375 710 317 772 640 364 688z" fill="url(#wall)"/>
+  <path d="M364 375 710 317 745 339 404 399z" fill="#ebdfc7"/>
+  <path d="M404 399 745 339 805 664 364 688z" fill="#b7b8a9"/>
+  <path d="M364 688 805 664 872 710 444 740z" fill="#263e4a"/>
+  <path d="M295 348 644 290 710 317 364 375z" fill="#718d84"/>
+  <path d="M710 317 772 640 805 664 745 339z" fill="#617a76"/>
+  <path d="M295 348 348 368 348 679 295 660z" fill="#536b68"/>
+
+  <!-- Storefront and broad illuminated glass -->
+  <path d="M391 666 780 645 752 431 399 450z" fill="#263d48"/>
+  <path d="M405 447 758 425 783 645 409 660z" fill="#f1e7ba" opacity=".82"/>
+  <path d="M414 469 749 448 771 631 420 647z" fill="#f8e3a1" opacity=".55"/>
+  <path d="M405 447 758 425 783 645 409 660z" fill="url(#glass)" opacity=".18"/>
+  <path d="M459 451 459 662M523 447 521 656M586 445 583 653M651 443 649 649M715 441 711 645" stroke="#51636b" stroke-width="6"/>
+  <path d="M400 438 761 416 765 432 402 454z" fill="#e6d8bb"/>
+  <path d="M405 663 787 644 793 660 410 678z" fill="#b2b5a2"/>
+  <path d="M414 677 792 658 805 675 419 695z" fill="#405b5e"/>
+
+  <!-- Interior: warm, dense convenience-store layers visible through glass -->
+  <g clip-path="url(#baseclip)">
+    <path d="M407 454 757 433 779 638 414 654z" fill="#f7dc9e"/>
+    <path d="M408 454 758 433 757 474 410 495z" fill="#fff3c8"/>
+    <path d="M429 478 486 472 484 628 427 639z" fill="#e8ead3"/>
+    <path d="M494 472 551 466 549 623 492 629z" fill="#e8ead3"/>
+    <path d="M560 465 616 459 614 617 558 623z" fill="#e8ead3"/>
+    <path d="M620 459 678 452 676 609 618 615z" fill="#d6eee3"/>
+    <g stroke="#365c5a" stroke-width="3">
+      <path d="M429 502 484 497M429 528 484 523M429 554 485 549M429 580 486 575M429 606 486 601"/>
+      <path d="M495 498 549 493M495 524 550 519M495 550 550 545M495 576 551 571M495 602 551 597"/>
+      <path d="M561 491 614 485M561 517 615 511M561 543 615 537M561 569 616 563M561 595 616 589"/>
+      <path d="M621 486 676 479M621 512 677 505M621 538 677 531M621 564 678 557M621 590 678 583"/>
+    </g>
+    <g>
+      <path d="M432 502v-12h7v12zM443 502v-18h6v18zM453 502v-9h7v9zM464 502v-15h6v15zM474 502v-11h5v11z" fill="#d66c5a"/>
+      <path d="M497 498v-12h7v12zM508 498v-19h6v19zM519 498v-9h7v9zM530 498v-15h5v15zM540 498v-11h5v11z" fill="#598b70"/>
+      <path d="M563 491v-15h6v15zM574 491v-20h6v20zM585 491v-11h6v11zM596 491v-17h6v17zM607 491v-13h4v13z" fill="#e8bd5f"/>
+      <path d="M623 486v-14h6v14zM634 486v-19h6v19zM645 486v-11h6v11zM656 486v-16h6v16zM667 486v-12h5v12z" fill="#c87564"/>
+      <path d="M432 528v-13h6v13zM443 528v-10h6v10zM454 528v-16h7v16zM465 528v-8h6v8zM475 528v-14h5v14z" fill="#e1ac55"/>
+      <path d="M663 512v-13h7v13zM674 512v-9h4v9zM538 524v-15h6v15zM548 524v-10h4v10z" fill="#6ca38b"/>
+    </g>
+    <path d="M622 608 678 602 681 470 620 480z" fill="#73bfb6" opacity=".2"/>
+    <path d="M630 574 671 569 671 500 630 506z" fill="#e1faeb" opacity=".66"/>
+    <path d="M635 568 666 564M635 548 666 544M635 528 666 524" stroke="#74bfae" stroke-width="4"/>
+    <path d="M419 614 490 602 492 636 418 649z" fill="#c68061"/>
+    <path d="M422 619 487 608M422 626 487 615M422 633 487 622" stroke="#f0d2a7" stroke-width="2" opacity=".8"/>
+    <path d="M497 618 559 607 560 638 496 648z" fill="#a7b78f"/>
+    <path d="M502 620 516 617 515 633 502 636zM518 617 532 614 531 630 517 633zM534 614 548 611 547 627 533 630z" fill="#f0c777"/>
+    <path d="M565 575 617 568 618 631 565 638z" fill="#7f9d87"/>
+    <path d="M568 580 613 574 614 590 568 596z" fill="#d7e5bd"/>
+    <path d="M571 599 611 594" stroke="#eabf7b" stroke-width="4"/>
+    <path d="M570 610 611 605" stroke="#d97869" stroke-width="4"/>
+    <path d="M445 469 677 438" stroke="#fff7d1" stroke-width="5" opacity=".85"/>
+    <path d="M447 476 677 445" stroke="#efbb6f" stroke-width="2" opacity=".8"/>
+    <circle cx="478" cy="491" r="7" fill="#f8edb8"/>
+    <circle cx="538" cy="483" r="7" fill="#f8edb8"/>
+    <circle cx="599" cy="475" r="7" fill="#f8edb8"/>
+    <circle cx="658" cy="467" r="7" fill="#f8edb8"/>
+  </g>
+
+  <!-- Entry door and mat -->
+  <path d="M677 445 754 435 778 642 686 650z" fill="#507d85" opacity=".76"/>
+  <path d="M680 457 748 448 769 633 687 641z" fill="#8db8b4" opacity=".34"/>
+  <path d="M683 452 748 444 748 632M726 447 730 638" stroke="#e7f1da" stroke-width="3" opacity=".9"/>
+  <path d="M748 528 761 526" stroke="#e0d7bd" stroke-width="5"/>
+  <path d="M696 663 775 657 803 685 719 694z" fill="#4a5e63"/>
+  <path d="M711 671 770 665 789 680 725 688z" fill="#789a8f" opacity=".46"/>
+
+  <!-- Sign and roof details -->
+  <path d="M388 398 748 343 755 399 391 454z" fill="#263f4c"/>
+  <path d="M402 407 742 355 748 389 407 440z" fill="#305b5b"/>
+  <path d="M415 419 731 369 734 383 417 431z" fill="#f4fbe9" opacity=".98"/>
+  <path d="M414 424 731 374" stroke="#7be0ce" stroke-width="3" opacity=".9"/>
+  <path d="M415 430 733 380" stroke="#efc478" stroke-width="2" opacity=".9"/>
+  <path d="M403 392 751 340 753 346 405 399z" fill="#86e9d4" opacity=".36"/>
+  <path d="M405 458 774 405 777 425 408 476z" fill="url(#awning)"/>
+  <path d="M409 456 416 498 427 451M450 451 456 492 468 445M492 446 496 486 509 438M533 439 537 479 550 432M574 431 579 472 591 424M615 425 619 465 633 418M657 417 661 458 674 411M700 410 702 450 715 404M740 404 743 442 760 397" stroke="#f4dec1" stroke-width="9" opacity=".82"/>
+  <path d="M389 397 748 342 763 350 400 407z" fill="#d1c8b4"/>
+  <path d="M754 383 797 375 802 402 757 412z" fill="#6a8581"/>
+  <g opacity=".8">
+    <path d="M739 366 786 359M741 373 787 366" stroke="#f3d290" stroke-width="4"/>
+    <path d="M710 327 743 322 749 341 716 346z" fill="#526e6b"/>
+    <path d="M654 337 664 336 667 364 656 365z" fill="#4b6c6c"/>
+    <path d="M626 344 633 343 636 367 629 368z" fill="#4b6c6c"/>
+  </g>
+
+  <!-- alley side, AC unit, delivery door -->
+  <path d="M420 731 533 690 535 790 430 835z" fill="#304d59" opacity=".88"/>
+  <path d="M532 690 660 723 655 818 535 790z" fill="#192f3b"/>
+  <path d="M566 730 617 744 616 780 567 766z" fill="#6b8182"/>
+  <path d="M570 736 612 748M570 748 612 760M570 760 612 772" stroke="#293d47" stroke-width="3"/>
+  <path d="M470 742 526 727 526 791 472 808z" fill="#202f39"/>
+  <path d="M479 753 519 742 519 772 480 783z" fill="#59747a"/>
+  <path d="M501 756 503 783" stroke="#a4c9c4" stroke-width="3" opacity=".6"/>
+  <path d="M441 832 495 813 529 827 473 847z" fill="#152c38" opacity=".7"/>
+
+  <!-- small props: vending machine, umbrella stand, bins, bike, poster board -->
+  <path d="M233 734 290 710 292 814 230 838z" fill="#d9ddd2"/>
+  <path d="M239 727 287 708 290 733 241 753z" fill="#8ddfd0"/>
+  <path d="M243 759 283 742 283 793 244 811z" fill="#365d6b"/>
+  <path d="M249 766 277 755M249 774 277 763M249 782 277 771" stroke="#a8e2d0" stroke-width="4" opacity=".78"/>
+  <path d="M249 811 278 799 278 813 250 824z" fill="#223d49"/>
+  <path d="M210 739 232 730 232 774 208 783z" fill="#324b56"/>
+  <path d="M213 745 229 739M213 756 229 750M213 767 229 761" stroke="#d9b472" stroke-width="3"/>
+  <path d="M303 710 314 706 314 731 303 736z" fill="#4c5e5e"/>
+  <path d="M301 727 317 721" stroke="#d3d6c8" stroke-width="2"/>
+  <path d="M195 789 214 781 214 817 194 826z" fill="#4b6470"/>
+  <path d="M219 782 238 775 238 810 218 818z" fill="#6a7e78"/>
+  <path d="M192 775 215 766 216 777 194 786z" fill="#a4c0b9"/>
+  <path d="M221 768 239 761 240 773 220 780z" fill="#d6a06e"/>
+
+  <!-- bike silhouette -->
+  <g transform="translate(166 665) rotate(-9)" fill="none" stroke="#b9d0c6" stroke-width="4" opacity=".84">
+    <circle cx="24" cy="112" r="22"/>
+    <circle cx="93" cy="105" r="22"/>
+    <path d="M24 112 56 68 82 75 93 105 57 112 24 112M56 68 63 48 34 43M82 75 102 58 114 65M62 106 47 105"/>
+  </g>
+
+  <!-- street furniture: lamp, utility pole, wires, guard rail, sign, boards -->
+  <path d="M834 688 851 681 850 435 833 442z" fill="#95a19e"/>
+  <path d="M841 436 918 417 919 430 844 451z" fill="#6d7e7e"/>
+  <path d="M916 420 928 417 928 431 916 434z" fill="#fff0bd"/>
+  <circle cx="917" cy="437" r="22" fill="#f8cf8a" opacity=".14" filter="url(#softglow)"/>
+  <path d="M890 685 902 680 903 376 891 380z" fill="#758a88"/>
+  <path d="M897 375 841 334M897 375 977 342M897 375 1008 385" stroke="#617777" stroke-width="3" opacity=".8"/>
+  <path d="M872 692 890 685 890 718 873 724z" fill="#b1b7aa"/>
+  <path d="M755 702 846 677 850 690 759 716z" fill="#9daaa4"/>
+  <g stroke="#738a87" stroke-width="4">
+    <path d="M775 699 775 730M805 691 805 721M834 683 834 713"/>
+  </g>
+  <path d="M734 797 796 779 819 790 754 809z" fill="#5c777c"/>
+  <path d="M741 801 789 787 799 793 749 807z" fill="#a2c1b7"/>
+  <path d="M220 659 252 648 265 667 231 680z" fill="#46626d"/>
+  <path d="M225 660 233 671 248 665" stroke="#9ddbcc" stroke-width="3"/>
+
+  <!-- parking bay and gutter -->
+  <path d="M581 850 664 830M606 868 688 849M638 889 714 871" stroke="#b3bab0" stroke-width="4" opacity=".6"/>
+  <path d="M320 845 420 815 443 827 337 853z" fill="#193a48" opacity=".82"/>
+  <path d="M324 846 421 818M331 850 427 822" stroke="#83aeb3" stroke-width="2" opacity=".48"/>
+  <path d="M192 811 286 786 291 792 197 818z" fill="#304e58" opacity=".8"/>
+
+  <!-- puddle reflections and light pools -->
+  <path d="M188 785c28-20 79-26 118-6 23 12 15 29-14 35-42 8-106-5-104-29z" fill="url(#puddle)"/>
+  <path d="M526 858c37-17 113-18 143 3 15 10-7 24-51 27-53 3-110-9-92-30z" fill="url(#puddle)" opacity=".7"/>
+  <path d="M695 735c17-16 78-21 107-2 13 9-2 20-31 24-34 5-79-5-76-22z" fill="#82d8c1" opacity=".18"/>
+  <path d="M248 736c28-12 70-15 97-1" stroke="#94ddd5" stroke-width="3" opacity=".31"/>
+  <path d="M622 825c23-10 61-11 87 0M528 879c33-12 97-14 129-1M759 790c23-9 50-9 72-1" stroke="#69c8c7" stroke-width="2" opacity=".28"/>
+  <path d="M414 699 506 668 578 697 487 729z" fill="#ffd493" opacity=".06"/>
+
+  <!-- distant traffic light -->
+  <path d="M59 642 77 634 80 528 62 535z" fill="#223d4a"/>
+  <path d="M57 527 83 518 104 528 77 540z" fill="#1e3540"/>
+  <circle cx="69" cy="530" r="5" fill="#ed6f68"/>
+  <circle cx="80" cy="526" r="5" fill="#eabf67" opacity=".62"/>
+  <circle cx="91" cy="522" r="5" fill="#64dcbc" opacity=".4"/>
+
+  <!-- poster board tiny color blocks -->
+  <path d="M283 643 313 632 316 660 285 672z" fill="#284a54"/>
+  <path d="M289 644 306 638 308 654 290 660z" fill="#e6b876"/>
+  <path d="M291 648 304 643M291 654 304 649" stroke="#445b5d" stroke-width="1.5"/>
+
+  <!-- rain and final glass highlights -->
+  <path d="M150 702 878 523 921 557 512 927 147 765z" fill="url(#rain)" opacity=".66" clip-path="url(#baseclip)"/>
+  <g stroke="#d5f3ef" stroke-width="2" stroke-linecap="round" opacity=".62">
+    <path d="M465 466 461 503M513 454 510 488M604 446 600 477M721 430 718 461M774 476 770 513M768 568 765 599"/>
+    <path d="M428 465 425 489M475 454 472 481M538 445 535 470M649 437 646 462M687 428 684 451"/>
+  </g>
+  <path d="M404 445 758 422 758 429 405 453z" fill="#d9fff2" opacity=".5"/>
+  <path d="M398 460 774 410 776 415 400 466z" fill="#ffdd9e" opacity=".46"/>
+  <path d="M396 446 405 661 412 660 402 452z" fill="#c5efe8" opacity=".32"/>
+  <path d="M783 644 774 435 769 438 778 650z" fill="#dffbf1" opacity=".34"/>
+</svg>
