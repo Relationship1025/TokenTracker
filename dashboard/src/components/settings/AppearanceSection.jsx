@@ -1,5 +1,5 @@
 import React from "react";
-import { Info, Languages, Monitor, Moon, Sun } from "lucide-react";
+import { Info, Languages, Monitor, Moon, Store, Sun } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme.js";
 import { useLocale } from "../../hooks/useLocale.js";
 import { useCurrency } from "../../hooks/useCurrency.js";
@@ -16,6 +16,7 @@ function buildThemeOptions() {
     { value: "light", label: copy("settings.appearance.theme.light"), Icon: Sun },
     { value: "dark", label: copy("settings.appearance.theme.dark"), Icon: Moon },
     { value: "system", label: copy("settings.appearance.theme.system"), Icon: Monitor },
+    { value: "neon-store", label: copy("settings.appearance.theme.neon_store"), Icon: Store },
   ];
 }
 

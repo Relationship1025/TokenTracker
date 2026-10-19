@@ -18,6 +18,7 @@ import {
   Sun,
   Moon,
   Monitor,
+  Store,
 } from "lucide-react";
 import { copy } from "../../lib/copy";
 import { cn } from "../../lib/cn";
@@ -232,11 +233,14 @@ function StarPill({ repo = "xiufengsun/TokenTracker", glassChrome = false }) {
 function ThemePill({ theme, resolvedTheme, onSetTheme, glassChrome = false }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
-  const ActiveIcon = resolvedTheme === "dark" ? Moon : Sun;
+  const ActiveIcon = theme === "neon-store"
+    ? Store
+    : resolvedTheme === "dark" ? Moon : Sun;
   const themeOptions = [
     { value: "light", label: copy("settings.appearance.theme.light"), Icon: Sun },
     { value: "dark", label: copy("settings.appearance.theme.dark"), Icon: Moon },
     { value: "system", label: copy("settings.appearance.theme.system"), Icon: Monitor },
+    { value: "neon-store", label: copy("settings.appearance.theme.neon_store"), Icon: Store },
   ];
 
   useEffect(() => {

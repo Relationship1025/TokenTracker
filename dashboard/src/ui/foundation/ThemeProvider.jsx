@@ -6,12 +6,14 @@ import {
   subscribeNativeSystemAppearance,
   syncNativeChromeAppearance,
 } from "../../lib/native-bridge.js";
-
-const THEME_STORAGE_KEY = "tokentracker-theme";
+import {
+  getInitialTheme,
+  THEME_STORAGE_KEY,
+} from "./theme-preference.js";
 
 /**
- * @typedef {"light" | "dark" | "system"} Theme
- * @typedef {{ theme: Theme, setTheme: (theme: Theme) => void, toggleTheme: () => void, resolvedTheme: "light" | "dark" }} ThemeContextValue
+ * @typedef {"light" | "dark" | "system" | "neon-store"} Theme
+ * @typedef {{ theme: Theme, setTheme: (theme: Theme) => void, toggleTheme: () => void, resolvedTheme: "light" | "dark", isNeonStore: boolean }} ThemeContextValue
  */
 
 /** @type {React.Context<ThemeContextValue | null>} */
@@ -47,7 +49,7 @@ function getSystemTheme() {
  * Apply theme class to document element
  * @param {"light" | "dark"} resolvedTheme
  */
-function applyThemeToDOM(resolvedTheme) {
+function applyThemeToDOM(resolvedTheme, theme) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
   if (resolvedTheme === "dark") {
@@ -55,6 +57,7 @@ function applyThemeToDOM(resolvedTheme) {
   } else {
     root.classList.remove("dark");
   }
+  root.classList.toggle("neon-store", theme === "neon-store");
 }
 
 /**
@@ -62,8 +65,9 @@ function applyThemeToDOM(resolvedTheme) {
  * @param {{ children: React.ReactNode }} props
  */
 export function ThemeProvider({ children }) {
-  const [theme, setThemeState] = useState(getInitialTheme);
+  const [theme, setThemeState] = useState(() => getInitialTheme());
   const [resolvedTheme, setResolvedTheme] = useState(() => {
+    if (theme === "neon-store") return "dark";
     if (theme !== "system") return theme;
     if (isNativeEmbed()) {
       // 优先用原生缓存（模块加载时已挂上 always-on listener）
@@ -78,10 +82,10 @@ export function ThemeProvider({ children }) {
     themeRef.current = theme;
   }, [theme]);
 
-  // Apply theme to DOM whenever resolvedTheme changes
+  // Apply theme to DOM whenever resolvedTheme or the special theme changes.
   useEffect(() => {
-    applyThemeToDOM(resolvedTheme);
-  }, [resolvedTheme]);
+    applyThemeToDOM(resolvedTheme, theme);
+  }, [resolvedTheme, theme]);
 
   // theme 切换时先同步 resolved（避免 native push 还没到时停留在旧值一帧）
   useLayoutEffect(() => {
@@ -100,6 +104,8 @@ export function ThemeProvider({ children }) {
         return;
       }
       setResolvedTheme(getSystemTheme());
+    } else if (theme === "neon-store") {
+      setResolvedTheme("dark");
     } else {
       setResolvedTheme(theme);
     }
@@ -177,6 +183,7 @@ export function ThemeProvider({ children }) {
       setTheme,
       toggleTheme,
       resolvedTheme,
+      isNeonStore: theme === "neon-store",
     }),
     [theme, setTheme, toggleTheme, resolvedTheme]
   );

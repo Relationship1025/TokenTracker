@@ -61,7 +61,7 @@
       (function(){
         var t;
         try { t = localStorage.getItem("tokentracker-theme"); } catch(e) {}
-        var dark = t === "dark" || (t !== "light" && matchMedia("(prefers-color-scheme:dark)").matches);
+        var dark = t === "dark" || t === "neon-store" || (t !== "light" && t !== "neon-store" && matchMedia("(prefers-color-scheme:dark)").matches);
         if (dark) document.documentElement.classList.add("dark");
       })();
     </script>

@@ -2,8 +2,8 @@ import { useContext } from "react";
 import { ThemeContext } from "../ui/foundation/ThemeProvider.jsx";
 
 /**
- * @typedef {"light" | "dark" | "system"} Theme
- * @typedef {{ theme: Theme, setTheme: (theme: Theme) => void, toggleTheme: () => void, resolvedTheme: "light" | "dark" }} UseThemeReturn
+ * @typedef {"light" | "dark" | "system" | "neon-store"} Theme
+ * @typedef {{ theme: Theme, setTheme: (theme: Theme) => void, toggleTheme: () => void, resolvedTheme: "light" | "dark", isNeonStore: boolean }} UseThemeReturn
  */
 
 /**

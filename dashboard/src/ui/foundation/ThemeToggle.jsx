@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Store } from "lucide-react";
 
 const ICON_SIZE = 18;
 
@@ -35,9 +36,11 @@ const OPTIONS = [
   { value: "light", label: "Light", Icon: SunIcon },
   { value: "dark", label: "Dark", Icon: MoonIcon },
   { value: "system", label: "System", Icon: MonitorIcon },
+  { value: "neon-store", label: "Rainy Neon Store", Icon: Store },
 ];
 
-function currentIcon(resolvedTheme) {
+function currentIcon(theme, resolvedTheme) {
+  if (theme === "neon-store") return Store;
   return resolvedTheme === "dark" ? MoonIcon : SunIcon;
 }
 
@@ -69,7 +72,7 @@ export function ThemeToggle({ theme, resolvedTheme, onSetTheme, className = "", 
     return () => document.removeEventListener("keydown", handler);
   }, [open, close]);
 
-  const ActiveIcon = currentIcon(resolvedTheme);
+  const ActiveIcon = currentIcon(theme, resolvedTheme);
 
   return (
     <div ref={ref} className={`relative ${className}`}>
