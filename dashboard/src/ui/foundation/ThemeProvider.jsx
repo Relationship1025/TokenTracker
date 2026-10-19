@@ -20,23 +20,6 @@ import {
 export const ThemeContext = createContext(null);
 
 /**
- * Get initial theme from localStorage or default to "system"
- * @returns {Theme}
- */
-function getInitialTheme() {
-  if (typeof window === "undefined") return "system";
-  try {
-    const stored = localStorage.getItem(THEME_STORAGE_KEY);
-    if (stored === "light" || stored === "dark" || stored === "system") {
-      return stored;
-    }
-  } catch {
-    // Ignore localStorage errors (e.g., private mode)
-  }
-  return "system";
-}
-
-/**
  * Get system preferred theme
  * @returns {"light" | "dark"}
  */

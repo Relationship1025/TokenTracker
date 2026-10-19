@@ -7,6 +7,11 @@ import { DashboardView } from "./DashboardView.jsx";
 
 const loadingCard = vi.hoisted(() => ({ pending: true, mounts: 0, unmounts: 0 }));
 const deviceUsageCard = vi.hoisted(() => ({ calls: [] }));
+const themeState = vi.hoisted(() => ({ isNeonStore: false }));
+
+vi.mock("../../../hooks/useTheme.js", () => ({
+  useTheme: () => ({ theme: themeState.isNeonStore ? "neon-store" : "dark", isNeonStore: themeState.isNeonStore }),
+}));
 
 vi.mock("../../components", () => ({ Shell: ({ children }) => <>{children}</>, Card: ({ children }) => <>{children}</> }));
 vi.mock("../../foundation/FadeIn.jsx", () => ({ FadeIn: ({ children }) => <>{children}</> }));
@@ -29,7 +34,10 @@ vi.mock("../components/QualityPerDollarCard.jsx", async () => {
   } };
 });
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  themeState.isNeonStore = false;
+});
 
 it("registers device usage in the default left-column order", () => {
   expect(LEFT_CARD_ORDER_DEFAULTS).toContain("deviceUsage");
@@ -69,6 +77,22 @@ it("ignores removed promotional cards in saved layouts without leaving draggable
     rightCardOrder={["usageOverview"]} />);
   expect(screen.getByTestId("stats")).toBeInTheDocument();
   expect(screen.getByTestId("usage")).toBeInTheDocument();
+  expect(screen.getAllByRole("button", { name: copy("dashboard.overview.layout.drag_handle") })).toHaveLength(2);
+});
+
+it("keeps every card draggable while adding rainy glass wrappers", () => {
+  themeState.isNeonStore = true;
+  render(
+    <DashboardView
+      copy={copy}
+      isLocalMode
+      leftCardOrder={["statsPanel"]}
+      rightCardOrder={["usageOverview"]}
+    />,
+  );
+  expect(screen.getByTestId("stats")).toBeInTheDocument();
+  expect(screen.getByTestId("usage")).toBeInTheDocument();
+  expect(document.querySelectorAll("[data-rainy-card='true']")).toHaveLength(2);
   expect(screen.getAllByRole("button", { name: copy("dashboard.overview.layout.drag_handle") })).toHaveLength(2);
 });
 

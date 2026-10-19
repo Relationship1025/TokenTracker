@@ -136,6 +136,79 @@
   --radius-full: 9999px;
 }
 
+/* Rainy Neon Store is a first-class appearance, not a token-only dark variant.
+   Every selector here is scoped to the explicit root class so ordinary themes
+   cannot inherit its translucent surfaces or cool linework. */
+:root.neon-store {
+  color-scheme: dark;
+  --oai-black: #effafb;
+  --oai-white: #07131c;
+  --oai-gray-50: #0c1b25;
+  --oai-gray-100: #10232e;
+  --oai-gray-200: #18313d;
+  --oai-gray-300: #2b4a55;
+  --oai-gray-400: #63808a;
+  --oai-gray-500: #8ea7ad;
+  --oai-gray-600: #b3c6c9;
+  --oai-gray-700: #d0dfe0;
+  --oai-gray-800: #e2edee;
+  --oai-gray-900: #eff7f7;
+  --oai-gray-950: #f6ffff;
+  --brand-primary: #67e8d4;
+  --brand-primary-dark: #35b9ac;
+  --brand-primary-light: #a0fff0;
+  --rainy-bg: #06131d;
+  --rainy-panel: rgba(10, 28, 38, 0.76);
+  --rainy-panel-strong: rgba(12, 31, 42, 0.92);
+  --rainy-line: rgba(147, 222, 218, 0.18);
+  --rainy-line-strong: rgba(147, 222, 218, 0.3);
+  --rainy-accent: #67e8d4;
+  --rainy-warm: #efbd7a;
+  --rainy-text: #ecf8f7;
+  --rainy-muted: #91aab0;
+  --community-trend: #67e8d4;
+  --oai-info: #67e8d4;
+  --oai-warning: #efbd7a;
+}
+
+:root.neon-store body {
+  background: var(--rainy-bg);
+  color: var(--rainy-text);
+}
+
+:root.neon-store ::selection {
+  background: rgba(103, 232, 212, 0.26);
+  color: #f4ffff;
+}
+
+:root.neon-store .tt-rainy-card {
+  position: relative;
+  border-radius: 12px;
+  background:
+    linear-gradient(145deg, rgba(176, 235, 234, 0.075), rgba(58, 123, 134, 0.035) 42%, rgba(4, 16, 25, 0.2)),
+    var(--rainy-panel);
+  border: 1px solid var(--rainy-line);
+  box-shadow:
+    inset 0 1px 0 rgba(227, 255, 252, 0.07),
+    0 14px 36px rgba(0, 7, 13, 0.22);
+  backdrop-filter: blur(18px) saturate(125%);
+  -webkit-backdrop-filter: blur(18px) saturate(125%);
+}
+
+:root.neon-store .tt-rainy-card > * {
+  border-radius: inherit;
+}
+
+:root.neon-store .tt-rainy-card .rounded-xl.border.bg-white,
+:root.neon-store .tt-rainy-card .rounded-xl.border.dark\:bg-oai-gray-900 {
+  border-color: transparent;
+  background: transparent;
+}
+
+:root.neon-store .tt-rainy-shell-nav {
+  background: rgba(5, 18, 27, 0.94);
+}
+
 /* ========================================
    Dark Mode Variables
    ======================================== */

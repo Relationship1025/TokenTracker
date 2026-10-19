@@ -24,6 +24,8 @@ import { FadeIn } from "../../foundation/FadeIn.jsx";
 import { QualityPerDollarCard } from "../components/QualityPerDollarCard.jsx";
 import { SessionInsightsCard } from "../components/SessionInsightsCard.jsx";
 import { DashboardSkeleton } from "../../../components/DashboardSkeleton.jsx";
+import { DashboardGlassCard } from "../components/DashboardGlassCard.jsx";
+import { useTheme } from "../../../hooks/useTheme.js";
 import { cn } from "../../../lib/cn";
 
 // Entrance stagger timing — computed from each column's *rendered* index so
@@ -33,6 +35,7 @@ const D_LEFT_BASE = 0.11;
 const D_RIGHT_BASE = 0.05;
 
 export function DashboardView(props) {
+  const { isNeonStore = false } = useTheme();
 
   const {
     copy,
@@ -345,11 +348,16 @@ export function DashboardView(props) {
   );
 
   function renderSortableColumn(order, renderCard, baseDelay, onDragEnd) {
+    const renderGlassCard = (id, delay) => (
+      <DashboardGlassCard active={isNeonStore}>
+        {renderCard(id, delay)}
+      </DashboardGlassCard>
+    );
     if (screenshotMode) {
       return (
         <>
           {order.map((id, i) => (
-            <React.Fragment key={id}>{renderCard(id, baseDelay + STEP * i)}</React.Fragment>
+            <React.Fragment key={id}>{renderGlassCard(id, baseDelay + STEP * i)}</React.Fragment>
           ))}
         </>
       );
@@ -359,7 +367,7 @@ export function DashboardView(props) {
         <SortableContext items={order} strategy={verticalListSortingStrategy}>
           {order.map((id, i) => (
             <SortableCard key={id} id={id}>
-              {renderCard(id, baseDelay + STEP * i)}
+              {renderGlassCard(id, baseDelay + STEP * i)}
             </SortableCard>
           ))}
         </SortableContext>
