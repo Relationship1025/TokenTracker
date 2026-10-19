@@ -410,7 +410,7 @@ settings.appearance.theme.label,ui,SettingsPage,SettingsPage,theme_label,"Theme"
 settings.appearance.theme.hint,ui,SettingsPage,SettingsPage,theme_hint,"Choose how Token Tracker looks across the dashboard.",,active
 settings.appearance.theme.light,ui,SettingsPage,SettingsPage,theme_light,"Light",,active
 settings.appearance.theme.dark,ui,SettingsPage,SettingsPage,theme_dark,"Dark",,active
-settings.appearance.theme.glass,ui,SettingsPage,SettingsPage,theme_glass,"Glass",,active
+settings.appearance.theme.aurora,ui,SettingsPage,SettingsPage,theme_aurora,"Aurora",,active
 settings.appearance.theme.system,ui,SettingsPage,SettingsPage,theme_system,"System",,active
 settings.appearance.currency.label,ui,SettingsPage,SettingsPage,currency_label,"Currency",,active
 settings.appearance.currency.hint,ui,SettingsPage,SettingsPage,currency_hint,"Select the display currency for usage costs.",,active

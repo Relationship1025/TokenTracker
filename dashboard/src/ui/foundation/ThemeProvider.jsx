@@ -10,7 +10,7 @@ import {
 const THEME_STORAGE_KEY = "tokentracker-theme";
 
 /**
- * @typedef {"light" | "dark" | "system" | "glass"} Theme
+ * @typedef {"light" | "dark" | "system" | "aurora"} Theme
  * @typedef {{ theme: Theme, setTheme: (theme: Theme) => void, toggleTheme: () => void, resolvedTheme: "light" | "dark" }} ThemeContextValue
  */
 
@@ -25,7 +25,7 @@ function getInitialTheme() {
   if (typeof window === "undefined") return "system";
   try {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
-    if (stored === "light" || stored === "dark" || stored === "system" || stored === "glass") {
+    if (stored === "light" || stored === "dark" || stored === "system" || stored === "aurora") {
       return stored;
     }
   } catch {
@@ -56,9 +56,9 @@ function applyThemeToDOM(resolvedTheme, theme) {
   } else {
     root.classList.remove("dark");
   }
-  // Glass is a dark-based frosted style: keep the dark palette and add the
-  // tt-glass hook for the aurora backdrop + translucent surfaces in styles.css.
-  root.classList.toggle("tt-glass", theme === "glass");
+  // Aurora 是深色底 + 极光渐变的氛围主题：沿用深色配色，并通过 tt-aurora
+  // 钩子类启用 styles.css 中的极光背景与半透明表面。
+  root.classList.toggle("tt-aurora", theme === "aurora");
 }
 
 /**
@@ -89,8 +89,8 @@ export function ThemeProvider({ children }) {
 
   // theme 切换时先同步 resolved（避免 native push 还没到时停留在旧值一帧）
   useLayoutEffect(() => {
-    if (theme === "glass") {
-      // Glass 是固定风格（深色底 + 毛玻璃），不跟随系统外观。
+    if (theme === "aurora") {
+      // Aurora 是固定风格（深色底 + 极光渐变），不跟随系统外观。
       setResolvedTheme("dark");
       return;
     }
@@ -152,8 +152,8 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     const forNative =
       theme === "system" && !isNativeEmbed() ? getSystemTheme() : resolvedTheme;
-    // 原生 chrome 只认 light/dark/system；glass 对原生窗口表现为深色。
-    syncNativeChromeAppearance(forNative, theme === "glass" ? "dark" : theme);
+    // 原生 chrome 只认 light/dark/system；aurora 对原生窗口表现为深色。
+    syncNativeChromeAppearance(forNative, theme === "aurora" ? "dark" : theme);
   }, [resolvedTheme, theme]);
 
   const setTheme = useCallback((newTheme) => {

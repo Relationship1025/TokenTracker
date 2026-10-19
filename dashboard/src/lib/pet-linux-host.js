@@ -145,7 +145,7 @@ export function relayedStorage(win) {
 
 export function readDark(storage, win) {
   const theme = readStorage(storage, THEME_STORAGE_KEY);
-  if (theme === "dark" || theme === "glass") return true;
+  if (theme === "dark" || theme === "aurora") return true;
   if (theme === "light") return false;
   try { return Boolean(win.matchMedia?.("(prefers-color-scheme: dark)").matches); } catch { return false; }
 }

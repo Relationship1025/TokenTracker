@@ -282,7 +282,7 @@
   "settings.appearance.theme.hint": "대시보드 전반에서 Token Tracker가 표시되는 방식을 선택하세요.",
   "settings.appearance.theme.light": "라이트",
   "settings.appearance.theme.dark": "다크",
-  "settings.appearance.theme.glass": "글래스",
+  "settings.appearance.theme.aurora": "오로라",
   "settings.appearance.theme.system": "시스템",
   "settings.account.displayName": "표시 이름",
   "settings.account.edit": "편집",

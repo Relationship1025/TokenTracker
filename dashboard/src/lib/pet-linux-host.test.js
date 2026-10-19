@@ -86,7 +86,7 @@ describe("readDark", () => {
     const win = { matchMedia: () => ({ matches: true }) };
     expect(readDark(storage({ "tokentracker-theme": "light" }), win)).toBe(false);
     expect(readDark(storage({ "tokentracker-theme": "dark" }), win)).toBe(true);
-    expect(readDark(storage({ "tokentracker-theme": "glass" }), win)).toBe(true);
+    expect(readDark(storage({ "tokentracker-theme": "aurora" }), win)).toBe(true);
     expect(readDark(storage({ "tokentracker-theme": "system" }), win)).toBe(true);
   });
 });
