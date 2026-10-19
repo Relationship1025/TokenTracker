@@ -25,15 +25,34 @@ const LABELS = {
   "nav.close_menu": "Close navigation menu",
   "nav.aside_label": "Main navigation",
   "nav.nav_label": "Primary navigation",
+  "shared.app_name": "Token Tracker",
+  "settings.appearance.theme.label": "Theme",
+  "settings.appearance.theme.light": "Light",
+  "settings.appearance.theme.dark": "Dark",
+  "settings.appearance.theme.system": "System",
+  "settings.appearance.theme.neon_store": "Rainy Neon Store",
   "shared.github.star": "Star",
 };
 
+const themeState = vi.hoisted(() => ({
+  theme: "system",
+  resolvedTheme: "light",
+  isNeonStore: false,
+}));
+
 vi.mock("../../lib/copy", () => ({
-  copy: (key) => LABELS[key] || key,
+  copy: (key, params) => {
+    const value = LABELS[key] || key;
+    if (!params) return value;
+    return Object.entries(params).reduce(
+      (text, [name, replacement]) => text.split(`{{${name}}}`).join(String(replacement)),
+      value,
+    );
+  },
 }));
 
 vi.mock("../../hooks/useTheme.js", () => ({
-  useTheme: () => ({ theme: "system", resolvedTheme: "light", setTheme: vi.fn() }),
+  useTheme: () => ({ ...themeState, setTheme: vi.fn() }),
 }));
 
 vi.mock("../../hooks/useLocale.js", () => ({
@@ -76,6 +95,9 @@ describe("AppLayout sidebar controls", () => {
     localDashboardHost = true;
     desktopMatches = false;
     mediaListeners = new Set();
+    themeState.theme = "system";
+    themeState.resolvedTheme = "light";
+    themeState.isNeonStore = false;
     window.matchMedia = vi.fn((query) => ({
       matches: query === "(min-width: 1024px)" ? desktopMatches : false,
       media: query,
@@ -86,6 +108,20 @@ describe("AppLayout sidebar controls", () => {
       removeListener: (_listener) => {},
       dispatchEvent: vi.fn(),
     }));
+  });
+
+  it("uses a fixed icon rail in the rainy neon store theme", () => {
+    themeState.theme = "neon-store";
+    themeState.resolvedTheme = "dark";
+    themeState.isNeonStore = true;
+    renderLayout();
+
+    const sidebar = screen.getByRole("complementary", { name: "Main navigation" });
+    expect(sidebar).toHaveAttribute("data-sidebar-state", "rail");
+    expect(screen.queryByRole("button", { name: "Collapse sidebar" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Expand sidebar" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Usage" })).toBeInTheDocument();
+    expect(document.querySelector("[data-rainy-nav-rail]")).toBeInTheDocument();
   });
 
   it("collapses and expands the desktop sidebar and persists the preference", async () => {

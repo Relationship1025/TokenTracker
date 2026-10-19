@@ -27,6 +27,7 @@ import { useLocale } from "../../hooks/useLocale.js";
 import { shouldFetchGithubStars } from "../dashboard/util/should-fetch-github-stars.js";
 import { isNativeApp, isNativeEmbed, isNativeLinuxApp, isNativeWindowsApp } from "../../lib/native-bridge.js";
 import { isLocalDashboardHost } from "../../lib/host-mode";
+import { NavIconRail } from "./NavIconRail.jsx";
 
 const STORAGE_KEY = "tt.sidebarCollapsed";
 
@@ -330,10 +331,58 @@ function SidebarBody({
   const location = useLocation();
   const pathname = location?.pathname || "/";
   const { theme, resolvedTheme, setTheme } = useTheme();
+  const isNeonStore = theme === "neon-store";
   // Re-compute copy() via getNavGroups when locale changes, otherwise the
   // labels stay stale after a language switch.
   const { resolvedLocale } = useLocale();
   const navGroups = useMemo(() => getNavGroups(), [resolvedLocale]);
+
+  if (isNeonStore && !showCloseButton) {
+    return (
+      <>
+        <div className="tt-rainy-rail-brand flex h-[62px] shrink-0 items-center justify-center border-b border-white/[0.07]">
+          <Link
+            to="/dashboard"
+            onClick={onItemClick}
+            aria-label={copy("shared.app_name")}
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-300 text-[11px] font-black tracking-tight text-slate-950 no-underline shadow-[0_0_24px_rgba(103,232,212,0.18)]"
+          >
+            TT
+          </Link>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-2 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <NavIconRail
+            groups={navGroups.map((group) => ({
+              ...group,
+              items: group.items.filter(
+                (item) => !(item.to === "/widgets" && (isNativeWindowsApp() || isNativeLinuxApp())),
+              ),
+            }))}
+            pathname={pathname}
+            onNavigate={onItemClick}
+          />
+        </div>
+        <div className="tt-rainy-rail-utilities flex shrink-0 flex-col items-center gap-2 border-t border-white/[0.07] px-2 py-3">
+          <Link
+            to="/settings"
+            onClick={onItemClick}
+            aria-label={copy("nav.settings")}
+            aria-current={isActive(pathname, "/settings") ? "page" : undefined}
+            title={copy("nav.settings")}
+            className={cn(
+              "flex h-10 w-10 items-center justify-center rounded-lg no-underline transition-colors",
+              isActive(pathname, "/settings")
+                ? "bg-cyan-300/15 text-cyan-100"
+                : "text-slate-400 hover:bg-white/[0.06] hover:text-slate-100",
+            )}
+          >
+            <SettingsIcon className="h-[17px] w-[17px]" strokeWidth={1.8} aria-hidden="true" />
+          </Link>
+          <ThemePill theme={theme} resolvedTheme={resolvedTheme} onSetTheme={setTheme} glassChrome />
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -418,6 +467,8 @@ function SidebarBody({
  * already bounded by AppLayout's fixed-viewport flex container).
  */
 function Sidebar({ collapsed, onToggleCollapsed }) {
+  const { theme } = useTheme();
+  const isNeonStore = theme === "neon-store";
   const nativeGlass = useMemo(() => {
     if (typeof window === "undefined") return false;
     return isNativeEmbed() || isNativeApp();
@@ -427,14 +478,16 @@ function Sidebar({ collapsed, onToggleCollapsed }) {
     <aside
       data-native-sidebar
       id="app-sidebar"
-      data-sidebar-state={collapsed ? "collapsed" : "expanded"}
+      data-sidebar-state={isNeonStore ? "rail" : collapsed ? "collapsed" : "expanded"}
       aria-label={copy("nav.aside_label")}
       className={cn(
         "hidden lg:flex flex-col shrink-0 h-full min-h-0 transition-[width] duration-200",
-        collapsed ? "w-[72px]" : "w-[220px]",
+        isNeonStore
+          ? "w-[72px] border-r border-white/[0.07] bg-[#09151e]/95"
+          : collapsed ? "w-[72px]" : "w-[220px]",
       )}
     >
-      <SidebarBody collapsed={collapsed} onToggleCollapsed={onToggleCollapsed} glassChrome={nativeGlass} />
+      <SidebarBody collapsed={isNeonStore ? true : collapsed} onToggleCollapsed={onToggleCollapsed} glassChrome={nativeGlass} />
     </aside>
   );
 }
@@ -577,6 +630,8 @@ function MobileTopBar({ open, onOpenDrawer, menuButtonRef }) {
  */
 export function AppLayout({ children }) {
   const { collapsed, toggle } = useSidebarCollapsed();
+  const { theme } = useTheme();
+  const isNeonStore = theme === "neon-store";
   const [drawerOpen, setDrawerOpen] = useState(false);
   const menuButtonRef = useRef(null);
   const mainContentRef = useRef(null);
@@ -608,7 +663,8 @@ export function AppLayout({ children }) {
       className={cn(
         "fixed inset-0 flex flex-col text-oai-black dark:text-oai-white font-sans overflow-hidden",
         isNativeWindowsApp() && "tt-native-glass-shell",
-        nativeEmbed ? "bg-transparent" : "bg-oai-gray-100 dark:bg-oai-gray-950",
+        isNeonStore && "tt-rainy-app-shell",
+        nativeEmbed ? "bg-transparent" : isNeonStore ? "bg-[#06111a]" : "bg-oai-gray-100 dark:bg-oai-gray-950",
       )}
     >
       {nativeEmbed && (
@@ -631,6 +687,7 @@ export function AppLayout({ children }) {
           <div
             className={cn(
               "flex-1 min-h-0 flex flex-col bg-oai-white dark:bg-oai-gray-900 border border-oai-gray-200 dark:border-oai-gray-800 overflow-hidden",
+              isNeonStore && "border-white/[0.08] bg-[#08141d] dark:bg-[#08141d]",
               nativeEmbed ? "tt-native-main-card" : "rounded-2xl",
               !nativeEmbed && "shadow-sm",
             )}
@@ -640,7 +697,10 @@ export function AppLayout({ children }) {
               ref={mainContentRef}
               id="app-main-content"
               tabIndex={-1}
-              className="flex-1 min-h-0 overflow-y-auto"
+              className={cn(
+                "flex-1 min-h-0",
+                isNeonStore ? "overflow-hidden" : "overflow-y-auto",
+              )}
             >
               {children}
             </div>
