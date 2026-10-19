@@ -191,7 +191,7 @@ struct NativeQAProfile: Codable {
         case "setChromeAppearance":
             guard let boolean = message["isDark"] as? NSNumber else { return false }
             return fields == ["type", "theme", "isDark"] && CFGetTypeID(boolean) == CFBooleanGetTypeID() &&
-                ["system", "light", "dark"].contains(message["theme"] as? String ?? "")
+                ["system", "light", "dark", "neon-store"].contains(message["theme"] as? String ?? "")
         case "setSetting":
             guard fields == ["type", "key", "value"], let key = message["key"] as? String else { return false }
             if key == "exchangeRate" {

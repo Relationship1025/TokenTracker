@@ -10,6 +10,7 @@ internal static class NativeTheme
     public const string SystemPreference = "system";
     public const string LightPreference = "light";
     public const string DarkPreference = "dark";
+    public const string NeonStorePreference = "neon-store";
 
     private static readonly string SettingsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -25,6 +26,7 @@ internal static class NativeTheme
         {
             LightPreference => LightPreference,
             DarkPreference => DarkPreference,
+            NeonStorePreference => NeonStorePreference,
             SystemPreference => SystemPreference,
             _ => DarkPreference,
         };
@@ -36,6 +38,7 @@ internal static class NativeTheme
         {
             LightPreference => true,
             DarkPreference => false,
+            NeonStorePreference => false,
             _ => IsWindowsAppLightTheme(),
         };
     }

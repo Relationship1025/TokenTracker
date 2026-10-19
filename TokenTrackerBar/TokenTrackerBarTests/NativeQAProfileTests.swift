@@ -171,6 +171,21 @@ final class NativeQAProfileTests: XCTestCase {
         }
     }
 
+    func testRainyNeonStoreUsesAcceptedDarkNativeChrome() throws {
+        try withProfile { profile, _ in
+            XCTAssertTrue(profile.permitsNativeMessage([
+                "type": "setChromeAppearance",
+                "theme": "neon-store",
+                "isDark": NSNumber(value: true)
+            ]))
+            XCTAssertTrue(profile.permitsNativeMessage([
+                "type": "setChromeAppearance",
+                "theme": "neon-store",
+                "isDark": NSNumber(value: false)
+            ]))
+        }
+    }
+
     func testOnlyBoundedQaNativeMessagesCanReachTheRealBridge() throws {
         try withProfile { profile, _ in
             XCTAssertTrue(profile.permitsNativeMessage(["type": "getSettings"]))

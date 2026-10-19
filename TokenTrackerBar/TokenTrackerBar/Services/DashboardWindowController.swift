@@ -238,7 +238,7 @@ final class DashboardWindowController: NSObject, NSWindowDelegate, WKNavigationD
     }
 
     /// Match dashboard light/dark so native glass / `NSVisualEffectView` + window chrome follow the web theme.
-    /// - `theme`: `"system"` | `"light"` | `"dark"` (matches `tokentracker-theme` in `localStorage`).
+    /// - `theme`: `"system"` | `"light"` | `"dark"` | `"neon-store"` (matches `tokentracker-theme` in `localStorage`).
     func applyChromeAppearance(theme: String, resolvedIsDark: Bool) {
         switch theme {
         case "system":
@@ -248,6 +248,9 @@ final class DashboardWindowController: NSObject, NSWindowDelegate, WKNavigationD
             chromeFollowsSystem = false
             window?.appearance = NSAppearance(named: .aqua)
         case "dark":
+            chromeFollowsSystem = false
+            window?.appearance = NSAppearance(named: .darkAqua)
+        case "neon-store":
             chromeFollowsSystem = false
             window?.appearance = NSAppearance(named: .darkAqua)
         default:

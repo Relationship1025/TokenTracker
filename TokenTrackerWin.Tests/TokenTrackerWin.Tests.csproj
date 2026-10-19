@@ -33,6 +33,7 @@
     <Compile Include="../TokenTrackerWin/UpdateChecker.cs" Link="UpdateChecker.cs" />
     <Compile Include="../TokenTrackerWin/NativeReturnUri.cs" Link="NativeReturnUri.cs" />
     <Compile Include="../TokenTrackerWin/DocumentScriptCache.cs" Link="DocumentScriptCache.cs" />
+    <Compile Include="../TokenTrackerWin/NativeTheme.cs" Link="NativeTheme.cs" />
     <Compile Include="../TokenTrackerWin/WebViewActivity.cs" Link="WebViewActivity.cs" />
   </ItemGroup>
 
