@@ -366,6 +366,8 @@
   "settings.appearance.theme.system": "系统",
   "settings.appearance.theme.neon_store": "雨夜霓虹便利店",
   "dashboard.rainy_store.description": "雨夜日本街角的动漫风便利店微缩景观，店内透出温暖灯光。",
+  "dashboard.rainy_store.reset_view": "重置便利店视角",
+  "dashboard.rainy_store.canvas_description": "可交互的雨夜日本便利店第三人称微缩景观。拖动旋转视角，按住 Shift 滚动缩放。",
   "settings.account.displayName": "显示名称",
   "settings.account.edit": "编辑",
   "settings.account.save": "保存",

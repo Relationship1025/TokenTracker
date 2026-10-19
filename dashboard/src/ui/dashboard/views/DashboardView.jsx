@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
   DndContext,
@@ -26,6 +26,8 @@ import { SessionInsightsCard } from "../components/SessionInsightsCard.jsx";
 import { DashboardSkeleton } from "../../../components/DashboardSkeleton.jsx";
 import { DashboardGlassCard } from "../components/DashboardGlassCard.jsx";
 import { RainyDashboardLayout } from "../components/RainyDashboardLayout.jsx";
+import { RainyStoreScene } from "../components/RainyStoreScene.jsx";
+import { RainyStoreStatic } from "../components/RainyStoreStatic.jsx";
 import { useTheme } from "../../../hooks/useTheme.js";
 import { cn } from "../../../lib/cn";
 
@@ -37,6 +39,28 @@ const D_RIGHT_BASE = 0.05;
 
 export function DashboardView(props) {
   const { isNeonStore = false } = useTheme();
+  const [isDesktop, setIsDesktop] = useState(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return true;
+    return window.matchMedia("(min-width: 1024px)").matches;
+  });
+  const [reducedMotion, setReducedMotion] = useState(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return undefined;
+    const desktopQuery = window.matchMedia("(min-width: 1024px)");
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updateDesktop = (event) => setIsDesktop(event.matches);
+    const updateMotion = (event) => setReducedMotion(event.matches);
+    desktopQuery.addEventListener("change", updateDesktop);
+    motionQuery.addEventListener("change", updateMotion);
+    return () => {
+      desktopQuery.removeEventListener("change", updateDesktop);
+      motionQuery.removeEventListener("change", updateMotion);
+    };
+  }, []);
 
   const {
     copy,
@@ -388,6 +412,12 @@ export function DashboardView(props) {
     D_RIGHT_BASE,
     handleRightDragEnd,
   );
+  const liveScene = isNeonStore && isDesktop && !screenshotMode && !reducedMotion;
+  const sceneContent = isNeonStore
+    ? liveScene
+      ? <RainyStoreScene active screenshotMode={screenshotMode} reducedMotion={reducedMotion} />
+      : <RainyStoreStatic priority />
+    : null;
 
   return (
     <>
@@ -404,9 +434,10 @@ export function DashboardView(props) {
         {!initialDashboardLoading && (
           isNeonStore ? (
             <RainyDashboardLayout
-              scene={null}
+              scene={sceneContent}
               leftColumn={leftColumnContent}
               rightColumn={rightColumnContent}
+              narrow={!isDesktop}
             />
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
