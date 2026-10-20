@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   clampOrbit,
+  collectSceneResources,
   createRainGeometry,
+  createSceneResourceRegistry,
   disposeScene3D,
   shouldAnimate,
 } from "./rainy-store-runtime.js";
@@ -34,6 +36,33 @@ describe("rainy store scene runtime", () => {
     expect(shouldAnimate({ hidden: false, inView: false, reducedMotion: false, screenshotMode: false })).toBe(false);
     expect(shouldAnimate({ hidden: false, inView: true, reducedMotion: true, screenshotMode: false })).toBe(false);
     expect(shouldAnimate({ hidden: false, inView: true, reducedMotion: false, screenshotMode: true })).toBe(false);
+  });
+
+  it("registers each created geometry and material exactly once", () => {
+    const registry = createSceneResourceRegistry();
+    const geometry = { dispose: vi.fn() };
+    const material = { dispose: vi.fn() };
+    registry.trackGeometry(geometry);
+    registry.trackGeometry(geometry);
+    registry.trackMaterial(material);
+    registry.trackMaterial(material);
+    expect(registry.geometries).toEqual([geometry]);
+    expect(registry.materials).toEqual([material]);
+  });
+
+  it("collects geometries materials and textures from the full scene tree", () => {
+    const geometry = { dispose: vi.fn() };
+    const material = { map: { image: {}, dispose: vi.fn() }, dispose: vi.fn() };
+    const object = { geometry, material };
+    const root = {
+      traverse(visitor) {
+        visitor(object);
+      },
+    };
+    const collected = collectSceneResources(root);
+    expect(collected.geometries).toEqual([geometry]);
+    expect(collected.materials).toEqual([material]);
+    expect(collected.textures).toEqual([material.map]);
   });
 
   it("disposes every retained GPU resource exactly once", () => {

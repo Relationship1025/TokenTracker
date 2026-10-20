@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import {
+  collectSceneResources,
   createOrbitController,
   createRainGeometry,
   disposeScene3D,
@@ -41,7 +42,8 @@ function makeMaterial(color, options = {}) {
 }
 
 function addBox(parent, w, h, d, material, x, y, z, options = {}) {
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+  const geometry = new THREE.BoxGeometry(w, h, d);
+  const mesh = new THREE.Mesh(geometry, material);
   mesh.position.set(x, y, z);
   mesh.castShadow = options.castShadow ?? true;
   mesh.receiveShadow = options.receiveShadow ?? true;
@@ -975,12 +977,13 @@ export function createRainyStoreScene({
       intersectionObserver?.disconnect();
       document.removeEventListener("visibilitychange", onVisibility);
       removePointerOrbit();
+      const sceneResources = collectSceneResources(scene);
       night.clear();
       scene.clear();
       disposeScene3D({
-        geometries: resources.geometries,
-        materials: resources.materials,
-        textures: resources.textures,
+        geometries: [...resources.geometries, ...sceneResources.geometries],
+        materials: [...resources.materials, ...sceneResources.materials],
+        textures: [...resources.textures, ...sceneResources.textures],
         renderer,
       });
       if (renderer.domElement.parentElement === mount) {

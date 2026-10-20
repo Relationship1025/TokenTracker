@@ -46,6 +46,74 @@ export function shouldAnimate({
   return !hidden && inView && !reducedMotion && !screenshotMode;
 }
 
+export function collectSceneResources(root) {
+  const geometries = [];
+  const materials = [];
+  const textures = [];
+  const geometrySet = new Set();
+  const materialSet = new Set();
+  const textureSet = new Set();
+
+  const addGeometry = (resource) => {
+    if (!resource || geometrySet.has(resource)) return;
+    geometrySet.add(resource);
+    geometries.push(resource);
+  };
+  const addMaterial = (resource) => {
+    if (!resource || materialSet.has(resource)) return;
+    materialSet.add(resource);
+    materials.push(resource);
+    for (const value of Object.values(resource)) {
+      if (value?.isTexture || (value?.image != null && typeof value.dispose === "function")) {
+        if (textureSet.has(value)) continue;
+        textureSet.add(value);
+        textures.push(value);
+      }
+    }
+  };
+
+  root?.traverse?.((object) => {
+    addGeometry(object.geometry);
+    if (Array.isArray(object.material)) object.material.forEach(addMaterial);
+    else addMaterial(object.material);
+  });
+
+  return { geometries, materials, textures };
+}
+
+export function createSceneResourceRegistry() {
+  const geometries = [];
+  const materials = [];
+  const textures = [];
+  const geometrySet = new Set();
+  const materialSet = new Set();
+  const textureSet = new Set();
+
+  return {
+    geometries,
+    materials,
+    textures,
+    trackGeometry(resource) {
+      if (!resource || geometrySet.has(resource)) return resource;
+      geometrySet.add(resource);
+      geometries.push(resource);
+      return resource;
+    },
+    trackMaterial(resource) {
+      if (!resource || materialSet.has(resource)) return resource;
+      materialSet.add(resource);
+      materials.push(resource);
+      return resource;
+    },
+    trackTexture(resource) {
+      if (!resource || textureSet.has(resource)) return resource;
+      textureSet.add(resource);
+      textures.push(resource);
+      return resource;
+    },
+  };
+}
+
 export function disposeScene3D({ geometries = [], materials = [], textures = [], renderer }) {
   const disposed = new Set();
   const disposeOnce = (resource) => {
