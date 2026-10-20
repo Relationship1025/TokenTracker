@@ -5,11 +5,13 @@ import {
   classifyKonbiniMaterial,
   createToonGradient,
   isAnimatedKonbiniNode,
+  createHeightField,
   readMaterialTone,
   shouldOutline,
+  toneOverrideFor,
 } from "./rainy-konbini-loader.js";
 import { createSceneResourceRegistry } from "./rainy-store-runtime.js";
-import { doorOpenAmount, signFlicker, signalColorAt } from "./rainy-store-scene.js";
+import { createEdgeDripSpots, doorOpenAmount, signFlicker, signalColorAt } from "./rainy-store-scene.js";
 
 function toonSource(name, color, emit = 0) {
   const material = new THREE.MeshStandardMaterial({ name });
@@ -85,5 +87,30 @@ describe("konbini animation timing", () => {
   it("flickers the sign briefly", () => {
     expect(signFlicker(1)).toBe(1);
     expect(signFlicker(6.04)).toBeLessThan(1);
+  });
+});
+
+describe("konbini weather helpers", () => {
+  it("rasterises roof heights so rain stops on top of buildings", () => {
+    const box = new THREE.Box3(new THREE.Vector3(-1, 0, -1), new THREE.Vector3(1, 2.9, 1));
+    const field = createHeightField([box], { size: 16, extent: 4 });
+    expect(field.heightAt(0, 0)).toBeCloseTo(2.9);
+    expect(field.heightAt(3, 3)).toBe(0);
+    expect(field.heightAt(9, 0)).toBe(-0.7);
+  });
+
+  it("uses neutral wall and charcoal roof tones", () => {
+    const roof = toneOverrideFor("Roof", "White");
+    expect(Math.max(...roof)).toBeLessThan(0.25);
+    const wall = toneOverrideFor("RightWall", "Wall");
+    expect(wall[0]).toBeGreaterThan(wall[2]);
+    expect(toneOverrideFor("Shelf3", "Wood")).toBeNull();
+  });
+
+  it("spawns drips along awning and roof edges", () => {
+    const spots = createEdgeDripSpots();
+    expect(spots.length).toBeGreaterThan(20);
+    expect(spots.some((s) => s.x < -2.7)).toBe(true);
+    expect(spots.some((s) => s.x > 2.7)).toBe(true);
   });
 });

@@ -7,7 +7,9 @@ import {
   shouldAnimate,
   syncOrbitCamera,
 } from "./rainy-store-runtime.js";
-import { buildKonbiniDiorama, loadKonbiniModel } from "./rainy-konbini-loader.js";
+import { Reflector } from "three/examples/jsm/objects/Reflector.js";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { HEIGHT_FIELD, buildKonbiniDiorama, loadKonbiniModel } from "./rainy-konbini-loader.js";
 
 /*
  * Rainy-night konbini diorama. The store geometry comes from the Blender
@@ -18,8 +20,8 @@ import { buildKonbiniDiorama, loadKonbiniModel } from "./rainy-konbini-loader.js
 
 const COLORS = {
   night: 0x0a1330,
-  hemiSky: 0x5d74c4,
-  hemiGround: 0x161a30,
+  hemiSky: 0x7f8fae,
+  hemiGround: 0x1c1f26,
   moon: 0x8eaaff,
   warm: 0xffc78a,
   rain: 0xa9c4ff,
@@ -80,13 +82,19 @@ function createRain(registry, count) {
   const material = registry.trackMaterial(new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
-    uniforms: { uTime: { value: 0 }, uColor: { value: new THREE.Color(COLORS.rain) } },
+    uniforms: {
+      uTime: { value: 0 },
+      uColor: { value: new THREE.Color(COLORS.rain) },
+      uHeight: { value: null },
+      uExtent: { value: HEIGHT_FIELD.extent },
+    },
     vertexShader: `uniform float uTime; attribute float aTail; attribute float aSeed; varying float vA;
+      uniform sampler2D uHeight; uniform float uExtent;
       float floorAt(vec2 p){
-        if (p.x > ${ROOF.minX.toFixed(2)} && p.x < ${ROOF.maxX.toFixed(2)} && p.y > ${ROOF.minZ.toFixed(2)} && p.y < ${ROOF.maxZ.toFixed(2)}) return ${ROOF.top.toFixed(2)};
-        if (p.x > ${AWNING.minX.toFixed(2)} && p.x < ${AWNING.maxX.toFixed(2)} && p.y > ${AWNING.minZ.toFixed(2)} && p.y < ${AWNING.maxZ.toFixed(2)}) return ${AWNING.top.toFixed(2)};
+        vec2 uv = (p + uExtent) / (2.0 * uExtent);
+        if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) return -0.7;
         if (abs(p.x) > 6.2 || abs(p.y) > 6.2) return -0.7;
-        return 0.04;
+        return max(0.04, texture2D(uHeight, uv).r + 0.02);
       }
       void main(){
         float top = 9.0; float ground = floorAt(position.xz);
@@ -107,38 +115,92 @@ function createRain(registry, count) {
   return lines;
 }
 
-function createPuddleMaterial(registry) {
-  return registry.trackMaterial(new THREE.ShaderMaterial({
-    transparent: true,
-    depthWrite: false,
-    uniforms: {
-      uTime: { value: 0 },
-      uDeep: { value: new THREE.Color(0x2b3d78) },
-      uWarm: { value: new THREE.Color(0xffb46a) },
-      uRing: { value: new THREE.Color(0xbcd4ff) },
-    },
-    vertexShader: `varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
-    fragmentShader: `uniform float uTime; uniform vec3 uDeep; uniform vec3 uWarm; uniform vec3 uRing; varying vec3 vW;
-      float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
-      void main(){
-        vec2 p = vW.xz;
-        float ring = 0.0;
-        for (int i = 0; i < 3; i++){
-          vec2 cell = floor(p * 1.6 + float(i) * 0.37);
-          float h = hash(cell + float(i) * 7.1);
-          float t = fract(uTime * (0.55 + 0.3 * h) + h);
-          vec2 c = (cell + 0.25 + 0.5 * vec2(h, hash(cell.yx + 3.0)) - float(i) * 0.37) / 1.6;
-          float d = length(p - c);
-          float r = t * 0.22;
-          ring += smoothstep(0.012, 0.0, abs(d - r)) * (1.0 - t) * step(d, 0.24);
-        }
-        float warm = smoothstep(4.5, 0.5, length(p - vec2(0.0, 1.0)));
-        vec3 col = mix(uDeep, uWarm, warm * 0.6);
-        col += vec3(0.05, 0.07, 0.12) * (0.5 + 0.5 * sin(p.x * 3.0 + p.y * 2.0));
-        col = mix(col, uRing, clamp(ring, 0.0, 1.0) * 0.8);
-        gl_FragColor = vec4(col, 0.7);
-      }`,
-  }));
+const PUDDLE_SHADER = {
+  name: "KonbiniPuddleReflector",
+  uniforms: {
+    color: { value: null },
+    tDiffuse: { value: null },
+    textureMatrix: { value: null },
+    uTime: { value: 0 },
+    uDeep: { value: new THREE.Color(0x18233f) },
+  },
+  vertexShader: `uniform mat4 textureMatrix; varying vec4 vUv; varying vec3 vW;
+    void main(){
+      vUv = textureMatrix * vec4(position, 1.0);
+      vec4 w = modelMatrix * vec4(position, 1.0);
+      vW = w.xyz;
+      gl_Position = projectionMatrix * viewMatrix * w;
+    }`,
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float uTime; uniform vec3 uDeep; uniform vec3 color;
+    varying vec4 vUv; varying vec3 vW;
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
+    void main(){
+      vec2 p = vW.xz;
+      vec2 offset = vec2(0.0);
+      float ring = 0.0;
+      for (int i = 0; i < 3; i++){
+        vec2 cell = floor(p * 1.6 + float(i) * 0.37);
+        float h = hash(cell + float(i) * 7.1);
+        float t = fract(uTime * (0.55 + 0.3 * h) + h);
+        vec2 c = (cell + 0.25 + 0.5 * vec2(h, hash(cell.yx + 3.0)) - float(i) * 0.37) / 1.6;
+        vec2 dv = p - c;
+        float d = length(dv);
+        float r = t * 0.22;
+        float w = smoothstep(0.03, 0.0, abs(d - r)) * (1.0 - t) * step(d, 0.24);
+        ring += w;
+        offset += (d > 1e-4 ? dv / d : vec2(0.0)) * w * 0.012;
+      }
+      vec4 uv = vUv;
+      uv.xy += offset * uv.w;
+      vec3 refl = texture2DProj(tDiffuse, uv).rgb;
+      vec3 col = mix(uDeep, refl * color, 0.78);
+      col += vec3(0.55, 0.65, 0.85) * clamp(ring, 0.0, 1.0) * 0.18;
+      gl_FragColor = vec4(col, 1.0);
+      #include <colorspace_fragment>
+    }`,
+};
+
+/**
+ * One planar reflector shared by every puddle (a single extra low-res render
+ * per frame; several reflectors would recursively render each other). Puddle
+ * meshes are merged into one geometry in the reflector's local XY plane; the
+ * raised sidewalk puddle keeps its small height offset.
+ */
+function createPuddleReflector(puddles, renderer, mount) {
+  if (!puddles.length) return null;
+  const tops = puddles.map((mesh) => {
+    mesh.updateMatrixWorld(true);
+    return new THREE.Box3().setFromObject(mesh).max.y;
+  });
+  const level = Math.min(...tops) + 0.004;
+  const toPlane = new THREE.Matrix4().makeRotationX(Math.PI / 2);
+  const geoms = puddles.map((mesh, index) => {
+    const g = mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone();
+    for (const key of Object.keys(g.attributes)) if (key !== "position") g.deleteAttribute(key);
+    g.applyMatrix4(mesh.matrixWorld);
+    const pos = g.attributes.position;
+    const lift = tops[index] + 0.004 - level;
+    for (let i = 0; i < pos.count; i += 1) pos.setY(i, lift);
+    g.applyMatrix4(toPlane);
+    return g;
+  });
+  const geometry = mergeGeometries(geoms, false);
+  geoms.forEach((g) => g.dispose());
+  const scale = 0.5 * renderer.getPixelRatio();
+  const reflector = new Reflector(geometry, {
+    shader: PUDDLE_SHADER,
+    color: 0xb8c4dc,
+    clipBias: 0.003,
+    multisample: 0,
+    textureWidth: Math.max(256, Math.round((mount.clientWidth || 800) * scale)),
+    textureHeight: Math.max(256, Math.round((mount.clientHeight || 450) * scale)),
+  });
+  reflector.rotation.x = -Math.PI / 2;
+  reflector.position.y = level;
+  reflector.renderOrder = 1;
+  reflector.name = "PuddleReflector";
+  puddles.forEach((mesh) => { mesh.visible = false; });
+  return reflector;
 }
 
 function createDrops(registry, count, { color, radius, stretch }) {
@@ -153,15 +215,27 @@ function createDrops(registry, count, { color, radius, stretch }) {
   return mesh;
 }
 
+export function createEdgeDripSpots() {
+  const spots = [];
+  const along = (n, fn) => { for (let i = 0; i < n; i += 1) spots.push(fn((i + 0.5) / n)); };
+  along(14, (t) => ({ x: AWNING.minX + 0.2 + t * (AWNING.maxX - AWNING.minX - 0.4), z: AWNING.maxZ + 0.02, top: AWNING.top - 0.27 }));
+  along(3, (t) => ({ x: AWNING.minX - 0.02, z: AWNING.minZ + t * (AWNING.maxZ - AWNING.minZ), top: AWNING.top - 0.27 }));
+  along(3, (t) => ({ x: AWNING.maxX + 0.02, z: AWNING.minZ + t * (AWNING.maxZ - AWNING.minZ), top: AWNING.top - 0.27 }));
+  along(7, (t) => ({ x: ROOF.minX - 0.04, z: ROOF.minZ + 0.2 + t * (ROOF.maxZ - ROOF.minZ - 0.4), top: 2.7 }));
+  along(7, (t) => ({ x: ROOF.maxX + 0.04, z: ROOF.minZ + 0.2 + t * (ROOF.maxZ - ROOF.minZ - 0.4), top: 2.7 }));
+  return spots;
+}
+
 function createEaveDrips(registry) {
-  const count = 14;
-  const mesh = createDrops(registry, count, { color: 0xcfe0ff, radius: 0.03, stretch: 2.2 });
-  const drips = Array.from({ length: count }, (_, i) => ({
-    x: -2.6 + (5.2 * (i + 0.5)) / count + (Math.random() - 0.5) * 0.15,
+  const spots = createEdgeDripSpots();
+  const mesh = createDrops(registry, spots.length, { color: 0xcfe0ff, radius: 0.03, stretch: 2.2 });
+  const drips = spots.map((spot) => ({
+    ...spot,
+    bottom: 0.08,
     phase: Math.random(),
     period: 1.1 + Math.random() * 1.3,
   }));
-  return { mesh, drips, top: 2.06, bottom: 0.14, z: 1.66 };
+  return { mesh, drips };
 }
 
 function createGlassDrops(registry) {
@@ -183,15 +257,15 @@ function stepDrips(state, time, dummy) {
   state.drips.forEach((drip, index) => {
     const t = ((time / drip.period + drip.phase) % 1);
     const hang = 0.35;
-    let y = state.top;
+    let y = drip.top;
     let s = 1;
     if (t < hang) {
       s = 0.4 + (t / hang) * 0.6;
     } else {
       const f = (t - hang) / (1 - hang);
-      y = state.top - (state.top - state.bottom) * f * f;
+      y = drip.top - (drip.top - drip.bottom) * f * f;
     }
-    dummy.position.set(drip.x, y, state.z);
+    dummy.position.set(drip.x, y, drip.z);
     dummy.scale.setScalar(s);
     dummy.updateMatrix();
     state.mesh.setMatrixAt(index, dummy.matrix);
@@ -277,7 +351,9 @@ export function createRainyStoreScene({
   const rain = createRain(registry, lowPower ? 900 : 1800);
   const drips = createEaveDrips(registry);
   const glassDrops = createGlassDrops(registry);
-  const puddleMaterial = createPuddleMaterial(registry);
+  let reflectors = [];
+  let outlineMaterial = null;
+  let heightTexture = null;
   scene.add(rain, drips.mesh, glassDrops.mesh);
 
   let parts = null;
@@ -286,7 +362,7 @@ export function createRainyStoreScene({
 
   const applyTime = (time) => {
     rain.material.uniforms.uTime.value = time;
-    puddleMaterial.uniforms.uTime.value = time;
+    reflectors.forEach((r) => { r.material.uniforms.uTime.value = time; });
     stepDrips(drips, time, dummy);
     stepGlassDrops(glassDrops, time, dummy);
     if (!parts) return;
@@ -314,7 +390,18 @@ export function createRainyStoreScene({
       }
       const built = buildKonbiniDiorama(gltf.scene, registry);
       parts = built.parts;
-      parts.puddles.forEach((mesh) => { mesh.material = puddleMaterial; mesh.renderOrder = 1; });
+      outlineMaterial = built.outlineMaterial;
+      const hf = built.heightField;
+      heightTexture = registry.trackTexture(new THREE.DataTexture(hf.data, hf.size, hf.size, THREE.RedFormat, THREE.FloatType));
+      heightTexture.needsUpdate = true;
+      rain.material.uniforms.uHeight.value = heightTexture;
+      drips.drips.forEach((drip) => { drip.bottom = Math.max(0.06, hf.heightAt(drip.x, drip.z) + 0.02); });
+      const reflector = createPuddleReflector(parts.puddles, renderer, mount);
+      if (reflector) {
+        reflectors = [reflector];
+        scene.add(reflector);
+      }
+      resize();
       Object.values(parts.signals).flat().forEach((mesh) => {
         mesh.material.emissive = mesh.material.color.clone();
         mesh.material.color.multiplyScalar(0.03);
@@ -336,6 +423,7 @@ export function createRainyStoreScene({
     camera.aspect = width / height;
     camera.fov = width < 500 ? 46 : 36;
     camera.updateProjectionMatrix();
+    outlineMaterial?.uniforms.uResolution.value.set(width, height);
     render();
   };
   resize();
@@ -408,6 +496,7 @@ export function createRainyStoreScene({
       intersectionObserver?.disconnect();
       document.removeEventListener("visibilitychange", onVisibility);
       removePointerOrbit();
+      reflectors.forEach((r) => r.dispose());
       const sceneResources = collectSceneResources(scene);
       scene.clear();
       disposeScene3D({

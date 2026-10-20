@@ -31,7 +31,7 @@ export function isAnimatedKonbiniNode(name = "") {
 }
 
 export function shouldOutline(role, size) {
-  return !NO_OUTLINE.has(role) && size >= 0.06;
+  return !NO_OUTLINE.has(role) && size >= 0.015;
 }
 
 /** Three-step cel gradient (shadow / mid / lit), nearest-filtered. */
@@ -54,8 +54,10 @@ export function readMaterialTone(material) {
   return { color, emit };
 }
 
-function makeSurfaceMaterial(source, role, gradientMap, registry) {
-  const { color, emit } = readMaterialTone(source);
+function makeSurfaceMaterial(source, role, gradientMap, registry, override = null) {
+  const tone = readMaterialTone(source);
+  const color = override ?? tone.color;
+  const { emit } = tone;
   const base = new THREE.Color().setRGB(color[0], color[1], color[2], THREE.LinearSRGBColorSpace);
   let material;
   if (role === "glass") {
@@ -84,20 +86,82 @@ function stripToPositionNormal(geometry) {
   return g;
 }
 
-export function createOutlineMaterial(thickness = 0.018) {
+export function createOutlineMaterial(widthPx = 2.2) {
   return new THREE.ShaderMaterial({
-    uniforms: { uThickness: { value: thickness }, uColor: { value: new THREE.Color(0x0a0c18) } },
-    vertexShader: `uniform float uThickness;
+    uniforms: {
+      uWidth: { value: widthPx },
+      uResolution: { value: new THREE.Vector2(1600, 900) },
+      uColor: { value: new THREE.Color(0x0a0c18) },
+    },
+    vertexShader: `uniform float uWidth; uniform vec2 uResolution;
       void main(){
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
         vec3 n = normalize(normalMatrix * normal);
-        float scale = uThickness * clamp(-mv.z * 0.08, 0.6, 2.2);
-        mv.xyz += n * scale;
-        gl_Position = projectionMatrix * mv;
+        vec4 clip = projectionMatrix * mv;
+        vec4 clipN = projectionMatrix * vec4(mv.xyz + n * 0.05, 1.0);
+        vec2 d = clipN.xy / clipN.w - clip.xy / clip.w;
+        float len = length(d);
+        if (len > 1e-6) {
+          clip.xy += (d / len) * (uWidth * 2.0 / uResolution) * clip.w;
+        }
+        // nudge hull behind the surface so it never covers the front face
+        clip.z += 0.0004 * clip.w;
+        gl_Position = clip;
       }`,
     fragmentShader: `uniform vec3 uColor; void main(){ gl_FragColor = vec4(uColor, 1.0); }`,
     side: THREE.BackSide,
   });
+}
+
+/** Neutral palette overrides so the night light reads as cool, not lavender/pink. */
+const MATERIAL_OVERRIDES = {
+  Wall: [0.78, 0.72, 0.6],
+  Neighbor: [0.5, 0.5, 0.48],
+  BackBld: [0.36, 0.37, 0.38],
+};
+const NODE_OVERRIDES = {
+  Roof: [0.16, 0.17, 0.19],
+  NeighborWall: [0.42, 0.42, 0.4],
+  BackBuilding: [0.3, 0.31, 0.32],
+};
+
+export function toneOverrideFor(nodeName = "", materialName = "") {
+  const node = String(nodeName).replace(/\d+$/, "");
+  return NODE_OVERRIDES[node] ?? MATERIAL_OVERRIDES[materialName] ?? null;
+}
+
+export const HEIGHT_FIELD = { size: 96, extent: 6.4 };
+
+/**
+ * Rasterises the top of every sizeable roof-like mesh into an XZ height map so
+ * rain can stop on roofs, awnings, signs and neighbouring buildings.
+ */
+export function createHeightField(boxes, { size = HEIGHT_FIELD.size, extent = HEIGHT_FIELD.extent } = {}) {
+  const data = new Float32Array(size * size);
+  const cell = (2 * extent) / size;
+  for (const box of boxes) {
+    const x0 = Math.max(0, Math.floor((box.min.x + extent) / cell));
+    const x1 = Math.min(size - 1, Math.floor((box.max.x + extent) / cell));
+    const z0 = Math.max(0, Math.floor((box.min.z + extent) / cell));
+    const z1 = Math.min(size - 1, Math.floor((box.max.z + extent) / cell));
+    for (let z = z0; z <= z1; z += 1) {
+      for (let x = x0; x <= x1; x += 1) {
+        const k = z * size + x;
+        if (box.max.y > data[k]) data[k] = box.max.y;
+      }
+    }
+  }
+  return {
+    data,
+    size,
+    extent,
+    heightAt(x, z) {
+      const ix = Math.floor((x + extent) / cell);
+      const iz = Math.floor((z + extent) / cell);
+      if (ix < 0 || iz < 0 || ix >= size || iz >= size) return -0.7;
+      return data[iz * size + ix];
+    },
+  };
 }
 
 /**
@@ -117,9 +181,9 @@ export function buildKonbiniDiorama(gltfScene, registry) {
   const size = new THREE.Vector3();
 
   gltfScene.updateMatrixWorld(true);
-  const surface = (src, role) => {
-    const key = `${src?.name}|${role}`;
-    if (!materialCache.has(key)) materialCache.set(key, makeSurfaceMaterial(src, role, gradientMap, registry));
+  const surface = (src, role, override = null) => {
+    const key = `${src?.name}|${role}|${override ?? ""}`;
+    if (!materialCache.has(key)) materialCache.set(key, makeSurfaceMaterial(src, role, gradientMap, registry, override));
     return materialCache.get(key);
   };
 
@@ -131,6 +195,7 @@ export function buildKonbiniDiorama(gltfScene, registry) {
   };
 
   const meshes = [];
+  const roofBoxes = [];
   gltfScene.traverse((node) => { if (node.isMesh) meshes.push(node); });
 
   for (const mesh of meshes) {
@@ -140,17 +205,21 @@ export function buildKonbiniDiorama(gltfScene, registry) {
     mesh.geometry.boundingBox.getSize(size).multiply(mesh.getWorldScale(new THREE.Vector3()));
     const extent = Math.max(size.x, size.y, size.z);
     const owner = insideAnimated(mesh);
+    const worldBox = new THREE.Box3().setFromObject(mesh);
+    const foot = (worldBox.max.x - worldBox.min.x) * (worldBox.max.z - worldBox.min.z);
+    if (role !== "glass" && role !== "puddle" && !/^(Wire|WirePole|UtilPole|LampPole|TLPole|SignPost|TLArm|LampArm|CrossArm)/.test(mesh.name) && foot > 0.2 && worldBox.max.y > 0.3) roofBoxes.push(worldBox);
+    const override = toneOverrideFor(mesh.name, src?.name);
 
     if (role === "static" && !owner) {
       const g = stripToPositionNormal(mesh.geometry).applyMatrix4(mesh.matrixWorld);
-      const bucketKey = src?.name ?? "default";
-      if (!staticBuckets.has(bucketKey)) staticBuckets.set(bucketKey, { src, geoms: [] });
+      const bucketKey = `${src?.name ?? "default"}|${override ?? ""}`;
+      if (!staticBuckets.has(bucketKey)) staticBuckets.set(bucketKey, { src, override, geoms: [] });
       staticBuckets.get(bucketKey).geoms.push(g);
       if (shouldOutline(role, extent)) outlineGeoms.push(g);
       continue;
     }
 
-    const material = surface(src, role);
+    const material = surface(src, role, override);
     const live = new THREE.Mesh(registry.trackGeometry(mesh.geometry), material);
     live.name = mesh.name;
     mesh.matrixWorld.decompose(live.position, live.quaternion, live.scale);
@@ -178,9 +247,9 @@ export function buildKonbiniDiorama(gltfScene, registry) {
     if (role.startsWith("signal-")) parts.signals[role.slice(7)].push(live);
   }
 
-  for (const { src, geoms } of staticBuckets.values()) {
+  for (const { src, override, geoms } of staticBuckets.values()) {
     const merged = registry.trackGeometry(mergeGeometries(geoms, false));
-    const mesh = new THREE.Mesh(merged, surface(src, "static"));
+    const mesh = new THREE.Mesh(merged, surface(src, "static", override));
     mesh.name = `static:${src?.name}`;
     root.add(mesh);
   }
@@ -205,7 +274,7 @@ export function buildKonbiniDiorama(gltfScene, registry) {
     });
   });
 
-  return { root, parts, materialsByName: materialCache };
+  return { root, parts, materialsByName: materialCache, outlineMaterial, heightField: createHeightField(roofBoxes) };
 }
 
 export function loadKonbiniModel({ url = KONBINI_MODEL_URL, dracoPath = KONBINI_DRACO_PATH } = {}) {
