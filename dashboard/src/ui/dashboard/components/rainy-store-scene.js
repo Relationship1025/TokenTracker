@@ -63,14 +63,34 @@ function addGlowLine(parent, points, color, opacity = 0.85) {
   return line;
 }
 
-function makeSignTexture(title, subtitle, background, foreground) {
+function readScenePalette() {
+  const fallback = {
+    signBackground: "hsl(183 38% 16%)",
+    signForeground: "hsl(92 45% 92%)",
+    mainSignBackground: "hsl(183 39% 16%)",
+    mainSignForeground: "hsl(66 40% 94%)",
+    signBorder: "hsla(168 70% 73% / 0.5)",
+  };
+  if (typeof document === "undefined") return fallback;
+  const style = getComputedStyle(document.documentElement);
+  const read = (name, fallbackValue) => style.getPropertyValue(name).trim() || fallbackValue;
+  return {
+    signBackground: read("--rainy-sign-bg", fallback.signBackground),
+    signForeground: read("--rainy-sign-fg", fallback.signForeground),
+    mainSignBackground: read("--rainy-main-sign-bg", fallback.mainSignBackground),
+    mainSignForeground: read("--rainy-main-sign-fg", fallback.mainSignForeground),
+    signBorder: read("--rainy-sign-border", fallback.signBorder),
+  };
+}
+
+function makeSignTexture(title, subtitle, background, foreground, border) {
   const canvas = document.createElement("canvas");
   canvas.width = 1024;
   canvas.height = 200;
   const context = canvas.getContext("2d");
   context.fillStyle = background;
   context.fillRect(0, 0, canvas.width, canvas.height);
-  context.strokeStyle = "rgba(134, 239, 218, 0.5)";
+  context.strokeStyle = border;
   context.lineWidth = 3;
   context.strokeRect(17, 17, canvas.width - 34, canvas.height - 34);
   context.fillStyle = foreground;
@@ -336,6 +356,7 @@ function addStore(parent, resources) {
   store.position.set(0, 0.25, -1.15);
   store.rotation.y = -0.035;
   parent.add(store);
+  const palette = readScenePalette();
 
   // A cutaway roof preserves the miniature architecture while keeping the lit
   // shelves, counter and refrigeration visible from the primary camera angle.
@@ -388,8 +409,9 @@ function addStore(parent, resources) {
   const signTexture = makeSignTexture(
     "TOKEN MART",
     "OPEN ALL NIGHT  ·  LOCAL TOKENS INSIDE",
-    "#18343a",
-    "#e3f6dd",
+    palette.signBackground,
+    palette.signForeground,
+    palette.signBorder,
   );
   resources.textures.push(signTexture);
   const signMaterial = new THREE.MeshBasicMaterial({ map: signTexture });
@@ -403,8 +425,9 @@ function addStore(parent, resources) {
   const mainTexture = makeSignTexture(
     "TOKEN MART",
     "AUTONOMOUS NEIGHBORHOOD STORE",
-    "#17343a",
-    "#f1f4d4",
+    palette.mainSignBackground,
+    palette.mainSignForeground,
+    palette.signBorder,
   );
   resources.textures.push(mainTexture);
   const mainSignMaterial = new THREE.MeshBasicMaterial({ map: mainTexture });

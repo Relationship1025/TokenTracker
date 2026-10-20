@@ -37,6 +37,25 @@ const STEP = 0.06;
 const D_LEFT_BASE = 0.11;
 const D_RIGHT_BASE = 0.05;
 
+function getRainySceneContent({
+  isNeonStore,
+  liveScene,
+  screenshotMode,
+  reducedMotion,
+}) {
+  if (!isNeonStore) return null;
+  if (liveScene) {
+    return (
+      <RainyStoreScene
+        active
+        screenshotMode={screenshotMode}
+        reducedMotion={reducedMotion}
+      />
+    );
+  }
+  return <RainyStoreStatic priority />;
+}
+
 export function DashboardView(props) {
   const { isNeonStore = false } = useTheme();
   const [isDesktop, setIsDesktop] = useState(() => {
@@ -413,11 +432,12 @@ export function DashboardView(props) {
     handleRightDragEnd,
   );
   const liveScene = isNeonStore && isDesktop && !screenshotMode && !reducedMotion;
-  const sceneContent = isNeonStore
-    ? liveScene
-      ? <RainyStoreScene active screenshotMode={screenshotMode} reducedMotion={reducedMotion} />
-      : <RainyStoreStatic priority />
-    : null;
+  const sceneContent = getRainySceneContent({
+    isNeonStore,
+    liveScene,
+    screenshotMode,
+    reducedMotion,
+  });
 
   return (
     <>
@@ -431,25 +451,24 @@ export function DashboardView(props) {
         {initialDashboardLoading && (
           <DashboardSkeleton />
         )}
-        {!initialDashboardLoading && (
-          isNeonStore ? (
-            <RainyDashboardLayout
-              scene={sceneContent}
-              leftColumn={leftColumnContent}
-              rightColumn={rightColumnContent}
-              narrow={!isDesktop}
-            />
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-              <div className="lg:col-span-4 flex flex-col gap-4 min-w-0 order-2 lg:order-1">
-                {leftColumnContent}
-              </div>
-
-              <div className="lg:col-span-8 flex flex-col gap-4 min-w-0 order-1 lg:order-2">
-                {rightColumnContent}
-              </div>
+        {!initialDashboardLoading && isNeonStore && (
+          <RainyDashboardLayout
+            scene={sceneContent}
+            leftColumn={leftColumnContent}
+            rightColumn={rightColumnContent}
+            narrow={!isDesktop}
+          />
+        )}
+        {!initialDashboardLoading && !isNeonStore && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <div className="lg:col-span-4 flex flex-col gap-4 min-w-0 order-2 lg:order-1">
+              {leftColumnContent}
             </div>
-          )
+
+            <div className="lg:col-span-8 flex flex-col gap-4 min-w-0 order-1 lg:order-2">
+              {rightColumnContent}
+            </div>
+          </div>
         )}
       </Shell>
       <CostAnalysisModal isOpen={costModalOpen} onClose={closeCostModal} fleetData={fleetData} />

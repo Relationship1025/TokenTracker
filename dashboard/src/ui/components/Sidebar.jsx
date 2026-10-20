@@ -345,9 +345,10 @@ function SidebarBody({
             to="/dashboard"
             onClick={onItemClick}
             aria-label={copy("shared.app_name")}
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-300 text-[11px] font-black tracking-tight text-slate-950 no-underline shadow-[0_0_24px_rgba(103,232,212,0.18)]"
+            className="tt-rainy-rail-brand-mark flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-300 text-[11px] font-black tracking-tight text-slate-950 no-underline"
           >
-            TT
+            <span className="sr-only">{copy("shared.app_name")}</span>
+            <span className="h-3.5 w-3.5 rounded-[3px] border-2 border-current" aria-hidden="true" />
           </Link>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-2 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -483,7 +484,7 @@ function Sidebar({ collapsed, onToggleCollapsed }) {
       className={cn(
         "hidden lg:flex flex-col shrink-0 h-full min-h-0 transition-[width] duration-200",
         isNeonStore
-          ? "w-[72px] border-r border-white/[0.07] bg-[#09151e]/95"
+          ? "tt-rainy-desktop-sidebar w-[72px]"
           : collapsed ? "w-[72px]" : "w-[220px]",
       )}
     >
@@ -609,11 +610,11 @@ function MobileTopBar({ open, onOpenDrawer, menuButtonRef }) {
       <Link
         to="/landing"
         className="flex items-center gap-2 no-underline hover:opacity-80 transition-opacity"
-        aria-label="Token Tracker"
+        aria-label={copy("shared.app_name")}
       >
         <img src="/app-icon.png" alt="" width={24} height={24} className="rounded-md" />
         <span className="text-sm font-semibold text-oai-black dark:text-oai-white">
-          Token Tracker
+          {copy("shared.app_name")}
         </span>
       </Link>
       <div className="w-10 shrink-0" aria-hidden />
@@ -664,7 +665,7 @@ export function AppLayout({ children }) {
         "fixed inset-0 flex flex-col text-oai-black dark:text-oai-white font-sans overflow-hidden",
         isNativeWindowsApp() && "tt-native-glass-shell",
         isNeonStore && "tt-rainy-app-shell",
-        nativeEmbed ? "bg-transparent" : isNeonStore ? "bg-[#06111a]" : "bg-oai-gray-100 dark:bg-oai-gray-950",
+        nativeEmbed ? "bg-transparent" : isNeonStore ? "tt-rainy-app-background" : "bg-oai-gray-100 dark:bg-oai-gray-950",
       )}
     >
       {nativeEmbed && (
@@ -687,7 +688,7 @@ export function AppLayout({ children }) {
           <div
             className={cn(
               "flex-1 min-h-0 flex flex-col bg-oai-white dark:bg-oai-gray-900 border border-oai-gray-200 dark:border-oai-gray-800 overflow-hidden",
-              isNeonStore && "border-white/[0.08] bg-[#08141d] dark:bg-[#08141d]",
+              isNeonStore && "tt-rainy-main-panel",
               nativeEmbed ? "tt-native-main-card" : "rounded-2xl",
               !nativeEmbed && "shadow-sm",
             )}

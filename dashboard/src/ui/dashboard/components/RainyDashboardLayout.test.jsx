@@ -7,8 +7,8 @@ it("keeps the store beside two card streams", () => {
   render(
     <RainyDashboardLayout
       scene={<section aria-label="Rainy store" />}
-      leftColumn={<section aria-label="Left cards">left</section>}
-      rightColumn={<section aria-label="Right cards">right</section>}
+      leftColumn={<section aria-label="Left cards" />}
+      rightColumn={<section aria-label="Right cards" />}
     />,
   );
   expect(screen.getByLabelText("Rainy store")).toBeInTheDocument();
@@ -23,12 +23,12 @@ it("renders the single narrow stream without live scene", () => {
     <RainyDashboardLayout
       narrow
       scene={<div data-testid="static-scene" />}
-      leftColumn={<div>left</div>}
-      rightColumn={<div>right</div>}
+      leftColumn={<div data-testid="left-card" />}
+      rightColumn={<div data-testid="right-card" />}
     />,
   );
   expect(screen.getByTestId("static-scene")).toBeInTheDocument();
-  expect(screen.getByText("left")).toBeInTheDocument();
-  expect(screen.getByText("right")).toBeInTheDocument();
+  expect(screen.getByTestId("left-card")).toBeInTheDocument();
+  expect(screen.getByTestId("right-card")).toBeInTheDocument();
   expect(document.querySelector("[data-rainy-layout='narrow']")).toBeInTheDocument();
 });

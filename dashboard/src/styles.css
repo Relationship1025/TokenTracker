@@ -169,6 +169,17 @@
   --community-trend: #67e8d4;
   --oai-info: #67e8d4;
   --oai-warning: #efbd7a;
+  --rainy-sign-bg: #18343a;
+  --rainy-sign-fg: #e3f6dd;
+  --rainy-main-sign-bg: #17343a;
+  --rainy-main-sign-fg: #f1f4d4;
+  --rainy-sign-border: rgba(134, 239, 218, 0.5);
+  --rainy-rail-active-border: rgba(103, 232, 212, 0.24);
+  --rainy-rail-brand-glow: rgba(103, 232, 212, 0.18);
+  --rainy-subtle-line: rgba(255, 255, 255, 0.08);
+  --rainy-rail-background: rgba(9, 21, 30, 0.95);
+  --rainy-app-background: #06111a;
+  --rainy-main-panel: #08141d;
 }
 
 :root.neon-store body {
@@ -213,6 +224,28 @@
 
 :root.neon-store .tt-rainy-shell-nav {
   background: rgba(5, 18, 27, 0.94);
+}
+
+:root.neon-store .tt-rainy-rail-active {
+  box-shadow: inset 0 0 0 1px var(--rainy-rail-active-border);
+}
+
+:root.neon-store .tt-rainy-rail-brand-mark {
+  box-shadow: 0 0 24px var(--rainy-rail-brand-glow);
+}
+
+:root.neon-store .tt-rainy-desktop-sidebar {
+  border-right: 1px solid var(--rainy-subtle-line);
+  background: var(--rainy-rail-background);
+}
+
+:root.neon-store .tt-rainy-app-background {
+  background: var(--rainy-app-background);
+}
+
+:root.neon-store .tt-rainy-main-panel {
+  border-color: var(--rainy-subtle-line);
+  background: var(--rainy-main-panel);
 }
 
 :root.neon-store .tt-rainy-dashboard {
