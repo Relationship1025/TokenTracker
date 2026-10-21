@@ -730,7 +730,7 @@ export function AppLayout({ children }) {
               tabIndex={-1}
               className={cn(
                 "flex-1 min-h-0",
-                isNeonStore ? "overflow-hidden" : "overflow-y-auto",
+                isNeonStore ? "flex flex-col overflow-hidden" : "overflow-y-auto",
               )}
             >
               {children}

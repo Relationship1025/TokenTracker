@@ -37,6 +37,32 @@ const STEP = 0.06;
 const D_LEFT_BASE = 0.11;
 const D_RIGHT_BASE = 0.05;
 
+
+function rainyDockTitle(id, copy) {
+  switch (id) {
+    case "statsPanel":
+      return copy("dashboard.identity.title");
+    case "installCopy":
+      return copy("landing.install.action.copy");
+    case "activityHeatmap":
+      return copy("heatmap.title");
+    case "deviceUsage":
+      return copy("dashboard.device_usage.title");
+    case "trendMonitor":
+      return copy("trend.monitor.label");
+    case "qualityPerDollar":
+      return copy("qpd.card.title");
+    case "sessionInsights":
+      return copy("sessions.card.title");
+    case "usageOverview":
+      return copy("nav.usage");
+    case "dataDetails":
+      return copy("dashboard.daily.title");
+    default:
+      return id;
+  }
+}
+
 function getRainySceneContent({
   isNeonStore,
   liveScene,
@@ -197,6 +223,10 @@ export function DashboardView(props) {
   const visibleRightOrder = (rightCardOrder || []).filter(
     (id) => rightVisible[id],
   );
+
+  const dockTitles = [...visibleLeftOrder, ...visibleRightOrder]
+    .map((id) => ({ id, label: rainyDockTitle(id, copy) }))
+    .filter((item) => Boolean(item.label));
 
   function renderLeftCard(id, delay) {
     switch (id) {
@@ -456,6 +486,7 @@ export function DashboardView(props) {
             scene={sceneContent}
             leftColumn={leftColumnContent}
             rightColumn={rightColumnContent}
+            dockTitles={dockTitles}
             narrow={!isDesktop}
           />
         )}

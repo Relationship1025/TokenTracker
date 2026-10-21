@@ -43,8 +43,8 @@ export function Shell({
   const mainPad = isNeonStore ? "flex-1 min-h-0 p-0" : "flex-1 px-6 py-6";
   if (bare) {
     return (
-      <div className={cn("flex flex-col flex-1 min-h-0", className)}>
-        <main className={mainPad}>{children}</main>
+      <div className={cn("flex flex-col flex-1 min-h-0 h-full", className)}>
+        <main className={cn(mainPad, isNeonStore && "flex flex-col")}>{children}</main>
         {!hideFooter && footer && (
           <footer className="border-t border-oai-gray-200 dark:border-oai-gray-800 px-6 py-4 mt-auto transition-colors duration-200">
             {footer}
