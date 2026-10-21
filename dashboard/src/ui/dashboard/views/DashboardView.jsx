@@ -68,6 +68,7 @@ function getRainySceneContent({
   liveScene,
   screenshotMode,
   reducedMotion,
+  daytime = false,
 }) {
   if (!isNeonStore) return null;
   if (liveScene) {
@@ -76,6 +77,7 @@ function getRainySceneContent({
         active
         screenshotMode={screenshotMode}
         reducedMotion={reducedMotion}
+        daytime={daytime}
       />
     );
   }
@@ -83,7 +85,8 @@ function getRainySceneContent({
 }
 
 export function DashboardView(props) {
-  const { isNeonStore = false } = useTheme();
+  const { isNeonStore = false, neonStorePeriod = "night" } = useTheme();
+  const rainyDaytime = neonStorePeriod === "day";
   const [isDesktop, setIsDesktop] = useState(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return true;
     return window.matchMedia("(min-width: 1024px)").matches;
@@ -467,6 +470,7 @@ export function DashboardView(props) {
     liveScene,
     screenshotMode,
     reducedMotion,
+    daytime: rainyDaytime,
   });
 
   return (

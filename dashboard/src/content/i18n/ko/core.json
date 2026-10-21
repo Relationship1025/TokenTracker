@@ -283,7 +283,7 @@
   "settings.appearance.theme.light": "라이트",
   "settings.appearance.theme.dark": "다크",
   "settings.appearance.theme.system": "시스템",
-  "settings.appearance.theme.neon_store": "비 오는 밤 네온 편의점",
+  "settings.appearance.theme.neon_store": "Token 편의점",
   "dashboard.rainy_store.description": "비 내리는 일본 거리 모퉁이의 따뜻한 불빛이 새어 나오는 애니메이션풍 편의점 미니어처입니다.",
   "dashboard.rainy_store.reset_view": "편의점 시점 초기화",
   "dashboard.rainy_store.canvas_description": "비 내리는 일본 편의점을 3인칭으로 보는 인터랙티브 미니어처입니다. 드래그로 회전하고 Shift를 누른 채 스크롤하여 확대/축소합니다.",
@@ -572,5 +572,8 @@
   "settings.appearance.token_grouping.label": "숫자 그룹화",
   "settings.appearance.token_grouping.hint": "정확한 숫자는 3자리 또는 중국어 4자리 그룹을 사용합니다. 간단히 표시한 값의 툴팁에도 적용됩니다.",
   "settings.appearance.token_grouping.thousand": "3자리",
-  "settings.appearance.token_grouping.wan": "4자리"
+  "settings.appearance.token_grouping.wan": "4자리",
+  "dashboard.rainy_store.period_label": "편의점 낮/밤",
+  "dashboard.rainy_store.period_day": "낮",
+  "dashboard.rainy_store.period_night": "밤"
 }

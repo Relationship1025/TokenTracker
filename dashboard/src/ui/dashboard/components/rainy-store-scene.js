@@ -9,11 +9,11 @@ import {
 } from "./rainy-store-runtime.js";
 import { Reflector } from "three/examples/jsm/objects/Reflector.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { HEIGHT_FIELD, buildKonbiniDiorama, loadKonbiniModel } from "./rainy-konbini-loader.js";
+import { DAY_KONBINI_MODEL_URL, HEIGHT_FIELD, buildKonbiniDiorama, loadKonbiniModel } from "./rainy-konbini-loader.js";
 
 /*
- * Rainy-night konbini diorama. The store geometry comes from the Blender
- * diorama (public/models/rainy-konbini.glb); everything that moves - rain,
+ * Konbini diorama. Night geometry: public/models/rainy-konbini.glb;
+ * day geometry: public/models/day-konbini.glb. Everything that moves - rain,
  * eave drips, glass drops, puddle ripples, sign flicker, auto door and the
  * traffic signal - is rebuilt here so it stays cheap and loops forever.
  */
@@ -25,6 +25,12 @@ const COLORS = {
   moon: 0x8eaaff,
   warm: 0xffc78a,
   rain: 0xa9c4ff,
+  // Sunny day (scheme B): clear sky, hard sun, rain off, neon nearly dark.
+  daySky: 0x87b7e8,
+  dayFog: 0xc5daf0,
+  dayHemiSky: 0xf2f7ff,
+  dayHemiGround: 0xb8c0c8,
+  sun: 0xfff4d6,
 };
 
 // Blender (x, y, z) -> three (x, z, -y)
@@ -290,6 +296,7 @@ export function createRainyStoreScene({
   mount,
   reducedMotion = false,
   screenshotMode = false,
+  daytime = false,
   onFailure,
   onReady,
 }) {
@@ -325,13 +332,14 @@ export function createRainyStoreScene({
   const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 120);
   // Frame the whole plinth/store; viewOffset below lifts it into the clear band above cards.
   const target = new THREE.Vector3(0, 1.05, 0.2);
-  const orbit = { yaw: 0.56, pitch: 0.42, distance: 22 };
+  const orbit = { yaw: 0.56, pitch: 0.42, distance: 24.5 };
   const defaultOrbit = { ...orbit };
   /** Bottom frosted card dock coverage; keep in sync with .tt-rainy-card-pane max-height. */
   const CARD_DOCK_FRACTION = 0.28;
   syncOrbitCamera(camera, target, orbit);
 
-  scene.add(new THREE.HemisphereLight(COLORS.hemiSky, COLORS.hemiGround, 1.05));
+  const hemi = new THREE.HemisphereLight(COLORS.hemiSky, COLORS.hemiGround, 1.05);
+  scene.add(hemi);
   const moon = new THREE.DirectionalLight(COLORS.moon, 1.0);
   moon.position.set(-8, 14, 9);
   scene.add(moon);
@@ -350,66 +358,145 @@ export function createRainyStoreScene({
   const vending = new THREE.PointLight(0xbfe1ff, 3, 4, 1.4);
   vending.position.set(3.5, 1.3, 1.1);
   scene.add(vending);
+  let isDaytime = Boolean(daytime);
+  let parts = null;
+  let nightRoot = null;
+  let dayRoot = null;
+  let nightParts = null;
+  let dayParts = null;
+  let outlineMaterials = [];
+  let reflectors = [];
+  const syncModelRoots = () => {
+    if (nightRoot) nightRoot.visible = !isDaytime;
+    if (dayRoot) dayRoot.visible = isDaytime;
+    parts = isDaytime ? dayParts : nightParts;
+    reflectors.forEach((r) => { r.visible = !isDaytime; });
+  };
+  const applyDaytime = (next) => {
+    isDaytime = Boolean(next);
+    syncModelRoots();
+    if (isDaytime) {
+      scene.background = new THREE.Color(COLORS.daySky);
+      scene.fog = new THREE.Fog(COLORS.dayFog, 42, 78);
+      hemi.color.setHex(COLORS.dayHemiSky);
+      hemi.groundColor.setHex(COLORS.dayHemiGround);
+      hemi.intensity = 1.55;
+      moon.color.setHex(COLORS.sun);
+      moon.intensity = 2.65;
+      moon.position.set(12, 22, 8);
+      interior.forEach((light) => {
+        light.intensity = light.userData.base * 0.22;
+      });
+      lamp.intensity = 1.1;
+      vending.intensity = 0.55;
+      if (rain) rain.visible = false;
+      if (drips?.mesh) drips.mesh.visible = false;
+      if (glassDrops?.mesh) glassDrops.mesh.visible = false;
+    } else {
+      scene.background = new THREE.Color(COLORS.night);
+      scene.fog = new THREE.Fog(COLORS.night, 24, 46);
+      hemi.color.setHex(COLORS.hemiSky);
+      hemi.groundColor.setHex(COLORS.hemiGround);
+      hemi.intensity = 1.05;
+      moon.color.setHex(COLORS.moon);
+      moon.intensity = 1.0;
+      moon.position.set(-8, 14, 9);
+      interior.forEach((light) => {
+        light.intensity = light.userData.base;
+      });
+      lamp.intensity = 7;
+      vending.intensity = 3;
+      if (rain) {
+        rain.visible = true;
+        if (rain.material?.uniforms?.uColor) {
+          rain.material.uniforms.uColor.value.setHex(COLORS.rain);
+        }
+      }
+      if (drips?.mesh) drips.mesh.visible = true;
+      if (glassDrops?.mesh) glassDrops.mesh.visible = true;
+    }
+  };
 
   const rain = createRain(registry, lowPower ? 900 : 1800);
   const drips = createEaveDrips(registry);
   const glassDrops = createGlassDrops(registry);
-  let reflectors = [];
   let outlineMaterial = null;
   let heightTexture = null;
   scene.add(rain, drips.mesh, glassDrops.mesh);
+  applyDaytime(isDaytime);
 
-  let parts = null;
   let disposed = false;
   const dummy = new THREE.Object3D();
 
   const applyTime = (time) => {
     rain.material.uniforms.uTime.value = time;
     reflectors.forEach((r) => { r.material.uniforms.uTime.value = time; });
-    stepDrips(drips, time, dummy);
-    stepGlassDrops(glassDrops, time, dummy);
+    if (!isDaytime) {
+      stepDrips(drips, time, dummy);
+      stepGlassDrops(glassDrops, time, dummy);
+    }
     if (!parts) return;
     const flicker = signFlicker(time);
+    const signMul = isDaytime ? 0.12 : 1;
     parts.signs.forEach((mesh) => {
-      mesh.material.emissiveIntensity = mesh.material.userData.baseEmissive * flicker;
+      mesh.material.emissiveIntensity = mesh.material.userData.baseEmissive * flicker * signMul;
     });
     const open = doorOpenAmount(time);
     if (parts.doors.DoorL) parts.doors.DoorL.position.x = -open * DOOR_SLIDE;
     if (parts.doors.DoorR) parts.doors.DoorR.position.x = open * DOOR_SLIDE;
     const active = signalColorAt(time);
     Object.entries(parts.signals).forEach(([color, meshes]) => {
-      meshes.forEach((mesh) => { mesh.material.emissiveIntensity = color === active ? 2.6 : 0; });
+      meshes.forEach((mesh) => {
+        const on = color === active ? (isDaytime ? 1.15 : 2.6) : 0;
+        mesh.material.emissiveIntensity = on;
+      });
     });
-    interior[0].intensity = interior[0].userData.base * (0.97 + Math.sin(time * 1.3) * 0.03);
+    const dayMul = isDaytime ? 0.22 : 1;
+    interior[0].intensity = interior[0].userData.base * dayMul * (0.97 + Math.sin(time * 1.3) * 0.03);
   };
 
   const render = () => renderer.render(scene, camera);
 
-  loadKonbiniModel()
-    .then((gltf) => {
+  Promise.all([
+    loadKonbiniModel(),
+    loadKonbiniModel({ url: DAY_KONBINI_MODEL_URL }),
+  ])
+    .then(([nightGltf, dayGltf]) => {
       if (disposed) {
-        collectSceneResources(gltf.scene).geometries.forEach((g) => g.dispose());
+        [nightGltf, dayGltf].forEach((gltf) => {
+          collectSceneResources(gltf.scene).geometries.forEach((g) => g.dispose());
+        });
         return;
       }
-      const built = buildKonbiniDiorama(gltf.scene, registry);
-      parts = built.parts;
-      outlineMaterial = built.outlineMaterial;
-      const hf = built.heightField;
+      const nightBuilt = buildKonbiniDiorama(nightGltf.scene, registry);
+      const dayBuilt = buildKonbiniDiorama(dayGltf.scene, registry);
+      nightRoot = nightBuilt.root;
+      dayRoot = dayBuilt.root;
+      nightRoot.name = "KonbiniDioramaNight";
+      dayRoot.name = "KonbiniDioramaDay";
+      nightParts = nightBuilt.parts;
+      dayParts = dayBuilt.parts;
+      outlineMaterials = [nightBuilt.outlineMaterial, dayBuilt.outlineMaterial];
+      outlineMaterial = nightBuilt.outlineMaterial;
+      const hf = nightBuilt.heightField;
       heightTexture = registry.trackTexture(new THREE.DataTexture(hf.data, hf.size, hf.size, THREE.RedFormat, THREE.FloatType));
       heightTexture.needsUpdate = true;
       rain.material.uniforms.uHeight.value = heightTexture;
       drips.drips.forEach((drip) => { drip.bottom = Math.max(0.06, hf.heightAt(drip.x, drip.z) + 0.02); });
-      const reflector = createPuddleReflector(parts.puddles, renderer, mount);
+      const reflector = createPuddleReflector(nightParts.puddles, renderer, mount);
       if (reflector) {
         reflectors = [reflector];
         scene.add(reflector);
       }
       resize();
-      Object.values(parts.signals).flat().forEach((mesh) => {
-        mesh.material.emissive = mesh.material.color.clone();
-        mesh.material.color.multiplyScalar(0.03);
+      [nightParts, dayParts].forEach((bundle) => {
+        Object.values(bundle.signals).flat().forEach((mesh) => {
+          mesh.material.emissive = mesh.material.color.clone();
+          mesh.material.color.multiplyScalar(0.03);
+        });
       });
-      scene.add(built.root);
+      scene.add(nightRoot, dayRoot);
+      syncModelRoots();
       applyTime(screenshotMode ? 4.2 : 0);
       render();
       onReady?.(parts);
@@ -436,7 +523,8 @@ export function createRainyStoreScene({
       camera.clearViewOffset();
     }
     camera.updateProjectionMatrix();
-    outlineMaterial?.uniforms.uResolution.value.set(width, height);
+    outlineMaterials.forEach((mat) => mat?.uniforms.uResolution.value.set(width, height));
+    if (!outlineMaterials.length) outlineMaterial?.uniforms.uResolution.value.set(width, height);
     render();
   };
   resize();
@@ -485,6 +573,11 @@ export function createRainyStoreScene({
 
   return {
     resetView,
+    setDaytime(next) {
+      applyDaytime(next);
+      applyTime(sceneTime);
+      render();
+    },
     /** Test/screenshot hook: jump the loop to a given second and redraw. */
     seek(seconds) {
       sceneTime = seconds;

@@ -136,7 +136,7 @@
   --radius-full: 9999px;
 }
 
-/* Rainy Neon Store is a first-class appearance, not a token-only dark variant.
+/* Token Store is a first-class appearance, not a token-only dark variant.
    Every selector here is scoped to the explicit root class so ordinary themes
    cannot inherit its translucent surfaces or cool linework. */
 :root.neon-store {
@@ -335,6 +335,19 @@
   backdrop-filter: blur(18px) saturate(1.3);
   -webkit-backdrop-filter: blur(18px) saturate(1.3);
 }
+
+:root.neon-store.neon-store-day .tt-rainy-app-background {
+  background:
+    radial-gradient(120% 90% at 50% -10%, rgba(210, 230, 250, 0.34), transparent 58%),
+    #102030;
+}
+
+:root.neon-store.neon-store-day .tt-rainy-card-pane {
+  background: linear-gradient(180deg, rgba(24, 44, 58, 0.34), rgba(14, 30, 42, 0.55));
+  border-top-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 -18px 40px rgba(20, 40, 60, 0.18);
+}
+
 
 :root.neon-store .tt-rainy-app-background {
   background: var(--rainy-app-background);

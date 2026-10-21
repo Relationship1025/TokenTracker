@@ -17,12 +17,15 @@ export function RainyStoreScene({
   active = true,
   reducedMotion = false,
   screenshotMode = false,
+  daytime = false,
   className = "",
 }) {
   const mountRef = useRef(null);
   const controllerRef = useRef(null);
+  const daytimeRef = useRef(daytime);
   const [webglFailed, setWebglFailed] = useState(false);
   const [ready, setReady] = useState(false);
+  daytimeRef.current = daytime;
 
   useEffect(() => {
     if (!active || reducedMotion || screenshotMode) {
@@ -44,6 +47,7 @@ export function RainyStoreScene({
           mount,
           reducedMotion: reducedMotion || detectReducedMotion(),
           screenshotMode,
+          daytime: daytimeRef.current,
           onFailure: () => {
             if (!cancelled) setWebglFailed(true);
           },
@@ -53,6 +57,7 @@ export function RainyStoreScene({
           return;
         }
         controllerRef.current = controller;
+        controller.setDaytime?.(daytimeRef.current);
         setReady(true);
       })
       .catch((error) => {
@@ -67,12 +72,20 @@ export function RainyStoreScene({
     };
   }, [active, reducedMotion, screenshotMode]);
 
+  useEffect(() => {
+    controllerRef.current?.setDaytime?.(daytime);
+  }, [daytime]);
+
   if (!active || reducedMotion || screenshotMode || webglFailed) {
     return <RainyStoreStatic className={className} priority={active} />;
   }
 
   return (
-    <div className={`tt-rainy-scene ${className}`} data-rainy-store-mode={ready ? "webgl" : "loading"}>
+    <div
+      className={`tt-rainy-scene ${className}`}
+      data-rainy-store-mode={ready ? "webgl" : "loading"}
+      data-rainy-period={daytime ? "day" : "night"}
+    >
       <div ref={mountRef} className="tt-rainy-canvas-mount" />
       <button
         type="button"

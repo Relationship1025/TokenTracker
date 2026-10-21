@@ -198,7 +198,7 @@
   "settings.appearance.theme.light": "Hell",
   "settings.appearance.theme.dark": "Dunkel",
   "settings.appearance.theme.system": "System",
-  "settings.appearance.theme.neon_store": "Regnerischer Neonladen",
+  "settings.appearance.theme.neon_store": "Token Store",
   "dashboard.rainy_store.description": "Animationsstil-Miniatur eines warm beleuchteten Convenience Stores an einer regnerischen japanischen Straßenecke.",
   "dashboard.rainy_store.reset_view": "Ladenansicht zurücksetzen",
   "dashboard.rainy_store.canvas_description": "Interaktive Miniatur eines regnerischen japanischen Convenience Stores aus der Third-Person-Ansicht. Ziehen zum Drehen, Shift beim Scrollen zum Zoomen halten.",

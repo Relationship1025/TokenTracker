@@ -311,27 +311,27 @@ function ThemePill({ theme, resolvedTheme, onSetTheme, glassChrome = false }) {
 
 
 /**
- * Top-right sun/moon appearance switch for neon-store chrome.
- * Sun → light, Moon → dark. Neon-store counts as the dark side visually.
+ * Top-right sun/moon switch for neon-store: day vs night of the rainy konbini
+ * scene (stays on neon-store; does not leave for the generic light theme).
  */
-function NeonSunMoonSwitch({ theme, setTheme }) {
-  const isLight = theme === "light";
+function NeonSunMoonSwitch({ neonStorePeriod, setNeonStorePeriod }) {
+  const isDay = neonStorePeriod === "day";
   return (
     <div
       className="tt-rainy-theme-switch inline-flex items-center rounded-full border border-white/15 bg-white/[0.08] p-1 shadow-[0_8px_28px_rgba(0,0,0,0.28)] backdrop-blur-xl"
       role="group"
-      aria-label={copy("settings.appearance.theme.label")}
+      aria-label={copy("dashboard.rainy_store.period_label")}
     >
       <button
         type="button"
-        aria-label={copy("settings.appearance.theme.light")}
-        aria-pressed={isLight}
-        title={copy("settings.appearance.theme.light")}
-        onClick={() => setTheme("light")}
+        aria-label={copy("dashboard.rainy_store.period_day")}
+        aria-pressed={isDay}
+        title={copy("dashboard.rainy_store.period_day")}
+        onClick={() => setNeonStorePeriod("day")}
         className={cn(
           "inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors",
-          isLight
-            ? "bg-white/90 text-slate-900 shadow-sm"
+          isDay
+            ? "bg-white/90 text-amber-700 shadow-sm"
             : "text-slate-300 hover:bg-white/10 hover:text-white",
         )}
       >
@@ -339,13 +339,13 @@ function NeonSunMoonSwitch({ theme, setTheme }) {
       </button>
       <button
         type="button"
-        aria-label={copy("settings.appearance.theme.dark")}
-        aria-pressed={!isLight}
-        title={copy("settings.appearance.theme.dark")}
-        onClick={() => setTheme(theme === "neon-store" ? "neon-store" : "dark")}
+        aria-label={copy("dashboard.rainy_store.period_night")}
+        aria-pressed={!isDay}
+        title={copy("dashboard.rainy_store.period_night")}
+        onClick={() => setNeonStorePeriod("night")}
         className={cn(
           "inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors",
-          !isLight
+          !isDay
             ? "bg-slate-950/80 text-cyan-100 shadow-sm"
             : "text-slate-500 hover:bg-black/10 hover:text-slate-800",
         )}
@@ -649,7 +649,7 @@ function MobileTopBar({ open, onOpenDrawer, menuButtonRef }) {
  */
 export function AppLayout({ children }) {
   const { collapsed, toggle } = useSidebarCollapsed();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, neonStorePeriod = "night", setNeonStorePeriod } = useTheme();
   const isNeonStore = theme === "neon-store";
   const [drawerOpen, setDrawerOpen] = useState(false);
   const menuButtonRef = useRef(null);
@@ -696,7 +696,7 @@ export function AppLayout({ children }) {
       {isNeonStore && (
         <div className="pointer-events-none fixed right-4 top-4 z-40">
           <div className="pointer-events-auto">
-            <NeonSunMoonSwitch theme={theme} setTheme={setTheme} />
+            <NeonSunMoonSwitch neonStorePeriod={neonStorePeriod} setNeonStorePeriod={setNeonStorePeriod} />
           </div>
         </div>
       )}

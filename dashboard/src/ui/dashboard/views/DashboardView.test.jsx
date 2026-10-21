@@ -10,7 +10,7 @@ const deviceUsageCard = vi.hoisted(() => ({ calls: [] }));
 const themeState = vi.hoisted(() => ({ isNeonStore: false }));
 
 vi.mock("../../../hooks/useTheme.js", () => ({
-  useTheme: () => ({ theme: themeState.isNeonStore ? "neon-store" : "dark", isNeonStore: themeState.isNeonStore }),
+  useTheme: () => ({ theme: themeState.isNeonStore ? "neon-store" : "dark", isNeonStore: themeState.isNeonStore, neonStorePeriod: "night", setNeonStorePeriod: () => {} }),
 }));
 
 vi.mock("../../components", () => ({ Shell: ({ children }) => <>{children}</>, Card: ({ children }) => <>{children}</> }));

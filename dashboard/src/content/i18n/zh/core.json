@@ -364,7 +364,7 @@
   "settings.appearance.theme.light": "浅色",
   "settings.appearance.theme.dark": "深色",
   "settings.appearance.theme.system": "系统",
-  "settings.appearance.theme.neon_store": "雨夜霓虹便利店",
+  "settings.appearance.theme.neon_store": "Token 便利店",
   "dashboard.rainy_store.description": "雨夜日本街角的动漫风便利店微缩景观，店内透出温暖灯光。",
   "dashboard.rainy_store.reset_view": "重置便利店视角",
   "dashboard.rainy_store.canvas_description": "可交互的雨夜日本便利店第三人称微缩景观。拖动旋转视角，按住 Shift 滚动缩放。",
@@ -772,5 +772,8 @@
   "settings.appearance.token_grouping.wan": "4位",
   "legal.nav.pricing": "云服务定价",
   "legal.nav.terms": "服务条款",
-  "legal.nav.support": "联系客服"
+  "legal.nav.support": "联系客服",
+  "dashboard.rainy_store.period_label": "便利店昼夜",
+  "dashboard.rainy_store.period_day": "白天",
+  "dashboard.rainy_store.period_night": "夜晚"
 }

@@ -8,12 +8,15 @@ import {
 } from "../../lib/native-bridge.js";
 import {
   getInitialTheme,
+  getInitialNeonStorePeriod,
   THEME_STORAGE_KEY,
+  NEON_STORE_PERIOD_KEY,
 } from "./theme-preference.js";
 
 /**
  * @typedef {"light" | "dark" | "system" | "neon-store"} Theme
- * @typedef {{ theme: Theme, setTheme: (theme: Theme) => void, toggleTheme: () => void, resolvedTheme: "light" | "dark", isNeonStore: boolean }} ThemeContextValue
+ * @typedef {"night" | "day"} NeonStorePeriod
+ * @typedef {{ theme: Theme, setTheme: (theme: Theme) => void, toggleTheme: () => void, resolvedTheme: "light" | "dark", isNeonStore: boolean, neonStorePeriod: NeonStorePeriod, setNeonStorePeriod: (period: NeonStorePeriod) => void }} ThemeContextValue
  */
 
 /** @type {React.Context<ThemeContextValue | null>} */
@@ -32,7 +35,7 @@ function getSystemTheme() {
  * Apply theme class to document element
  * @param {"light" | "dark"} resolvedTheme
  */
-function applyThemeToDOM(resolvedTheme, theme) {
+function applyThemeToDOM(resolvedTheme, theme, neonStorePeriod = "night") {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
   if (resolvedTheme === "dark") {
@@ -41,6 +44,7 @@ function applyThemeToDOM(resolvedTheme, theme) {
     root.classList.remove("dark");
   }
   root.classList.toggle("neon-store", theme === "neon-store");
+  root.classList.toggle("neon-store-day", theme === "neon-store" && neonStorePeriod === "day");
 }
 
 /**
@@ -49,6 +53,7 @@ function applyThemeToDOM(resolvedTheme, theme) {
  */
 export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => getInitialTheme());
+  const [neonStorePeriod, setNeonStorePeriodState] = useState(() => getInitialNeonStorePeriod());
   const [resolvedTheme, setResolvedTheme] = useState(() => {
     if (theme === "neon-store") return "dark";
     if (theme !== "system") return theme;
@@ -67,8 +72,8 @@ export function ThemeProvider({ children }) {
 
   // Apply theme to DOM whenever resolvedTheme or the special theme changes.
   useEffect(() => {
-    applyThemeToDOM(resolvedTheme, theme);
-  }, [resolvedTheme, theme]);
+    applyThemeToDOM(resolvedTheme, theme, neonStorePeriod);
+  }, [resolvedTheme, theme, neonStorePeriod]);
 
   // theme 切换时先同步 resolved（避免 native push 还没到时停留在旧值一帧）
   useLayoutEffect(() => {
@@ -146,6 +151,18 @@ export function ThemeProvider({ children }) {
     }
   }, []);
 
+  const setNeonStorePeriod = useCallback((period) => {
+    if (period !== "day" && period !== "night") return;
+    setNeonStorePeriodState(period);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(NEON_STORE_PERIOD_KEY, period);
+      } catch {
+        // Ignore localStorage errors
+      }
+    }
+  }, []);
+
   const toggleTheme = useCallback(() => {
     setTheme((prev) => {
       const next = prev === "dark" ? "light" : "dark";
@@ -167,8 +184,10 @@ export function ThemeProvider({ children }) {
       toggleTheme,
       resolvedTheme,
       isNeonStore: theme === "neon-store",
+      neonStorePeriod,
+      setNeonStorePeriod,
     }),
-    [theme, setTheme, toggleTheme, resolvedTheme]
+    [theme, setTheme, toggleTheme, resolvedTheme, neonStorePeriod, setNeonStorePeriod]
   );
 
   return (

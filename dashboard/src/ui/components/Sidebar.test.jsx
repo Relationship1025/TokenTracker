@@ -28,13 +28,17 @@ const LABELS = {
   "shared.app_name": "Token Tracker",
   "settings.appearance.theme.label": "Theme",
   "settings.appearance.theme.light": "Light",
+  "dashboard.rainy_store.period_label": "Store time of day",
+  "dashboard.rainy_store.period_day": "Daytime",
+  "dashboard.rainy_store.period_night": "Nighttime",
   "settings.appearance.theme.dark": "Dark",
   "settings.appearance.theme.system": "System",
-  "settings.appearance.theme.neon_store": "Rainy Neon Store",
+  "settings.appearance.theme.neon_store": "Token Store",
   "shared.github.star": "Star",
 };
 
 const themeState = vi.hoisted(() => ({
+  neonStorePeriod: "night",
   theme: "system",
   resolvedTheme: "light",
   isNeonStore: false,
@@ -52,7 +56,7 @@ vi.mock("../../lib/copy", () => ({
 }));
 
 vi.mock("../../hooks/useTheme.js", () => ({
-  useTheme: () => ({ ...themeState, setTheme: vi.fn() }),
+  useTheme: () => ({ ...themeState, setTheme: vi.fn(), setNeonStorePeriod: vi.fn() }),
 }));
 
 vi.mock("../../hooks/useLocale.js", () => ({
@@ -126,8 +130,8 @@ describe("AppLayout sidebar controls", () => {
     expect(document.querySelectorAll(".tt-rainy-rail-chip").length).toBeGreaterThan(1);
     expect(document.querySelector(".tt-rainy-rail-brand")).not.toBeInTheDocument();
     expect(document.querySelector(".tt-rainy-rail-utilities")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Light" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Dark" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Daytime" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Nighttime" })).toBeInTheDocument();
     // Settings remains reachable from the icon rail, not a duplicated footer control.
     const settingsLinks = screen.getAllByRole("link", { name: "Settings" });
     expect(settingsLinks).toHaveLength(1);

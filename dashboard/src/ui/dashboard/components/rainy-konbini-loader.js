@@ -5,6 +5,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 
 const BASE_URL = (import.meta.env?.BASE_URL ?? "/").replace(/\/?$/, "/");
 export const KONBINI_MODEL_URL = `${BASE_URL}models/rainy-konbini.glb`;
+export const DAY_KONBINI_MODEL_URL = `${BASE_URL}models/day-konbini.glb`;
 export const KONBINI_DRACO_PATH = `${BASE_URL}draco/`;
 
 /** Materials that need their own live mesh (animated, transparent or shader-driven). */

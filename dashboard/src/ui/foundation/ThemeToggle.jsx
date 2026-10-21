@@ -36,7 +36,7 @@ const OPTIONS = [
   { value: "light", label: "Light", Icon: SunIcon },
   { value: "dark", label: "Dark", Icon: MoonIcon },
   { value: "system", label: "System", Icon: MonitorIcon },
-  { value: "neon-store", label: "Rainy Neon Store", Icon: Store },
+  { value: "neon-store", label: "Token Store", Icon: Store },
 ];
 
 function currentIcon(theme, resolvedTheme) {
