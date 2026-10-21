@@ -157,7 +157,7 @@
   --brand-primary: #67e8d4;
   --brand-primary-dark: #35b9ac;
   --brand-primary-light: #a0fff0;
-  --rainy-bg: #06131d;
+  --rainy-bg: #08141d;
   --rainy-panel: rgba(10, 28, 38, 0.76);
   --rainy-panel-strong: rgba(12, 31, 42, 0.92);
   --rainy-line: rgba(147, 222, 218, 0.18);
@@ -178,7 +178,7 @@
   --rainy-rail-brand-glow: rgba(103, 232, 212, 0.18);
   --rainy-subtle-line: rgba(255, 255, 255, 0.08);
   --rainy-rail-background: rgba(9, 21, 30, 0.95);
-  --rainy-app-background: #06111a;
+  --rainy-app-background: #08141d;
   --rainy-main-panel: #08141d;
 }
 
@@ -194,22 +194,23 @@
 
 :root.neon-store .tt-rainy-card {
   position: relative;
-  border-radius: 12px;
+  border-radius: 14px;
   background:
-    linear-gradient(145deg, rgba(121, 221, 217, 0.09), rgba(29, 85, 101, 0.045) 46%, rgba(2, 13, 22, 0.3)),
-    rgba(8, 24, 35, 0.78);
-  border: 1px solid var(--rainy-line);
+    linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(255, 200, 140, 0.05) 40%, rgba(8, 24, 36, 0.08)),
+    rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(210, 255, 248, 0.28);
   box-shadow:
-    inset 0 1px 0 rgba(208, 255, 249, 0.08),
-    0 14px 36px rgba(0, 7, 13, 0.28);
-  backdrop-filter: blur(20px) saturate(128%);
-  -webkit-backdrop-filter: blur(20px) saturate(128%);
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 10px 32px rgba(0, 4, 10, 0.28);
+  backdrop-filter: blur(32px) saturate(170%);
+  -webkit-backdrop-filter: blur(32px) saturate(170%);
 }
 
 :root.neon-store [data-rainy-card="true"] {
   background:
-    linear-gradient(145deg, rgba(121, 221, 217, 0.09), rgba(29, 85, 101, 0.045) 46%, rgba(2, 13, 22, 0.3)),
-    rgba(8, 24, 35, 0.78) !important;
+    linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(255, 200, 140, 0.05) 40%, rgba(8, 24, 36, 0.08)),
+    rgba(255, 255, 255, 0.06) !important;
 }
 
 :root.neon-store .tt-rainy-card > * {
@@ -217,10 +218,23 @@
 }
 
 :root.neon-store .tt-rainy-card .rounded-xl.border.bg-white,
-:root.neon-store .tt-rainy-card .rounded-xl.border.dark\:bg-oai-gray-900 {
-  border-color: transparent;
-  background: transparent;
+:root.neon-store .tt-rainy-card .rounded-xl.border.dark\:bg-oai-gray-900,
+:root.neon-store .tt-rainy-card .bg-white,
+:root.neon-store .tt-rainy-card .dark\:bg-oai-gray-900,
+:root.neon-store .tt-rainy-card [class*="bg-oai-gray-9"],
+:root.neon-store .tt-rainy-card [class*="bg-oai-gray-950"] {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
+
+:root.neon-store .tt-rainy-card [class*="bg-oai-gray-100"],
+:root.neon-store .tt-rainy-card [class*="bg-oai-gray-200"],
+:root.neon-store .tt-rainy-card [class*="bg-oai-gray-800"],
+:root.neon-store .tt-rainy-card [class*="dark:bg-oai-gray"] {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
 
 :root.neon-store .tt-rainy-shell-nav {
   background: rgba(5, 18, 27, 0.94);
@@ -235,8 +249,91 @@
 }
 
 :root.neon-store .tt-rainy-desktop-sidebar {
-  border-right: 1px solid var(--rainy-subtle-line);
-  background: var(--rainy-rail-background);
+  border-right: none;
+  background: transparent;
+  overflow: visible;
+}
+
+:root.neon-store .tt-rainy-rail-chip {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(8, 20, 29, 0.46);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(18px) saturate(1.35);
+  -webkit-backdrop-filter: blur(18px) saturate(1.35);
+  box-sizing: border-box;
+  width: max-content;
+  max-width: 2.75rem;
+  padding-left: 0.84rem; /* keep 17px icon centered in 44px chip */
+  padding-right: 0.84rem;
+  justify-content: flex-start;
+  gap: 0;
+  transform-origin: left center;
+  transition:
+    max-width 200ms ease,
+    padding-right 200ms ease,
+    gap 200ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease,
+    color 160ms ease;
+}
+
+:root.neon-store .tt-rainy-rail-chip .tt-rainy-rail-label {
+  display: inline-block;
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 550;
+  letter-spacing: 0.01em;
+  transition:
+    max-width 200ms ease,
+    opacity 160ms ease 40ms;
+}
+
+:root.neon-store .tt-rainy-rail-chip:hover,
+:root.neon-store .tt-rainy-rail-chip:focus-visible {
+  z-index: 20;
+  max-width: 12rem;
+  padding-right: 0.95rem;
+  gap: 0.55rem;
+  background: rgba(12, 28, 38, 0.72);
+  border-color: rgba(103, 232, 212, 0.42);
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.34),
+    0 0 16px rgba(34, 211, 238, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  transform: scale(1.05);
+}
+
+:root.neon-store .tt-rainy-rail-chip:hover .tt-rainy-rail-label,
+:root.neon-store .tt-rainy-rail-chip:focus-visible .tt-rainy-rail-label {
+  max-width: 9rem;
+  opacity: 1;
+}
+
+:root.neon-store .tt-rainy-rail-chip.tt-rainy-rail-active {
+  background: rgba(34, 211, 238, 0.18);
+  border-color: rgba(103, 232, 212, 0.45);
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.3),
+    0 0 18px rgba(34, 211, 238, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+:root.neon-store .tt-rainy-rail-chip.tt-rainy-rail-active:hover,
+:root.neon-store .tt-rainy-rail-chip.tt-rainy-rail-active:focus-visible {
+  background: rgba(34, 211, 238, 0.26);
+  border-color: rgba(103, 232, 212, 0.55);
+}
+
+:root.neon-store .tt-rainy-theme-switch {
+  backdrop-filter: blur(18px) saturate(1.3);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
 }
 
 :root.neon-store .tt-rainy-app-background {
@@ -244,13 +341,23 @@
 }
 
 :root.neon-store .tt-rainy-main-panel {
-  border-color: var(--rainy-subtle-line);
-  background: var(--rainy-main-panel);
+  border-color: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  background:
+    radial-gradient(ellipse at 30% 0%, rgba(255, 183, 120, 0.05), transparent 45%),
+    radial-gradient(ellipse at 80% 0%, rgba(103, 232, 212, 0.06), transparent 42%),
+    var(--rainy-main-panel);
 }
 
 :root.neon-store .tt-rainy-dashboard {
   min-height: 0;
   color: var(--rainy-text);
+  background:
+    radial-gradient(ellipse at 28% 18%, rgba(255, 183, 120, 0.07), transparent 42%),
+    radial-gradient(ellipse at 78% 12%, rgba(103, 232, 212, 0.08), transparent 40%),
+    radial-gradient(ellipse at 50% 100%, rgba(40, 90, 110, 0.18), transparent 55%),
+    var(--rainy-main-panel);
 }
 
 .tt-rainy-static {
@@ -259,22 +366,13 @@
   aspect-ratio: 1 / 1;
   align-self: center;
   overflow: hidden;
-  border-radius: 16px;
-  background: #0a1b27;
-  box-shadow:
-    0 30px 62px rgba(0, 7, 15, 0.35),
-    0 0 0 1px rgba(143, 229, 219, 0.08);
+  border-radius: 0;
+  background: var(--rainy-main-panel, #08141d);
+  box-shadow: none;
 }
 
 .tt-rainy-static::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: inherit;
-  box-shadow:
-    inset 0 1px 0 rgba(221, 255, 249, 0.13),
-    inset 0 -32px 64px rgba(0, 8, 15, 0.22);
+  content: none;
 }
 
 .tt-rainy-static img {
@@ -291,13 +389,9 @@
   aspect-ratio: 1 / 1;
   align-self: center;
   overflow: hidden;
-  border-radius: 16px;
-  background:
-    linear-gradient(145deg, rgba(118, 212, 212, 0.08), transparent 38%),
-    #091a26;
-  box-shadow:
-    0 30px 62px rgba(0, 7, 15, 0.35),
-    0 0 0 1px rgba(143, 229, 219, 0.1);
+  border-radius: 0;
+  background: var(--rainy-main-panel, #08141d);
+  box-shadow: none;
 }
 
 .tt-rainy-canvas-mount,
@@ -347,28 +441,81 @@
 
 :root.neon-store .tt-rainy-dashboard--wide {
   display: grid;
-  grid-template-columns: minmax(280px, 38%) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   height: 100%;
   min-height: 0;
   gap: 0;
+  position: relative;
+}
+
+/* Scene fills the stage; card dock shares the same cell and sits on top. */
+:root.neon-store .tt-rainy-dashboard--wide > .tt-rainy-scene-pane,
+:root.neon-store .tt-rainy-dashboard--wide > .tt-rainy-card-pane {
+  grid-column: 1;
+  grid-row: 1;
 }
 
 :root.neon-store .tt-rainy-scene-pane {
   min-width: 0;
   min-height: 0;
-  padding: 20px 16px 20px 24px;
+  padding: 0;
   display: flex;
 }
 
+/* Wide stage: frameless full-bleed scene under a frosted card dock. */
+:root.neon-store .tt-rainy-dashboard--wide .tt-rainy-scene-pane {
+  z-index: 0;
+  min-height: 100%;
+}
+
+:root.neon-store .tt-rainy-dashboard--wide .tt-rainy-scene,
+:root.neon-store .tt-rainy-dashboard--wide .tt-rainy-static {
+  aspect-ratio: auto;
+  width: 100%;
+  height: 100%;
+  align-self: stretch;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+:root.neon-store .tt-rainy-narrow-scene {
+  width: 100%;
+  max-width: none;
+  margin: 0 0 16px;
+}
+
+:root.neon-store .tt-rainy-dashboard--narrow .tt-rainy-scene,
+:root.neon-store .tt-rainy-dashboard--narrow .tt-rainy-static {
+  border-radius: 0;
+  box-shadow: none;
+  aspect-ratio: 16 / 10;
+  max-height: 420px;
+}
+
 :root.neon-store .tt-rainy-card-pane {
+  z-index: 2;
   min-width: 0;
   min-height: 0;
+  max-height: min(28%, 340px);
+  align-self: end;
+  /* ~5 Chinese characters clear of the left floating nav chips */
+  margin-left: 5em;
+  margin-right: 1rem;
+  margin-bottom: 0.75rem;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: rgba(122, 176, 181, 0.32) transparent;
-  padding: 20px 24px 24px 16px;
-  border-left: 1px solid rgba(151, 225, 218, 0.09);
+  padding: 18px 24px 22px;
+  border-left: 0;
+  border-top: 1px solid rgba(200, 245, 238, 0.12);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(8, 20, 29, 0.18), rgba(8, 20, 29, 0.42));
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  box-shadow: 0 -24px 48px rgba(0, 4, 10, 0.28);
 }
 
 :root.neon-store .tt-rainy-card-grid {
@@ -384,10 +531,6 @@
   padding: 14px;
 }
 
-:root.neon-store .tt-rainy-narrow-scene {
-  width: min(100%, 560px);
-  margin: 0 auto 16px;
-}
 
 :root.neon-store .tt-rainy-narrow-stream {
   display: flex;
@@ -398,8 +541,8 @@
 }
 
 @media (max-width: 1199px) {
-  :root.neon-store .tt-rainy-dashboard--wide {
-    grid-template-columns: minmax(260px, 34%) minmax(0, 1fr);
+  :root.neon-store .tt-rainy-card-pane {
+    max-height: min(32%, 320px);
   }
 }
 
@@ -408,14 +551,28 @@
     display: block;
     height: auto;
   }
+  :root.neon-store .tt-rainy-dashboard--wide > .tt-rainy-scene-pane,
+  :root.neon-store .tt-rainy-dashboard--wide > .tt-rainy-card-pane {
+    grid-column: auto;
+    grid-row: auto;
+  }
   :root.neon-store .tt-rainy-scene-pane {
     height: auto;
-    padding: 12px;
+    min-height: 220px;
+    padding: 0;
   }
   :root.neon-store .tt-rainy-card-pane {
+    position: relative;
+    max-height: none;
     overflow: visible;
+    margin-left: 0;
+    margin-right: 0;
+    margin-bottom: 0;
     padding: 8px 12px 24px;
-    border-left: 0;
+    border-top: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: rgba(8, 20, 29, 0.45);
   }
   :root.neon-store .tt-rainy-card-grid {
     grid-template-columns: minmax(0, 1fr);

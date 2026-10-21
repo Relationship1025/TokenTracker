@@ -2,8 +2,8 @@ import React from "react";
 import { cn } from "../../../lib/cn";
 
 /**
- * The rainy-store Overview composition. The store is unframed stage content;
- * card streams keep their existing rendering and scroll independently.
+ * The rainy-store Overview composition. Wide layout keeps an unframed full-bleed scene with a frosted
+ * card dock over the lower stage; cards keep existing rendering and scroll.
  */
 export function RainyDashboardLayout({
   scene,

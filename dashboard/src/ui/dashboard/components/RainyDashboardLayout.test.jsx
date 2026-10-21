@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { expect, it } from "vitest";
 import { RainyDashboardLayout } from "./RainyDashboardLayout.jsx";
 
-it("keeps the store beside two card streams", () => {
+it("keeps the store above two card streams", () => {
   render(
     <RainyDashboardLayout
       scene={<section aria-label="Rainy store" />}

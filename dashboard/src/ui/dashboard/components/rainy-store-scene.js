@@ -19,7 +19,7 @@ import { HEIGHT_FIELD, buildKonbiniDiorama, loadKonbiniModel } from "./rainy-kon
  */
 
 const COLORS = {
-  night: 0x0a1330,
+  night: 0x08141d,
   hemiSky: 0x7f8fae,
   hemiGround: 0x1c1f26,
   moon: 0x8eaaff,
@@ -322,10 +322,13 @@ export function createRainyStoreScene({
   renderer.domElement.setAttribute("aria-label", "Interactive rainy convenience store miniature");
   mount.appendChild(renderer.domElement);
 
-  const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 120);
-  const target = new THREE.Vector3(0, 1.1, 0.4);
-  const orbit = { yaw: 0.62, pitch: 0.36, distance: 18 };
+  const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 120);
+  // Frame the whole plinth/store; viewOffset below lifts it into the clear band above cards.
+  const target = new THREE.Vector3(0, 1.05, 0.2);
+  const orbit = { yaw: 0.56, pitch: 0.42, distance: 22 };
   const defaultOrbit = { ...orbit };
+  /** Bottom frosted card dock coverage; keep in sync with .tt-rainy-card-pane max-height. */
+  const CARD_DOCK_FRACTION = 0.28;
   syncOrbitCamera(camera, target, orbit);
 
   scene.add(new THREE.HemisphereLight(COLORS.hemiSky, COLORS.hemiGround, 1.05));
@@ -421,7 +424,17 @@ export function createRainyStoreScene({
     const height = mount.clientHeight || 1;
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
-    camera.fov = width < 500 ? 46 : 36;
+    camera.fov = width < 500 ? 42 : 32;
+    // Use the lower band of a taller virtual film so the diorama sits in the
+    // clear upper viewport instead of behind the frosted card dock.
+    const dock = Math.min(0.4, Math.max(0, CARD_DOCK_FRACTION));
+    if (dock > 0.05 && height > 200) {
+      const shift = Math.round(height * dock);
+      const fullH = height + shift;
+      camera.setViewOffset(width, fullH, 0, shift, width, height);
+    } else {
+      camera.clearViewOffset();
+    }
     camera.updateProjectionMatrix();
     outlineMaterial?.uniforms.uResolution.value.set(width, height);
     render();

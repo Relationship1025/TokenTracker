@@ -122,6 +122,15 @@ describe("AppLayout sidebar controls", () => {
     expect(screen.queryByRole("button", { name: "Expand sidebar" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Usage" })).toBeInTheDocument();
     expect(document.querySelector("[data-rainy-nav-rail]")).toBeInTheDocument();
+    expect(document.querySelector(".tt-rainy-rail-stack")).toBeInTheDocument();
+    expect(document.querySelectorAll(".tt-rainy-rail-chip").length).toBeGreaterThan(1);
+    expect(document.querySelector(".tt-rainy-rail-brand")).not.toBeInTheDocument();
+    expect(document.querySelector(".tt-rainy-rail-utilities")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Light" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Dark" })).toBeInTheDocument();
+    // Settings remains reachable from the icon rail, not a duplicated footer control.
+    const settingsLinks = screen.getAllByRole("link", { name: "Settings" });
+    expect(settingsLinks).toHaveLength(1);
   });
 
   it("collapses and expands the desktop sidebar and persists the preference", async () => {

@@ -1,5 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useTheme } from "../../hooks/useTheme.js";
+import { cn } from "../../lib/cn";
 
 /**
  * Brand Logo component (kept for screenshot mode / standalone Shell usage)
@@ -37,10 +39,12 @@ export function Shell({
   hideFooter = false,
   bare = false,
 }) {
+  const { isNeonStore } = useTheme();
+  const mainPad = isNeonStore ? "flex-1 min-h-0 p-0" : "flex-1 px-6 py-6";
   if (bare) {
     return (
-      <div className={`flex flex-col flex-1 min-h-0 ${className}`}>
-        <main className="flex-1 px-6 py-6">{children}</main>
+      <div className={cn("flex flex-col flex-1 min-h-0", className)}>
+        <main className={mainPad}>{children}</main>
         {!hideFooter && footer && (
           <footer className="border-t border-oai-gray-200 dark:border-oai-gray-800 px-6 py-4 mt-auto transition-colors duration-200">
             {footer}
@@ -61,7 +65,7 @@ export function Shell({
         </header>
       )}
 
-      <main className="flex-1 px-6 py-6">{children}</main>
+      <main className={mainPad}>{children}</main>
 
       {!hideFooter && footer && (
         <footer className="border-t border-oai-gray-200 dark:border-oai-gray-800 px-6 py-4 mt-auto transition-colors duration-200">

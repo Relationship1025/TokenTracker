@@ -309,6 +309,53 @@ function ThemePill({ theme, resolvedTheme, onSetTheme, glassChrome = false }) {
   );
 }
 
+
+/**
+ * Top-right sun/moon appearance switch for neon-store chrome.
+ * Sun → light, Moon → dark. Neon-store counts as the dark side visually.
+ */
+function NeonSunMoonSwitch({ theme, setTheme }) {
+  const isLight = theme === "light";
+  return (
+    <div
+      className="tt-rainy-theme-switch inline-flex items-center rounded-full border border-white/15 bg-white/[0.08] p-1 shadow-[0_8px_28px_rgba(0,0,0,0.28)] backdrop-blur-xl"
+      role="group"
+      aria-label={copy("settings.appearance.theme.label")}
+    >
+      <button
+        type="button"
+        aria-label={copy("settings.appearance.theme.light")}
+        aria-pressed={isLight}
+        title={copy("settings.appearance.theme.light")}
+        onClick={() => setTheme("light")}
+        className={cn(
+          "inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors",
+          isLight
+            ? "bg-white/90 text-slate-900 shadow-sm"
+            : "text-slate-300 hover:bg-white/10 hover:text-white",
+        )}
+      >
+        <Sun className="h-3.5 w-3.5" aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        aria-label={copy("settings.appearance.theme.dark")}
+        aria-pressed={!isLight}
+        title={copy("settings.appearance.theme.dark")}
+        onClick={() => setTheme(theme === "neon-store" ? "neon-store" : "dark")}
+        className={cn(
+          "inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors",
+          !isLight
+            ? "bg-slate-950/80 text-cyan-100 shadow-sm"
+            : "text-slate-500 hover:bg-black/10 hover:text-slate-800",
+        )}
+      >
+        <Moon className="h-3.5 w-3.5" aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
+
 /**
  * SidebarBody — shared markup used by both desktop sticky Sidebar and mobile Drawer.
  *
@@ -339,19 +386,8 @@ function SidebarBody({
 
   if (isNeonStore && !showCloseButton) {
     return (
-      <>
-        <div className="tt-rainy-rail-brand flex h-[62px] shrink-0 items-center justify-center border-b border-white/[0.07]">
-          <Link
-            to="/dashboard"
-            onClick={onItemClick}
-            aria-label={copy("shared.app_name")}
-            className="tt-rainy-rail-brand-mark flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-300 text-[11px] font-black tracking-tight text-slate-950 no-underline"
-          >
-            <span className="sr-only">{copy("shared.app_name")}</span>
-            <span className="h-3.5 w-3.5 rounded-[3px] border-2 border-current" aria-hidden="true" />
-          </Link>
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-2 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="tt-rainy-rail-glass flex w-full flex-1 flex-col items-start justify-center px-2">
+        <div className="tt-rainy-rail-stack pointer-events-auto max-h-[min(78vh,640px)] overflow-visible">
           <NavIconRail
             groups={navGroups.map((group) => ({
               ...group,
@@ -363,25 +399,7 @@ function SidebarBody({
             onNavigate={onItemClick}
           />
         </div>
-        <div className="tt-rainy-rail-utilities flex shrink-0 flex-col items-center gap-2 border-t border-white/[0.07] px-2 py-3">
-          <Link
-            to="/settings"
-            onClick={onItemClick}
-            aria-label={copy("nav.settings")}
-            aria-current={isActive(pathname, "/settings") ? "page" : undefined}
-            title={copy("nav.settings")}
-            className={cn(
-              "flex h-10 w-10 items-center justify-center rounded-lg no-underline transition-colors",
-              isActive(pathname, "/settings")
-                ? "bg-cyan-300/15 text-cyan-100"
-                : "text-slate-400 hover:bg-white/[0.06] hover:text-slate-100",
-            )}
-          >
-            <SettingsIcon className="h-[17px] w-[17px]" strokeWidth={1.8} aria-hidden="true" />
-          </Link>
-          <ThemePill theme={theme} resolvedTheme={resolvedTheme} onSetTheme={setTheme} glassChrome />
-        </div>
-      </>
+      </div>
     );
   }
 
@@ -484,7 +502,7 @@ function Sidebar({ collapsed, onToggleCollapsed }) {
       className={cn(
         "hidden lg:flex flex-col shrink-0 h-full min-h-0 transition-[width] duration-200",
         isNeonStore
-          ? "tt-rainy-desktop-sidebar w-[72px]"
+          ? "tt-rainy-desktop-sidebar pointer-events-none absolute inset-y-0 left-0 z-30 w-[12rem] overflow-visible"
           : collapsed ? "w-[72px]" : "w-[220px]",
       )}
     >
@@ -631,7 +649,7 @@ function MobileTopBar({ open, onOpenDrawer, menuButtonRef }) {
  */
 export function AppLayout({ children }) {
   const { collapsed, toggle } = useSidebarCollapsed();
-  const { theme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const isNeonStore = theme === "neon-store";
   const [drawerOpen, setDrawerOpen] = useState(false);
   const menuButtonRef = useRef(null);
@@ -675,7 +693,14 @@ export function AppLayout({ children }) {
           aria-hidden
         />
       )}
-      <div className="flex-1 min-h-0 flex">
+      {isNeonStore && (
+        <div className="pointer-events-none fixed right-4 top-4 z-40">
+          <div className="pointer-events-auto">
+            <NeonSunMoonSwitch theme={theme} setTheme={setTheme} />
+          </div>
+        </div>
+      )}
+      <div className={cn("flex-1 min-h-0 flex", isNeonStore && "relative")}>
         <Sidebar collapsed={collapsed} onToggleCollapsed={toggle} />
         <MobileDrawer
           open={drawerOpen}
@@ -684,13 +709,18 @@ export function AppLayout({ children }) {
         />
         {/* lg：与侧栏内容区对齐 — 侧栏底部按钮区为 px-2 py-3；主卡右侧/底侧用 pr-3 pb-3 与 py-3 视觉一致，避免仅靠 p-2 显得贴边 */}
         {/* Mac App：`lg:pr-3 lg:pb-3` (12pt) 须与 Swift `DashboardChromeMetrics.mainGutterPoints` 一致，主卡圆角由 `--tt-main-card-radius` 注入 */}
-        <div className="flex-1 min-w-0 min-h-0 p-2 lg:pl-0 lg:pr-3 lg:pb-3 flex flex-col">
+        <div
+          className={cn(
+            "flex-1 min-w-0 min-h-0 flex flex-col",
+            isNeonStore ? "p-0" : "p-2 lg:pl-0 lg:pr-3 lg:pb-3",
+          )}
+        >
           <div
             className={cn(
               "flex-1 min-h-0 flex flex-col bg-oai-white dark:bg-oai-gray-900 border border-oai-gray-200 dark:border-oai-gray-800 overflow-hidden",
               isNeonStore && "tt-rainy-main-panel",
-              nativeEmbed ? "tt-native-main-card" : "rounded-2xl",
-              !nativeEmbed && "shadow-sm",
+              nativeEmbed ? "tt-native-main-card" : !isNeonStore && "rounded-2xl",
+              !nativeEmbed && !isNeonStore && "shadow-sm",
             )}
           >
             <MobileTopBar open={drawerOpen} onOpenDrawer={openDrawer} menuButtonRef={menuButtonRef} />
