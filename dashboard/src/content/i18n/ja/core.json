@@ -575,5 +575,6 @@
   "settings.appearance.token_grouping.wan": "4桁",
   "dashboard.rainy_store.period_label": "コンビニの昼夜",
   "dashboard.rainy_store.period_day": "昼",
-  "dashboard.rainy_store.period_night": "夜"
+  "dashboard.rainy_store.period_night": "夜",
+  "settings.appearance.theme.classic": "クラシック"
 }

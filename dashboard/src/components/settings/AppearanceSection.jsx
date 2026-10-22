@@ -1,5 +1,6 @@
 import React from "react";
-import { Info, Languages, Monitor, Moon, Store, Sun } from "lucide-react";
+import { Info, Languages, Palette, Store } from "lucide-react";
+import { themeControlValue, themeFromControlValue } from "../../ui/foundation/theme-preference.js";
 import { useTheme } from "../../hooks/useTheme.js";
 import { useLocale } from "../../hooks/useLocale.js";
 import { useCurrency } from "../../hooks/useCurrency.js";
@@ -13,9 +14,7 @@ import { TOKEN_FORMAT_MODES, TOKEN_GROUPINGS, TOKEN_UNIT_SYSTEMS } from "../../l
 
 function buildThemeOptions() {
   return [
-    { value: "light", label: copy("settings.appearance.theme.light"), Icon: Sun },
-    { value: "dark", label: copy("settings.appearance.theme.dark"), Icon: Moon },
-    { value: "system", label: copy("settings.appearance.theme.system"), Icon: Monitor },
+    { value: "classic", label: copy("settings.appearance.theme.classic"), Icon: Palette },
     { value: "neon-store", label: copy("settings.appearance.theme.neon_store"), Icon: Store },
   ];
 }
@@ -108,7 +107,7 @@ function CurrencyHint({ currency, rate, rateSource, rateFetchedAt }) {
 }
 
 export function AppearanceSection() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const { locale, setLocale } = useLocale();
   const { currency, rate, rateSource, rateFetchedAt, setCurrency } = useCurrency();
   const {
@@ -125,7 +124,13 @@ export function AppearanceSection() {
       <SettingsRow
         label={copy("settings.appearance.theme.label")}
         hint={copy("settings.appearance.theme.hint")}
-        control={<SegmentedControl options={buildThemeOptions()} value={theme} onChange={setTheme} />}
+        control={
+          <SegmentedControl
+            options={buildThemeOptions()}
+            value={themeControlValue(theme)}
+            onChange={(value) => setTheme(themeFromControlValue(value, resolvedTheme, theme))}
+          />
+        }
       />
       <SettingsRow
         label={copy("settings.appearance.language.label")}

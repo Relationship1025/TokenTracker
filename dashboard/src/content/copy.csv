@@ -410,6 +410,7 @@ settings.appearance.theme.label,ui,SettingsPage,SettingsPage,theme_label,"Theme"
 settings.appearance.theme.hint,ui,SettingsPage,SettingsPage,theme_hint,"Choose how Token Tracker looks across the dashboard.",,active
 settings.appearance.theme.light,ui,SettingsPage,SettingsPage,theme_light,"Light",,active
 settings.appearance.theme.dark,ui,SettingsPage,SettingsPage,theme_dark,"Dark",,active
+settings.appearance.theme.classic,ui,SettingsPage,SettingsPage,theme_classic,"Classic",,active
 settings.appearance.theme.system,ui,SettingsPage,SettingsPage,theme_system,"System",,active
 settings.appearance.theme.neon_store,ui,SettingsPage,SettingsPage,theme_neon_store,"Token Store",,active
 dashboard.rainy_store.description,ui,DashboardView,RainyStoreStatic,rainy_store_description,"Anime-style miniature of a warm-lit convenience store on a rainy Japanese street corner.",,active

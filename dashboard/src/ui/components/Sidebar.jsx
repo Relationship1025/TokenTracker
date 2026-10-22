@@ -17,12 +17,13 @@ import {
   X,
   Sun,
   Moon,
-  Monitor,
   Store,
+  Palette,
 } from "lucide-react";
 import { copy } from "../../lib/copy";
 import { cn } from "../../lib/cn";
 import { useTheme } from "../../hooks/useTheme.js";
+import { isClassicTheme, themeControlValue, themeFromControlValue } from "../foundation/theme-preference.js";
 import { useLocale } from "../../hooks/useLocale.js";
 import { shouldFetchGithubStars } from "../dashboard/util/should-fetch-github-stars.js";
 import { isNativeApp, isNativeEmbed, isNativeLinuxApp, isNativeWindowsApp } from "../../lib/native-bridge.js";
@@ -234,13 +235,9 @@ function StarPill({ repo = "xiufengsun/TokenTracker", glassChrome = false }) {
 function ThemePill({ theme, resolvedTheme, onSetTheme, glassChrome = false }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
-  const ActiveIcon = theme === "neon-store"
-    ? Store
-    : resolvedTheme === "dark" ? Moon : Sun;
+  const isNeon = theme === "neon-store";
   const themeOptions = [
-    { value: "light", label: copy("settings.appearance.theme.light"), Icon: Sun },
-    { value: "dark", label: copy("settings.appearance.theme.dark"), Icon: Moon },
-    { value: "system", label: copy("settings.appearance.theme.system"), Icon: Monitor },
+    { value: "classic", label: copy("settings.appearance.theme.classic"), Icon: Palette },
     { value: "neon-store", label: copy("settings.appearance.theme.neon_store"), Icon: Store },
   ];
 
@@ -258,6 +255,69 @@ function ThemePill({ theme, resolvedTheme, onSetTheme, glassChrome = false }) {
     };
   }, [open]);
 
+  const menu = open ? (
+    <div
+      role="menu"
+      className="absolute bottom-full left-0 mb-2 z-50 min-w-[140px] py-1 rounded-lg border border-oai-gray-200 dark:border-oai-gray-800 bg-white dark:bg-oai-gray-900 shadow-lg"
+    >
+      {themeOptions.map(({ value, label, Icon }) => {
+        const active = themeControlValue(theme) === value;
+        return (
+          <button
+            key={value}
+            type="button"
+            role="menuitem"
+            onClick={() => { onSetTheme(themeFromControlValue(value, resolvedTheme, theme)); setOpen(false); }}
+            className={cn(
+              "flex w-full items-center gap-2.5 px-3 py-1.5 text-[13px] transition-colors",
+              active
+                ? "text-oai-black dark:text-white bg-oai-gray-100 dark:bg-oai-gray-800"
+                : "text-oai-gray-600 dark:text-oai-gray-400 hover:bg-oai-gray-50 dark:hover:bg-oai-gray-800/60 hover:text-oai-black dark:hover:text-white",
+            )}
+          >
+            <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span>{label}</span>
+          </button>
+        );
+      })}
+    </div>
+  ) : null;
+
+  const packButtonClass = cn(
+    "tt-sidebar-pill tt-sidebar-theme-face inline-flex items-center justify-center rounded-full transition-colors",
+    glassChrome
+      ? "border border-gray-500/20 dark:border-gray-500/30 bg-gray-500/[0.04] dark:bg-gray-500/[0.06] backdrop-blur-[2px] text-oai-gray-700 dark:text-oai-gray-300 hover:bg-gray-500/10 dark:hover:bg-gray-500/12 hover:border-gray-500/30 dark:hover:border-gray-500/40 hover:text-oai-black dark:hover:text-white"
+      : "border border-oai-gray-200 dark:border-oai-gray-700 text-oai-gray-600 dark:text-oai-gray-400 hover:bg-oai-gray-200/60 dark:hover:bg-oai-gray-800 hover:text-oai-black dark:hover:text-white hover:border-oai-gray-300 dark:hover:border-oai-gray-600",
+  );
+
+  // Non-neon: footer is sun/moon (classic light/dark). Pack menu via palette.
+  // Works for classic and system (system shows current resolved side pressed; click sets classic).
+  if (!isNeon) {
+    const switchTheme = isClassicTheme(theme)
+      ? theme
+      : (resolvedTheme === "dark" ? "dark" : "light");
+    const PackIcon = Palette;
+    return (
+      <div ref={wrapRef} className="relative flex items-center gap-1">
+        <ClassicSunMoonSwitch theme={switchTheme} setTheme={onSetTheme} glassChrome={glassChrome} />
+        <button
+          type="button"
+          aria-label={copy("settings.appearance.theme.label")}
+          aria-expanded={open}
+          aria-haspopup="menu"
+          title={copy("settings.appearance.theme.label")}
+          onClick={() => setOpen((o) => !o)}
+          className="tt-sidebar-theme inline-flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oai-brand-500"
+        >
+          <span className={packButtonClass}>
+            <PackIcon className="h-3.5 w-3.5" aria-hidden />
+          </span>
+        </button>
+        {menu}
+      </div>
+    );
+  }
+
   return (
     <div ref={wrapRef} className="relative">
       <button
@@ -269,46 +329,69 @@ function ThemePill({ theme, resolvedTheme, onSetTheme, glassChrome = false }) {
         onClick={() => setOpen((o) => !o)}
         className="tt-sidebar-theme inline-flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oai-brand-500"
       >
-        <span className={cn(
-          "tt-sidebar-pill tt-sidebar-theme-face inline-flex items-center justify-center rounded-full transition-colors",
-          glassChrome
-            ? "border border-gray-500/20 dark:border-gray-500/30 bg-gray-500/[0.04] dark:bg-gray-500/[0.06] backdrop-blur-[2px] text-oai-gray-700 dark:text-oai-gray-300 hover:bg-gray-500/10 dark:hover:bg-gray-500/12 hover:border-gray-500/30 dark:hover:border-gray-500/40 hover:text-oai-black dark:hover:text-white"
-            : "border border-oai-gray-200 dark:border-oai-gray-700 text-oai-gray-600 dark:text-oai-gray-400 hover:bg-oai-gray-200/60 dark:hover:bg-oai-gray-800 hover:text-oai-black dark:hover:text-white hover:border-oai-gray-300 dark:hover:border-oai-gray-600",
-        )}>
-        <ActiveIcon className="h-3.5 w-3.5" aria-hidden />
+        <span className={packButtonClass}>
+          <Store className="h-3.5 w-3.5" aria-hidden />
         </span>
       </button>
-      {open && (
-        <div
-          role="menu"
-          className="absolute bottom-full left-0 mb-2 z-50 min-w-[140px] py-1 rounded-lg border border-oai-gray-200 dark:border-oai-gray-800 bg-white dark:bg-oai-gray-900 shadow-lg"
-        >
-          {themeOptions.map(({ value, label, Icon }) => {
-            const active = theme === value;
-            return (
-              <button
-                key={value}
-                type="button"
-                role="menuitem"
-                onClick={() => { onSetTheme(value); setOpen(false); }}
-                className={cn(
-                  "flex w-full items-center gap-2.5 px-3 py-1.5 text-[13px] transition-colors",
-                  active
-                    ? "text-oai-black dark:text-white bg-oai-gray-100 dark:bg-oai-gray-800"
-                    : "text-oai-gray-600 dark:text-oai-gray-400 hover:bg-oai-gray-50 dark:hover:bg-oai-gray-800/60 hover:text-oai-black dark:hover:text-white",
-                )}
-              >
-                <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                <span>{label}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {menu}
     </div>
   );
 }
 
+
+
+
+
+/**
+ * Sidebar sun/moon switch for Classic (light/dark).
+ * Lives in the footer in place of ThemePill while classic is active.
+ */
+function ClassicSunMoonSwitch({ theme, setTheme, glassChrome = false }) {
+  const isLight = theme === "light";
+  return (
+    <div
+      className={cn(
+        "tt-sidebar-theme inline-flex items-center rounded-full p-0.5",
+        glassChrome
+          ? "border border-gray-500/20 dark:border-gray-500/30 bg-gray-500/[0.04] dark:bg-gray-500/[0.06] backdrop-blur-[2px]"
+          : "border border-oai-gray-200 dark:border-oai-gray-700 bg-white/90 dark:bg-oai-gray-900/90",
+      )}
+      role="group"
+      aria-label={copy("settings.appearance.theme.classic")}
+    >
+      <button
+        type="button"
+        aria-label={copy("settings.appearance.theme.light")}
+        aria-pressed={isLight}
+        title={copy("settings.appearance.theme.light")}
+        onClick={() => setTheme("light")}
+        className={cn(
+          "tt-sidebar-pill inline-flex h-7 w-7 items-center justify-center rounded-full transition-colors",
+          isLight
+            ? "bg-oai-gray-100 text-amber-700 shadow-sm dark:bg-oai-gray-800 dark:text-amber-300"
+            : "text-oai-gray-500 hover:bg-oai-gray-100 hover:text-oai-black dark:text-oai-gray-400 dark:hover:bg-oai-gray-800 dark:hover:text-white",
+        )}
+      >
+        <Sun className="h-3.5 w-3.5" aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        aria-label={copy("settings.appearance.theme.dark")}
+        aria-pressed={!isLight}
+        title={copy("settings.appearance.theme.dark")}
+        onClick={() => setTheme("dark")}
+        className={cn(
+          "tt-sidebar-pill inline-flex h-7 w-7 items-center justify-center rounded-full transition-colors",
+          !isLight
+            ? "bg-slate-950/90 text-cyan-100 shadow-sm"
+            : "text-oai-gray-500 hover:bg-oai-gray-100 hover:text-oai-black dark:text-oai-gray-400 dark:hover:bg-oai-gray-800 dark:hover:text-white",
+        )}
+      >
+        <Moon className="h-3.5 w-3.5" aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
 
 /**
  * Top-right sun/moon switch for neon-store: day vs night of the rainy konbini
@@ -355,6 +438,7 @@ function NeonSunMoonSwitch({ neonStorePeriod, setNeonStorePeriod }) {
     </div>
   );
 }
+
 
 /**
  * SidebarBody — shared markup used by both desktop sticky Sidebar and mobile Drawer.
@@ -649,7 +733,7 @@ function MobileTopBar({ open, onOpenDrawer, menuButtonRef }) {
  */
 export function AppLayout({ children }) {
   const { collapsed, toggle } = useSidebarCollapsed();
-  const { theme, setTheme, neonStorePeriod = "night", setNeonStorePeriod } = useTheme();
+  const { theme, neonStorePeriod = "night", setNeonStorePeriod } = useTheme();
   const isNeonStore = theme === "neon-store";
   const [drawerOpen, setDrawerOpen] = useState(false);
   const menuButtonRef = useRef(null);

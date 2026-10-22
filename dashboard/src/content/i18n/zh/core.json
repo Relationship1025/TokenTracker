@@ -775,5 +775,6 @@
   "legal.nav.support": "联系客服",
   "dashboard.rainy_store.period_label": "便利店昼夜",
   "dashboard.rainy_store.period_day": "白天",
-  "dashboard.rainy_store.period_night": "夜晚"
+  "dashboard.rainy_store.period_night": "夜晚",
+  "settings.appearance.theme.classic": "经典"
 }

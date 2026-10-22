@@ -6,7 +6,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 const setTheme = vi.fn();
 
 vi.mock("../../hooks/useTheme.js", () => ({
-  useTheme: () => ({ theme: "system", setTheme }),
+  useTheme: () => ({ theme: "light", setTheme, resolvedTheme: "light" }),
 }));
 vi.mock("../../hooks/useLocale.js", () => ({
   useLocale: () => ({ locale: "system", setLocale: vi.fn() }),

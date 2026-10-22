@@ -23,19 +23,9 @@ function MoonIcon() {
   );
 }
 
-function MonitorIcon() {
-  return (
-    <svg aria-hidden width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="3" width="20" height="14" rx="2" />
-      <path d="M8 21h8" /><path d="M12 17v4" />
-    </svg>
-  );
-}
 
 const OPTIONS = [
-  { value: "light", label: "Light", Icon: SunIcon },
-  { value: "dark", label: "Dark", Icon: MoonIcon },
-  { value: "system", label: "System", Icon: MonitorIcon },
+  { value: "classic", label: "Classic", Icon: SunIcon },
   { value: "neon-store", label: "Token Store", Icon: Store },
 ];
 
@@ -44,8 +34,18 @@ function currentIcon(theme, resolvedTheme) {
   return resolvedTheme === "dark" ? MoonIcon : SunIcon;
 }
 
+function controlValue(theme) {
+  return theme === "light" || theme === "dark" ? "classic" : theme;
+}
+
+function storedTheme(value, theme, resolvedTheme) {
+  if (value !== "classic") return value;
+  if (theme === "light" || theme === "dark") return theme;
+  return resolvedTheme === "dark" ? "dark" : "light";
+}
+
 /**
- * Theme dropdown: Light / Dark / System.
+ * Theme dropdown: Classic / Token Store.
  * Stores preference in localStorage via ThemeProvider.
  */
 export function ThemeToggle({ theme, resolvedTheme, onSetTheme, className = "", direction = "down", align = "right" }) {
@@ -93,12 +93,12 @@ export function ThemeToggle({ theme, resolvedTheme, onSetTheme, className = "", 
           } ${align === "left" ? "left-0" : "right-0"}`}
         >
           {OPTIONS.map(({ value, label, Icon }) => {
-            const active = theme === value;
+            const active = controlValue(theme) === value;
             return (
               <button
                 key={value}
                 type="button"
-                onClick={() => { onSetTheme(value); close(); }}
+                onClick={() => { onSetTheme(storedTheme(value, theme, resolvedTheme)); close(); }}
                 className={`flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors ${
                   active
                     ? "text-oai-black dark:text-white bg-oai-gray-100 dark:bg-oai-gray-800"

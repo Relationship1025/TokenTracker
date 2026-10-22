@@ -57,6 +57,7 @@ export function RainyStoreScene({
           return;
         }
         controllerRef.current = controller;
+        if (typeof window !== "undefined") window.__rainyStoreController = controller;
         controller.setDaytime?.(daytimeRef.current);
         setReady(true);
       })
@@ -69,6 +70,9 @@ export function RainyStoreScene({
       cancelled = true;
       controller?.dispose();
       if (controllerRef.current === controller) controllerRef.current = null;
+      if (typeof window !== "undefined" && window.__rainyStoreController === controller) {
+        window.__rainyStoreController = null;
+      }
     };
   }, [active, reducedMotion, screenshotMode]);
 

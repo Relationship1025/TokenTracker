@@ -5,7 +5,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 
 const BASE_URL = (import.meta.env?.BASE_URL ?? "/").replace(/\/?$/, "/");
 export const KONBINI_MODEL_URL = `${BASE_URL}models/rainy-konbini.glb`;
-export const DAY_KONBINI_MODEL_URL = `${BASE_URL}models/day-konbini.glb`;
+export const DAY_KONBINI_MODEL_URL = `${BASE_URL}models/day-konbini-r2.glb`;
 export const KONBINI_DRACO_PATH = `${BASE_URL}draco/`;
 
 /** Materials that need their own live mesh (animated, transparent or shader-driven). */
@@ -200,13 +200,6 @@ export function buildKonbiniDiorama(gltfScene, registry) {
   gltfScene.traverse((node) => { if (node.isMesh) meshes.push(node); });
 
   for (const mesh of meshes) {
-    // Day front fascia (`SignTextFront`) reads mirrored in Three.js after the
-    // Blender→glTF Y-up export even though Blender previews correctly; flip
-    // local X before baking into the static merge. Night front keeps SignText.001.
-    if (mesh.name === "SignTextFront") {
-      mesh.scale.x *= -1;
-      mesh.updateMatrixWorld(true);
-    }
     const src = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
     const role = classifyKonbiniMaterial(src?.name);
     mesh.geometry.computeBoundingBox();

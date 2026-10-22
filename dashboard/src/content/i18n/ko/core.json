@@ -575,5 +575,6 @@
   "settings.appearance.token_grouping.wan": "4자리",
   "dashboard.rainy_store.period_label": "편의점 낮/밤",
   "dashboard.rainy_store.period_day": "낮",
-  "dashboard.rainy_store.period_night": "밤"
+  "dashboard.rainy_store.period_night": "밤",
+  "settings.appearance.theme.classic": "클래식"
 }

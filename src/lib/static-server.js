@@ -55,7 +55,9 @@ async function serveStaticFile(baseDir, pathname, res, { localRuntimeConfig = fa
     res.writeHead(200, {
       "Content-Type": contentType,
       "Content-Length": stat.size,
-      "Cache-Control": isHtml ? "no-cache" : "public, max-age=31536000, immutable",
+      "Cache-Control": isHtml || [".js", ".mjs", ".glb", ".gltf", ".wasm"].includes(ext)
+        ? "no-cache"
+        : "public, max-age=31536000, immutable",
     });
 
     const stream = handle.createReadStream();

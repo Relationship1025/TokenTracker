@@ -780,5 +780,6 @@
   "settings.appearance.token_grouping.wan": "4位",
   "legal.nav.pricing": "雲服務定價",
   "legal.nav.terms": "服務條款",
-  "legal.nav.support": "聯絡客服"
+  "legal.nav.support": "聯絡客服",
+  "settings.appearance.theme.classic": "經典"
 }
