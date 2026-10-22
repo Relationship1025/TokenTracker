@@ -336,16 +336,160 @@
   -webkit-backdrop-filter: blur(18px) saturate(1.3);
 }
 
+/* Day: clear glass — translucent sky-blue panels; night rules above stay untouched */
+:root.neon-store.neon-store-day {
+  /* Restore dark-on-light neutrals so inverted neon-store grays stay readable on glass */
+  --oai-black: #122536;
+  --oai-white: #f7fbff;
+  --oai-gray-50: #f3f8fc;
+  --oai-gray-100: #e6eff7;
+  --oai-gray-200: #d0deeb;
+  --oai-gray-300: #a9bfd3;
+  --oai-gray-400: #7a95ad;
+  --oai-gray-500: #5a7388;
+  --oai-gray-600: #3f5a70;
+  --oai-gray-700: #2a455a;
+  --oai-gray-800: #1c3346;
+  --oai-gray-900: #142738;
+  --oai-gray-950: #0d1a26;
+  --rainy-panel: rgba(255, 255, 255, 0.5);
+  --rainy-panel-strong: rgba(255, 255, 255, 0.68);
+  --rainy-line: rgba(120, 170, 220, 0.32);
+  --rainy-line-strong: rgba(90, 150, 210, 0.45);
+  --rainy-text: #1a3348;
+  --rainy-muted: #5a7388;
+  --rainy-rail-active-border: rgba(90, 160, 220, 0.4);
+  --rainy-rail-brand-glow: rgba(120, 180, 240, 0.22);
+  --rainy-subtle-line: rgba(255, 255, 255, 0.5);
+  --rainy-rail-background: rgba(255, 255, 255, 0.55);
+  --rainy-sign-border: rgba(120, 170, 220, 0.45);
+}
+
 :root.neon-store.neon-store-day .tt-rainy-app-background {
   background:
-    radial-gradient(120% 90% at 50% -10%, rgba(210, 230, 250, 0.34), transparent 58%),
-    #102030;
+    radial-gradient(120% 90% at 50% -10%, rgba(210, 230, 250, 0.42), transparent 58%),
+    #1a3348;
+}
+
+:root.neon-store.neon-store-day .tt-rainy-card {
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.62), rgba(190, 220, 245, 0.28) 45%, rgba(255, 255, 255, 0.2)),
+    rgba(255, 255, 255, 0.48);
+  border: 1px solid rgba(180, 210, 240, 0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 0 rgba(120, 160, 200, 0.08),
+    0 10px 28px rgba(80, 120, 160, 0.12);
+  backdrop-filter: blur(36px) saturate(160%);
+  -webkit-backdrop-filter: blur(36px) saturate(160%);
+  color: var(--rainy-text);
+}
+
+:root.neon-store.neon-store-day [data-rainy-card="true"] {
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.62), rgba(190, 220, 245, 0.28) 45%, rgba(255, 255, 255, 0.2)),
+    rgba(255, 255, 255, 0.48) !important;
+}
+
+:root.neon-store.neon-store-day .tt-rainy-card [class*="bg-oai-gray-100"],
+:root.neon-store.neon-store-day .tt-rainy-card [class*="bg-oai-gray-200"],
+:root.neon-store.neon-store-day .tt-rainy-card [class*="bg-oai-gray-800"],
+:root.neon-store.neon-store-day .tt-rainy-card [class*="dark:bg-oai-gray"] {
+  background-color: rgba(255, 255, 255, 0.38) !important;
 }
 
 :root.neon-store.neon-store-day .tt-rainy-card-pane {
-  background: linear-gradient(180deg, rgba(24, 44, 58, 0.34), rgba(14, 30, 42, 0.55));
-  border-top-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 -18px 40px rgba(20, 40, 60, 0.18);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(195, 220, 245, 0.36));
+  border-top: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 -18px 40px rgba(80, 120, 160, 0.12);
+  scrollbar-color: rgba(120, 160, 200, 0.4) transparent;
+}
+
+:root.neon-store.neon-store-day .tt-rainy-dock-handle-bar {
+  background: rgba(120, 160, 200, 0.48);
+  box-shadow: 0 0 10px rgba(140, 180, 220, 0.28);
+}
+
+:root.neon-store.neon-store-day .tt-rainy-dock-handle:hover .tt-rainy-dock-handle-bar,
+:root.neon-store.neon-store-day .tt-rainy-dock-handle:focus-visible .tt-rainy-dock-handle-bar {
+  background: rgba(90, 150, 210, 0.78);
+}
+
+:root.neon-store.neon-store-day .tt-rainy-dock-title-chip {
+  border: 1px solid rgba(160, 195, 230, 0.5);
+  background: rgba(255, 255, 255, 0.48);
+  box-shadow:
+    0 8px 22px rgba(80, 120, 160, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  color: rgba(26, 51, 72, 0.9);
+}
+
+:root.neon-store.neon-store-day .tt-rainy-dock-title-chip:hover,
+:root.neon-store.neon-store-day .tt-rainy-dock-title-chip:focus-visible {
+  border-color: rgba(90, 150, 210, 0.55);
+  background: rgba(255, 255, 255, 0.68);
+  color: #143048;
+  box-shadow:
+    0 10px 26px rgba(80, 120, 160, 0.14),
+    0 0 14px rgba(120, 180, 240, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+:root.neon-store.neon-store-day .tt-rainy-rail-chip {
+  border: 1px solid rgba(160, 195, 230, 0.48);
+  background: rgba(255, 255, 255, 0.46);
+  box-shadow:
+    0 8px 24px rgba(80, 120, 160, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  color: var(--rainy-text);
+}
+
+:root.neon-store.neon-store-day .tt-rainy-rail-chip:hover,
+:root.neon-store.neon-store-day .tt-rainy-rail-chip:focus-visible {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(90, 150, 210, 0.55);
+  box-shadow:
+    0 10px 28px rgba(80, 120, 160, 0.14),
+    0 0 14px rgba(120, 180, 240, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+:root.neon-store.neon-store-day .tt-rainy-rail-chip.tt-rainy-rail-active {
+  background: rgba(120, 180, 240, 0.28);
+  border-color: rgba(90, 150, 210, 0.55);
+  box-shadow:
+    0 8px 28px rgba(80, 120, 160, 0.12),
+    0 0 16px rgba(120, 180, 240, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+:root.neon-store.neon-store-day .tt-rainy-rail-chip.tt-rainy-rail-active:hover,
+:root.neon-store.neon-store-day .tt-rainy-rail-chip.tt-rainy-rail-active:focus-visible {
+  background: rgba(120, 180, 240, 0.38);
+  border-color: rgba(70, 140, 205, 0.65);
+}
+
+:root.neon-store.neon-store-day .tt-rainy-shell-nav {
+  background: rgba(255, 255, 255, 0.58);
+  border-color: rgba(160, 195, 230, 0.4);
+}
+
+:root.neon-store.neon-store-day .tt-rainy-rail-active {
+  box-shadow: inset 0 0 0 1px var(--rainy-rail-active-border);
+}
+
+:root.neon-store.neon-store-day .tt-rainy-rail-brand-mark {
+  box-shadow: 0 0 24px var(--rainy-rail-brand-glow);
+}
+
+/* dark:text-white / text-white stay #fff under .dark — force readable ink on day glass */
+:root.neon-store.neon-store-day .tt-rainy-card-pane .text-white,
+:root.neon-store.neon-store-day .tt-rainy-card .text-white,
+:root.neon-store.neon-store-day.dark .tt-rainy-card-pane .text-white,
+:root.neon-store.neon-store-day.dark .tt-rainy-card .text-white,
+:root.neon-store.neon-store-day.dark .tt-rainy-card-pane .dark\:text-white,
+:root.neon-store.neon-store-day.dark .tt-rainy-card .dark\:text-white {
+  color: var(--rainy-text) !important;
 }
 
 
