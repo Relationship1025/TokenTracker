@@ -200,6 +200,13 @@ export function buildKonbiniDiorama(gltfScene, registry) {
   gltfScene.traverse((node) => { if (node.isMesh) meshes.push(node); });
 
   for (const mesh of meshes) {
+    // Day front fascia (`SignTextFront`) reads mirrored in Three.js after the
+    // Blender→glTF Y-up export even though Blender previews correctly; flip
+    // local X before baking into the static merge. Night front keeps SignText.001.
+    if (mesh.name === "SignTextFront") {
+      mesh.scale.x *= -1;
+      mesh.updateMatrixWorld(true);
+    }
     const src = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
     const role = classifyKonbiniMaterial(src?.name);
     mesh.geometry.computeBoundingBox();
