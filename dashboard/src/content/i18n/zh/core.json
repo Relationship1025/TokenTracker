@@ -14,6 +14,7 @@
   "settings.transfer.cancel": "取消",
   "settings.transfer.confirm_title": "导入此快照？",
   "settings.transfer.confirm_description": "确认后，此快照会与同一台电脑此前导入的数据按行累加。",
+  "settings.transfer.action_noop": "这份快照已经导入过了。",
   "settings.transfer.account_source_warning": "Cursor 和 TRAE CN 的用量属于账号级数据，不计入跨设备合计。",
   "settings.transfer.source_label": "来源电脑",
   "settings.transfer.date_label": "导出时间",

@@ -125,9 +125,12 @@ export function DataTransferSection() {
               <div><span className="text-oai-gray-500">{copy("settings.transfer.tokens_label")}: </span>{preview.summary.tokens ?? preview.summary.total_tokens}</div>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => setConfirming(true)} disabled={busy || ["noop", "stale", "conflict"].includes(preview.action)}><Upload size={15} className="mr-1.5" aria-hidden />{copy("settings.transfer.import")}</Button>
+              <Button size="sm" onClick={() => setConfirming(true)} disabled={busy || preview.action === "noop"}><Upload size={15} className="mr-1.5" aria-hidden />{copy("settings.transfer.import")}</Button>
               {undoAvailable ? <Button size="sm" variant="secondary" onClick={handleUndo} disabled={busy}><RotateCcw size={15} className="mr-1.5" aria-hidden />{copy("settings.transfer.undo")}</Button> : null}
             </div>
+            {preview.action === "noop" ? (
+              <p className="mt-2 text-xs text-oai-gray-500 dark:text-oai-gray-400">{copy("settings.transfer.action_noop")}</p>
+            ) : null}
           </div>
         ) : null}
         {confirming ? (

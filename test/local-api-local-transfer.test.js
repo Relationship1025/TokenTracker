@@ -117,10 +117,11 @@ test("preview, atomic import, merged totals, conflict/stale handling, and undo",
 
     const same = await h.call("/api/local-transfer/preview", { method: "POST", headers: h.authHeaders, body: JSON.stringify({ snapshot: first }) });
     assert.equal(same.body.action, "noop");
-    const conflict = makeSnapshot({ rows: [transferRow({ output_tokens: 21, total_tokens: 31, billable_total_tokens: 31 })] });
-    const conflictResult = await h.call("/api/local-transfer/preview", { method: "POST", headers: h.authHeaders, body: JSON.stringify({ snapshot: conflict }) });
-    assert.equal(conflictResult.status, 409);
-    assert.equal(conflictResult.body.action, "conflict");
+
+    const sibling = makeSnapshot({ rows: [transferRow({ output_tokens: 21, total_tokens: 31, billable_total_tokens: 31 })] });
+    const siblingPreview = await h.call("/api/local-transfer/preview", { method: "POST", headers: h.authHeaders, body: JSON.stringify({ snapshot: sibling }) });
+    assert.equal(siblingPreview.status, 200);
+    assert.equal(siblingPreview.body.action, "accumulate");
 
     const newer = makeSnapshot({ revision: 2, rows: [transferRow({ total_tokens: 50, input_tokens: 25, output_tokens: 25, billable_total_tokens: 50 })] });
     const accumulated = await h.call("/api/local-transfer/import", { method: "POST", headers: h.authHeaders, body: JSON.stringify({ snapshot: newer }) });
@@ -130,10 +131,9 @@ test("preview, atomic import, merged totals, conflict/stale handling, and undo",
     const accumulatedSummary = await h.call("/functions/tokentracker-usage-summary?from=2026-10-16&to=2026-10-16&tz=UTC");
     assert.equal(accumulatedSummary.body.totals.total_tokens, 90);
 
-    const stale = makeSnapshot({ revision: 1, rows: [] });
-    const staleResult = await h.call("/api/local-transfer/preview", { method: "POST", headers: h.authHeaders, body: JSON.stringify({ snapshot: stale }) });
-    assert.equal(staleResult.status, 409);
-    assert.equal(staleResult.body.action, "stale");
+    const reimportNewer = await h.call("/api/local-transfer/preview", { method: "POST", headers: h.authHeaders, body: JSON.stringify({ snapshot: newer }) });
+    assert.equal(reimportNewer.status, 200);
+    assert.equal(reimportNewer.body.action, "noop");
 
     const undo = await h.call("/api/local-transfer/undo", { method: "POST", headers: h.authHeaders });
     assert.equal(undo.status, 200);

@@ -152,9 +152,11 @@ function mergeTransferredRows(localRows, snapshots) {
     let stored = snapshot;
     let undo;
     if (prior) {
-      if (snapshot.revision < prior.revision) action = 'stale';
-      else if (snapshot.revision === prior.revision) action = snapshot.content_hash === prior.content_hash ? 'noop' : 'conflict';
-      else {
+      if (snapshot.content_hash === prior.content_hash) {
+        action = 'noop';
+      } else {
+        // Incremental imports: same origin always accumulates by bucket.
+        // Identical content is noop above; revision ordering no longer blocks.
         action = 'accumulate';
         stored = accumulateSameOriginSnapshot(prior, snapshot);
         undo = { origin_id: snapshot.origin_id, previous: prior, replacement: stored };

@@ -35,14 +35,16 @@ test('same-origin newer snapshot accumulates numeric metrics per bucket', () => 
   assert.equal(merged.rows[0].conversation_count, 2);
 });
 
-test('same revision hash is noop, different hash conflicts, and stale revision is ignored', () => {
+test('same content hash is noop; different hash accumulates even at same or lower revision', () => {
   const current = snapshot({ revision: 3 });
   const same = snapshot({ revision: 3 });
-  const conflict = snapshot({ revision: 3, rows: [row({ output_tokens: 21, total_tokens: 31, billable_total_tokens: 31 })] });
-  const stale = snapshot({ revision: 2, rows: [] });
+  const other = snapshot({ revision: 3, rows: [row({ output_tokens: 21, total_tokens: 31, billable_total_tokens: 31 })] });
+  const olderRev = snapshot({ revision: 2, rows: [row({ input_tokens: 1, output_tokens: 1, total_tokens: 2, billable_total_tokens: 2 })] });
   assert.equal(mergeTransferredRows([], [current, same]).origins[1].action, 'noop');
-  assert.equal(mergeTransferredRows([], [current, conflict]).origins[1].action, 'conflict');
-  assert.equal(mergeTransferredRows([], [current, stale]).origins[1].action, 'stale');
+  const mixed = mergeTransferredRows([], [current, other]);
+  assert.equal(mixed.origins[1].action, 'accumulate');
+  assert.equal(mixed.rows[0].total_tokens, 61);
+  assert.equal(mergeTransferredRows([], [current, olderRev]).origins[1].action, 'accumulate');
 });
 
 test('different origins sum numeric metrics while excluding cursor and trae-cn imports', () => {

@@ -1521,6 +1521,7 @@ settings.transfer.unknown_source,ui,SettingsPage,DataTransferSection,unknown_sou
 settings.transfer.unknown_date,ui,SettingsPage,DataTransferSection,unknown_date,"Unknown date",,active
 settings.transfer.request_failed,ui,SettingsPage,DataTransferSection,request_failed,"Transfer request failed",,active
 settings.transfer.invalid_file,ui,SettingsPage,DataTransferSection,invalid_file,"This file could not be previewed.",,active
+settings.transfer.action_noop,ui,SettingsPage,DataTransferSection,action_noop,"This snapshot was already imported.",,active
 dashboard.device_usage.title,ui,DashboardPage,DeviceUsageCard,title,"Device usage",,active
 dashboard.device_usage.subtitle,ui,DashboardPage,DeviceUsageCard,subtitle,"Usage by local and imported device",,active
 dashboard.device_usage.loading,ui,DashboardPage,DeviceUsageCard,loading,"Loading device usage",,active

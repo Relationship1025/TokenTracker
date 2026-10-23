@@ -1056,7 +1056,7 @@ function createLocalApiHandler({ queuePath, serverVersion = null, trackerDataDir
   const localTransferExportStatePath = path.join(trackerDataDir, "local-transfer-export.json");
 
   function emptyLocalTransferImportState() {
-    return { version: 1, snapshots: [], undo: null };
+    return { version: 1, snapshots: [], undo: null, applied: [] };
   }
 
   function readLocalTransferImportState() {
@@ -1071,7 +1071,10 @@ function createLocalApiHandler({ queuePath, serverVersion = null, trackerDataDir
       throw new Error("Invalid local transfer import state");
     }
     const snapshots = parsed.snapshots.map((snapshot) => validateSnapshot(snapshot));
-    return { version: 1, snapshots, undo: parsed.undo || null };
+    const applied = Array.isArray(parsed.applied)
+      ? parsed.applied.filter((entry) => entry && typeof entry.origin_id === "string" && typeof entry.content_hash === "string")
+      : [];
+    return { version: 1, snapshots, undo: parsed.undo || null, applied };
   }
 
   function writeLocalTransferImportState(state) {
@@ -1083,12 +1086,14 @@ function createLocalApiHandler({ queuePath, serverVersion = null, trackerDataDir
     return state.snapshots.find((snapshot) => snapshot.origin_id === originId) || null;
   }
 
-  function transferActionFor(prior, snapshot) {
-    if (!prior) return "new";
-    if (snapshot.revision < prior.revision) return "stale";
-    if (snapshot.revision === prior.revision) {
-      return snapshot.content_hash === prior.content_hash ? "noop" : "conflict";
+  function transferActionFor(state, snapshot) {
+    const applied = Array.isArray(state.applied) ? state.applied : [];
+    if (applied.some((entry) => entry.origin_id === snapshot.origin_id && entry.content_hash === snapshot.content_hash)) {
+      return "noop";
     }
+    const prior = findImportedSnapshot(state, snapshot.origin_id);
+    if (!prior) return "new";
+    if (prior.content_hash === snapshot.content_hash) return "noop";
     return "accumulate";
   }
 
@@ -1905,7 +1910,14 @@ function createLocalApiHandler({ queuePath, serverVersion = null, trackerDataDir
           const snapshots = state.snapshots.filter((snapshot) => snapshot.origin_id !== originId);
           if (previous) snapshots.push(validateSnapshot(previous));
           snapshots.sort((a, b) => a.origin_id.localeCompare(b.origin_id));
-          writeLocalTransferImportState({ version: 1, snapshots, undo: null });
+          const applied = [...(Array.isArray(state.applied) ? state.applied : [])];
+          for (let i = applied.length - 1; i >= 0; i -= 1) {
+            if (applied[i].origin_id === originId) {
+              applied.splice(i, 1);
+              break;
+            }
+          }
+          writeLocalTransferImportState({ version: 1, snapshots, applied, undo: null });
           json(res, { ok: true, origin_id: originId, restored: Boolean(previous) });
           return true;
         }
@@ -1920,23 +1932,15 @@ function createLocalApiHandler({ queuePath, serverVersion = null, trackerDataDir
         }
         const snapshot = transferSnapshotFromBody(body);
         const prior = findImportedSnapshot(state, snapshot.origin_id);
-        const action = transferActionFor(prior, snapshot);
+        const action = transferActionFor(state, snapshot);
         const response = {
-          ok: action !== "conflict" && action !== "stale",
+          ok: true,
           action,
           summary: localTransferSummary(snapshot),
           previous_summary: prior ? localTransferSummary(prior) : null,
         };
         if (p === "/api/local-transfer/preview") {
-          json(res, response, action === "conflict" || action === "stale" ? 409 : 200);
-          return true;
-        }
-        if (action === "conflict") {
-          json(res, { ...response, error: "Same revision has a different content hash", code: "HASH_CONFLICT" }, 409);
-          return true;
-        }
-        if (action === "stale") {
-          json(res, { ...response, error: "Snapshot revision is older than the imported snapshot", code: "STALE_REVISION" }, 409);
+          json(res, response);
           return true;
         }
         if (action === "noop") {
@@ -1947,9 +1951,15 @@ function createLocalApiHandler({ queuePath, serverVersion = null, trackerDataDir
         const snapshots = state.snapshots.filter((entry) => entry.origin_id !== snapshot.origin_id);
         snapshots.push(stored);
         snapshots.sort((a, b) => a.origin_id.localeCompare(b.origin_id));
+        const applied = [...(Array.isArray(state.applied) ? state.applied : []), {
+          origin_id: snapshot.origin_id,
+          content_hash: snapshot.content_hash,
+          revision: snapshot.revision,
+        }];
         writeLocalTransferImportState({
           version: 1,
           snapshots,
+          applied,
           undo: { origin_id: snapshot.origin_id, previous: prior || null, replacement: stored },
         });
         json(res, { ...response, imported: true, summary: localTransferSummary(stored) });
