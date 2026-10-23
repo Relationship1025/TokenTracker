@@ -13,6 +13,7 @@ import {
   granularityFromPeriod,
 } from "../../../lib/trend-stats";
 import { TrendMonitorZoomModal } from "./TrendMonitorZoomModal";
+import { useRainyDockOverlay } from "./RainyDashboardLayout.jsx";
 
 function interpolateQuantile(sortedValues, ratio) {
   if (!Array.isArray(sortedValues) || sortedValues.length === 0) return 0;
@@ -509,7 +510,17 @@ export function TrendMonitor({
   const sweepSideRef = React.useRef(null);
   const selectedBarRef = React.useRef(null);
   const [isZoomOpen, setIsZoomOpen] = React.useState(false);
+  const rainyDockOverlay = useRainyDockOverlay();
   const containerRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!rainyDockOverlay) return undefined;
+    if (isZoomOpen) {
+      rainyDockOverlay.notifyOverlayOpen();
+      return () => rainyDockOverlay.notifyOverlayClose();
+    }
+    return undefined;
+  }, [isZoomOpen, rainyDockOverlay]);
   const showBar = React.useCallback((e, row, value, segments, kind, displayValue) => {
     setHoveredBar({ row, value, segments, timeLabel: formatBucketRange(row, granularity, locale), kind, displayValue });
     const rect = e.currentTarget.getBoundingClientRect();

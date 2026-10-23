@@ -20,6 +20,24 @@ import { cn } from "../../../lib/cn";
  * entirely. `onEmptyChange` reports emptiness up so the parent can drop the
  * id from `SortableContext`'s `items` before the user could ever drag.
  */
+/** True when the body has no meaningful UI (incl. empty glass + FadeIn shells). */
+function isSortableBodyEmpty(node) {
+  if (!node) return true;
+  if (node.childNodes.length === 0) return true;
+  const text = (node.textContent || "").replace(/\s+/g, "");
+  if (text.length > 0) return false;
+  // Real cards always leave text, media, controls, or a test id; null cards leave
+  // only empty wrappers (DashboardGlassCard / FadeIn motion.div).
+  if (
+    node.querySelector(
+      "img, canvas, video, iframe, svg, input, textarea, select, button, a, table, [data-testid]",
+    )
+  ) {
+    return false;
+  }
+  return true;
+}
+
 export function SortableCard({ id, children, onEmptyChange }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
@@ -29,7 +47,7 @@ export function SortableCard({ id, children, onEmptyChange }) {
 
   useLayoutEffect(() => {
     if (!onEmptyChange) return;
-    const isEmpty = bodyRef.current ? bodyRef.current.childNodes.length === 0 : true;
+    const isEmpty = isSortableBodyEmpty(bodyRef.current);
     if (reportedEmptyRef.current !== isEmpty) {
       reportedEmptyRef.current = isEmpty;
       onEmptyChange(id, isEmpty);
@@ -47,7 +65,7 @@ export function SortableCard({ id, children, onEmptyChange }) {
       ref={setNodeRef}
       style={style}
       className={cn(
-        "group/sortable relative has-[[data-sortable-body]:empty]:hidden",
+        "group/sortable relative has-[[data-sortable-body]:empty]:hidden has-[[data-sortable-body]>[data-rainy-card=true]:empty]:hidden",
         isDragging && "opacity-90",
       )}
     >

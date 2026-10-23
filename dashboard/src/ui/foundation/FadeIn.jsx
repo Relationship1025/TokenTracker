@@ -10,6 +10,10 @@ export function FadeIn({
   once = true,
 }) {
   const shouldReduceMotion = useReducedMotion();
+  // Empty children must not leave a wrapper: DashboardGlassCard / SortableCard
+  // treat a bare FadeIn shell as "content", which wrongly keeps dock chips and
+  // empty glass borders for cards that intentionally render null.
+  if (React.Children.toArray(children).length === 0) return null;
 
   if (shouldReduceMotion) {
     return <div className={className}>{children}</div>;

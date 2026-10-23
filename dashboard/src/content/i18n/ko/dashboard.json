@@ -123,7 +123,7 @@
   "dashboard.install.cmd.sync": "npx --yes tokentracker-cli sync",
   "dashboard.daily.title": "일별 내역",
   "dashboard.daily.empty": "아직 데이터가 없습니다. AI CLI를 사용한 다음 {{cmd}}을(를) 실행하세요.",
-  "dashboard.identity.title": "내 프로필",
+  "dashboard.identity.title": "사용량 개요",
   "dashboard.identity.subtitle": "코딩 여정을 기록하세요",
   "dashboard.identity.fallback": "익명",
   "dashboard.overview.layout.drag_handle": "드래그하여 순서 변경",

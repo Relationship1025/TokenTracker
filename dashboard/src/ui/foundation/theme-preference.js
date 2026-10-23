@@ -46,8 +46,14 @@ export function getInitialNeonStorePeriod(storage = globalThis.localStorage) {
   return "night";
 }
 
-export function resolveThemeClass(theme, systemDark) {
-  if (theme === "dark" || theme === "neon-store") return "dark";
+/**
+ * Map theme (+ optional neon-store period) to the light/dark class used by Tailwind.
+ * neon-store night stays dark; neon-store day resolves to light so every page
+ * (not only rainy dashboard cards) gets the shallow palette.
+ */
+export function resolveThemeClass(theme, systemDark, neonStorePeriod = "night") {
+  if (theme === "neon-store") return neonStorePeriod === "day" ? "light" : "dark";
+  if (theme === "dark") return "dark";
   if (theme === "light") return "light";
   return systemDark ? "dark" : "light";
 }

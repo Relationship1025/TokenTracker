@@ -118,7 +118,7 @@
   "dashboard.install.cmd.sync": "npx --yes tokentracker-cli sync",
   "dashboard.daily.title": "Tägliche Aufschlüsselung",
   "dashboard.daily.empty": "Noch keine Daten. Nutze zuerst ein KI-CLI und führe dann {{cmd}} aus.",
-  "dashboard.identity.title": "Dein Profil",
+  "dashboard.identity.title": "Nutzungsübersicht",
   "dashboard.identity.subtitle": "Verfolge deine Coding-Reise",
   "dashboard.identity.fallback": "Anonymer Benutzer",
   "dashboard.screenshot.twitter_text": "{{total_tokens}} aufgezeichnete Token.\\n{{model_name}} führt mit {{model_percent}}%.\\n\\nMeine AI-Nutzung, ungeprüft →\\ntokentracker.cc",

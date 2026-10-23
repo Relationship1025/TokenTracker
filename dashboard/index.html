@@ -59,10 +59,16 @@
       })();
       // Sync theme before first paint to prevent dark→light flash (FOUC)
       (function(){
-        var t;
+        var t, period;
         try { t = localStorage.getItem("tokentracker-theme"); } catch(e) {}
-        var dark = t === "dark" || t === "neon-store" || (t !== "light" && t !== "neon-store" && matchMedia("(prefers-color-scheme:dark)").matches);
-        if (dark) document.documentElement.classList.add("dark");
+        try { period = localStorage.getItem("tokentracker-neon-store-period"); } catch(e) {}
+        var root = document.documentElement;
+        var neon = t === "neon-store";
+        var neonDay = neon && period === "day";
+        var dark = t === "dark" || (neon && !neonDay) || (t !== "light" && !neon && matchMedia("(prefers-color-scheme:dark)").matches);
+        if (dark) root.classList.add("dark");
+        if (neon) root.classList.add("neon-store");
+        if (neonDay) root.classList.add("neon-store-day");
       })();
     </script>
     <style>

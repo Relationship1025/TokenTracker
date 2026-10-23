@@ -20,8 +20,10 @@ describe("rainy neon store theme preference", () => {
     expect(getInitialTheme({ getItem: () => "unknown" })).toBe("light");
   });
 
-  it("resolves neon-store to dark and migrates legacy system on read", () => {
+  it("resolves neon-store night to dark, day to light, and migrates legacy system on read", () => {
     expect(resolveThemeClass("neon-store", false)).toBe("dark");
+    expect(resolveThemeClass("neon-store", false, "night")).toBe("dark");
+    expect(resolveThemeClass("neon-store", true, "day")).toBe("light");
     expect(resolveThemeClass("system", false)).toBe("light");
     expect(resolveThemeClass("system", true)).toBe("dark");
     expect(getInitialTheme({ getItem: () => "system" })).toMatch(/^(light|dark)$/);

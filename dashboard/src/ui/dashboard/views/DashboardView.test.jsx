@@ -1,5 +1,5 @@
 import React from "react";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { copy } from "../../../lib/copy";
 import { LEFT_CARD_ORDER_DEFAULTS } from "../../../pages/DashboardPage.jsx";
@@ -93,6 +93,8 @@ it("keeps every card draggable while adding rainy glass wrappers", () => {
   expect(screen.getByTestId("stats")).toBeInTheDocument();
   expect(screen.getByTestId("usage")).toBeInTheDocument();
   expect(document.querySelectorAll("[data-rainy-card='true']")).toHaveLength(2);
+  // Dock starts collapsed (grid display:none); expand so drag handles are exposed to role queries.
+  fireEvent.click(screen.getByRole("button", { name: "Expand cards" }));
   expect(screen.getAllByRole("button", { name: copy("dashboard.overview.layout.drag_handle") })).toHaveLength(2);
 });
 
@@ -108,6 +110,28 @@ it("keeps an async data card mounted while empty so its loaded result can appear
   loadingCard.pending = false;
   view.rerender(page());
   expect(screen.getByTestId("quality")).toBeInTheDocument();
+  expect(loadingCard.mounts).toBe(1);
+  expect(loadingCard.unmounts).toBe(0);
+});
+
+it("omits empty cards from rainy dock title chips while keeping them mounted", async () => {
+  themeState.isNeonStore = true;
+  loadingCard.pending = true;
+  loadingCard.mounts = loadingCard.unmounts = 0;
+  render(
+    <DashboardView
+      copy={copy}
+      isLocalMode
+      leftCardOrder={["statsPanel", "qualityPerDollar"]}
+      rightCardOrder={["usageOverview"]}
+    />,
+  );
+  // SortableCard reports emptiness in useLayoutEffect → dock chips update on next paint.
+  await waitFor(() => {
+    expect(screen.queryByRole("button", { name: copy("qpd.card.title") })).toBeNull();
+  });
+  expect(screen.getByRole("button", { name: copy("dashboard.identity.title") })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: copy("nav.usage") })).toBeInTheDocument();
   expect(loadingCard.mounts).toBe(1);
   expect(loadingCard.unmounts).toBe(0);
 });

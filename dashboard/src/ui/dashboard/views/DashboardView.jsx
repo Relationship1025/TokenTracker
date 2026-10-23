@@ -95,6 +95,19 @@ export function DashboardView(props) {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   });
+  // Cards that render null / empty body (QPD, SessionInsights, empty heatmap, …)
+  // stay mounted for async load, but must not appear in the rainy dock chip strip.
+  const [emptyCardIds, setEmptyCardIds] = useState(() => new Set());
+  const handleCardEmptyChange = useCallback((id, isEmpty) => {
+    setEmptyCardIds((prev) => {
+      const has = prev.has(id);
+      if (isEmpty === has) return prev;
+      const next = new Set(prev);
+      if (isEmpty) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return undefined;
@@ -228,6 +241,7 @@ export function DashboardView(props) {
   );
 
   const dockTitles = [...visibleLeftOrder, ...visibleRightOrder]
+    .filter((id) => !emptyCardIds.has(id))
     .map((id) => ({ id, label: rainyDockTitle(id, copy) }))
     .filter((item) => Boolean(item.label));
 
@@ -443,7 +457,7 @@ export function DashboardView(props) {
       <DndContext sensors={sensors} onDragEnd={onDragEnd}>
         <SortableContext items={order} strategy={verticalListSortingStrategy}>
           {order.map((id, i) => (
-            <SortableCard key={id} id={id}>
+            <SortableCard key={id} id={id} onEmptyChange={handleCardEmptyChange}>
               {renderGlassCard(id, baseDelay + STEP * i)}
             </SortableCard>
           ))}

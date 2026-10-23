@@ -292,7 +292,7 @@ dashboard.install.link_code.failed,dashboard,DashboardPage,AsciiBox,install_stat
 dashboard.install.cmd.sync,dashboard,DashboardPage,AsciiBox,install_cmd,"npx --yes tokentracker-cli sync",,active
 dashboard.daily.title,dashboard,DashboardPage,AsciiBox,title,"Daily Breakdown",,active
 dashboard.daily.empty,dashboard,DashboardPage,AsciiBox,empty_state,"No data yet. Use your AI CLI then run {{cmd}}.",,active
-dashboard.identity.title,dashboard,DashboardPage,IdentityCard,title,"Your Profile",,active
+dashboard.identity.title,dashboard,DashboardPage,IdentityCard,title,"Usage Overview",,active
 dashboard.identity.subtitle,dashboard,DashboardPage,IdentityCard,subtitle,"Track your coding journey",,active
 dashboard.identity.fallback,dashboard,DashboardPage,IdentityCard,handle_fallback,"Anonymous",,active
 dashboard.overview.layout.drag_handle,dashboard,DashboardPage,SortableCard,drag_handle_aria_label,"Drag to reorder",,active

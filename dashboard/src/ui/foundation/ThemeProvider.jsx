@@ -55,7 +55,7 @@ export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => getInitialTheme());
   const [neonStorePeriod, setNeonStorePeriodState] = useState(() => getInitialNeonStorePeriod());
   const [resolvedTheme, setResolvedTheme] = useState(() => {
-    if (theme === "neon-store") return "dark";
+    if (theme === "neon-store") return neonStorePeriod === "day" ? "light" : "dark";
     if (theme !== "system") return theme;
     if (isNativeEmbed()) {
       // 优先用原生缓存（模块加载时已挂上 always-on listener）
@@ -93,11 +93,11 @@ export function ThemeProvider({ children }) {
       }
       setResolvedTheme(getSystemTheme());
     } else if (theme === "neon-store") {
-      setResolvedTheme("dark");
+      setResolvedTheme(neonStorePeriod === "day" ? "light" : "dark");
     } else {
       setResolvedTheme(theme);
     }
-  }, [theme]);
+  }, [theme, neonStorePeriod]);
 
   // 始终订阅原生 system appearance（不依赖 theme），缓存随时更新；只有处于 system 模式时才反映到 React state
   useEffect(() => {

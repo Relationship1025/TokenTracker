@@ -127,7 +127,7 @@
   "dashboard.install.cmd.sync": "npx --yes tokentracker-cli sync",
   "dashboard.daily.title": "每日细目",
   "dashboard.daily.empty": "还没有数据。先使用 AI CLI，再运行 {{cmd}}。",
-  "dashboard.identity.title": "你的个人资料",
+  "dashboard.identity.title": "用量概览",
   "dashboard.identity.subtitle": "记录你的编码之旅",
   "dashboard.identity.fallback": "匿名用户",
   "dashboard.overview.layout.drag_handle": "拖拽以重新排列",

@@ -412,12 +412,10 @@ export function ActivityHeatmap({
     [normalized?.to, weeks.length, weekStartsOn, monthLabels]
   );
 
+  // No weeks → unmount entirely so SortableCard reports empty and the rainy
+  // dock collapsed chip strip omits this card (avoids a "phantom" label).
   if (!weeks.length) {
-    return (
-      <div className="py-8 text-center text-sm text-oai-gray-500">
-        {copy("heatmap.empty")}
-      </div>
-    );
+    return null;
   }
 
   const cellSize = embedded ? 10 : CELL_SIZE;
