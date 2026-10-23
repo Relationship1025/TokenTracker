@@ -123,11 +123,12 @@ test("preview, atomic import, merged totals, conflict/stale handling, and undo",
     assert.equal(conflictResult.body.action, "conflict");
 
     const newer = makeSnapshot({ revision: 2, rows: [transferRow({ total_tokens: 50, input_tokens: 25, output_tokens: 25, billable_total_tokens: 50 })] });
-    const replacement = await h.call("/api/local-transfer/import", { method: "POST", headers: h.authHeaders, body: JSON.stringify({ snapshot: newer }) });
-    assert.equal(replacement.status, 200);
-    assert.equal(replacement.body.action, "replace");
-    const replacedSummary = await h.call("/functions/tokentracker-usage-summary?from=2026-10-16&to=2026-10-16&tz=UTC");
-    assert.equal(replacedSummary.body.totals.total_tokens, 60);
+    const accumulated = await h.call("/api/local-transfer/import", { method: "POST", headers: h.authHeaders, body: JSON.stringify({ snapshot: newer }) });
+    assert.equal(accumulated.status, 200);
+    assert.equal(accumulated.body.action, "accumulate");
+    // local 10 + first import 30 + second import 50
+    const accumulatedSummary = await h.call("/functions/tokentracker-usage-summary?from=2026-10-16&to=2026-10-16&tz=UTC");
+    assert.equal(accumulatedSummary.body.totals.total_tokens, 90);
 
     const stale = makeSnapshot({ revision: 1, rows: [] });
     const staleResult = await h.call("/api/local-transfer/preview", { method: "POST", headers: h.authHeaders, body: JSON.stringify({ snapshot: stale }) });

@@ -23,12 +23,16 @@ test('rejects malformed, nonfinite, negative, duplicate, and unknown row values'
   assert.throws(() => validateSnapshot({ ...snapshot(), content_hash: 'sha256:' + '0'.repeat(64) }), /hash/i);
 });
 
-test('same-origin newer complete snapshot replaces older rows, including zero values', () => {
+test('same-origin newer snapshot accumulates numeric metrics per bucket', () => {
   const older = snapshot();
-  const newer = snapshot({ revision: 2, rows: [row({ input_tokens: 0, output_tokens: 0, total_tokens: 0, billable_total_tokens: 0, conversation_count: 0 })] });
+  const newer = snapshot({ revision: 2, rows: [row({ input_tokens: 5, output_tokens: 5, total_tokens: 10, billable_total_tokens: 10, conversation_count: 1 })] });
   const merged = mergeTransferredRows([], [older, newer]);
-  assert.deepEqual(merged.rows, [newer.rows[0]]);
-  assert.equal(merged.origins[1].action, 'replace');
+  assert.equal(merged.origins[1].action, 'accumulate');
+  assert.equal(merged.rows.length, 1);
+  assert.equal(merged.rows[0].input_tokens, 15);
+  assert.equal(merged.rows[0].output_tokens, 25);
+  assert.equal(merged.rows[0].total_tokens, 40);
+  assert.equal(merged.rows[0].conversation_count, 2);
 });
 
 test('same revision hash is noop, different hash conflicts, and stale revision is ignored', () => {
@@ -52,10 +56,14 @@ test('different origins sum numeric metrics while excluding cursor and trae-cn i
   assert.equal(merged.excluded_sources.sort().join(','), 'cursor,trae-cn');
 });
 
-test('empty newer snapshots replace prior values and expose undo metadata', () => {
+test('empty newer snapshots keep prior rows and expose undo metadata', () => {
   const prior = snapshot({ revision: 1 });
   const empty = snapshot({ revision: 2, rows: [] });
   const merged = mergeTransferredRows([], [prior, empty]);
-  assert.deepEqual(merged.rows, []);
-  assert.deepEqual(merged.undo, { origin_id: 'origin-a', previous: prior, replacement: empty });
+  assert.equal(merged.origins[1].action, 'accumulate');
+  assert.deepEqual(merged.rows, [prior.rows[0]]);
+  assert.equal(merged.undo.origin_id, 'origin-a');
+  assert.deepEqual(merged.undo.previous, prior);
+  assert.equal(merged.undo.replacement.revision, 2);
+  assert.deepEqual(merged.undo.replacement.rows, prior.rows);
 });

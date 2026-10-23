@@ -124,6 +124,21 @@ function addRows(target, rows) {
   }
 }
 
+function accumulateSameOriginSnapshot(prior, incoming) {
+  const buckets = new Map();
+  addRows(buckets, prior.rows);
+  addRows(buckets, incoming.rows);
+  return createSnapshot({
+    rows: [...buckets.values()],
+    originId: incoming.origin_id,
+    originName: incoming.origin_name || prior.origin_name,
+    generationId: incoming.generation_id || prior.generation_id,
+    revision: Math.max(prior.revision, incoming.revision),
+    appVersion: incoming.app_version || prior.app_version,
+    exportedAt: incoming.exported_at || prior.exported_at,
+  });
+}
+
 function mergeTransferredRows(localRows, snapshots) {
   if (!Array.isArray(localRows) || !Array.isArray(snapshots)) throw new Error('localRows and snapshots must be arrays');
   for (let i = 0; i < localRows.length; i += 1) validateRow(localRows[i], `local ${i}`);
@@ -134,18 +149,20 @@ function mergeTransferredRows(localRows, snapshots) {
     const snapshot = validateSnapshot(raw);
     const prior = accepted.get(snapshot.origin_id);
     let action = 'new';
+    let stored = snapshot;
     let undo;
     if (prior) {
       if (snapshot.revision < prior.revision) action = 'stale';
       else if (snapshot.revision === prior.revision) action = snapshot.content_hash === prior.content_hash ? 'noop' : 'conflict';
       else {
-        action = 'replace';
-        undo = { origin_id: snapshot.origin_id, previous: prior, replacement: snapshot };
+        action = 'accumulate';
+        stored = accumulateSameOriginSnapshot(prior, snapshot);
+        undo = { origin_id: snapshot.origin_id, previous: prior, replacement: stored };
         undoEvents.push(undo);
       }
     }
     origins.push({ origin_id: snapshot.origin_id, revision: snapshot.revision, action });
-    if (action === 'new' || action === 'replace') accepted.set(snapshot.origin_id, snapshot);
+    if (action === 'new' || action === 'accumulate') accepted.set(snapshot.origin_id, stored);
   }
   const merged = new Map();
   addRows(merged, localRows);
@@ -167,4 +184,13 @@ function mergeTransferredRows(localRows, snapshots) {
   };
 }
 
-module.exports = { SCHEMA, ROW_FIELDS, NUMERIC_FIELDS, createSnapshot, validateSnapshot, mergeTransferredRows, summarizeSnapshot };
+module.exports = {
+  SCHEMA,
+  ROW_FIELDS,
+  NUMERIC_FIELDS,
+  createSnapshot,
+  validateSnapshot,
+  accumulateSameOriginSnapshot,
+  mergeTransferredRows,
+  summarizeSnapshot,
+};

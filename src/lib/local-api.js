@@ -22,6 +22,7 @@ const { writeJsonAtomicSync } = require("./atomic-json");
 const {
   createSnapshot,
   validateSnapshot,
+  accumulateSameOriginSnapshot,
   mergeTransferredRows,
   summarizeSnapshot,
   NUMERIC_FIELDS: TRANSFER_NUMERIC_FIELDS,
@@ -1088,7 +1089,7 @@ function createLocalApiHandler({ queuePath, serverVersion = null, trackerDataDir
     if (snapshot.revision === prior.revision) {
       return snapshot.content_hash === prior.content_hash ? "noop" : "conflict";
     }
-    return "replace";
+    return "accumulate";
   }
 
   function localTransferSummary(snapshot) {
@@ -1942,15 +1943,16 @@ function createLocalApiHandler({ queuePath, serverVersion = null, trackerDataDir
           json(res, response);
           return true;
         }
+        const stored = prior ? accumulateSameOriginSnapshot(prior, snapshot) : snapshot;
         const snapshots = state.snapshots.filter((entry) => entry.origin_id !== snapshot.origin_id);
-        snapshots.push(snapshot);
+        snapshots.push(stored);
         snapshots.sort((a, b) => a.origin_id.localeCompare(b.origin_id));
         writeLocalTransferImportState({
           version: 1,
           snapshots,
-          undo: { origin_id: snapshot.origin_id, previous: prior || null, replacement: snapshot },
+          undo: { origin_id: snapshot.origin_id, previous: prior || null, replacement: stored },
         });
-        json(res, { ...response, imported: true });
+        json(res, { ...response, imported: true, summary: localTransferSummary(stored) });
       } catch (error) {
         json(res, { ok: false, error: error?.message || "Local transfer failed" }, 400);
       }

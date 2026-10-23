@@ -13,7 +13,7 @@
   "settings.transfer.confirm": "確認匯入",
   "settings.transfer.cancel": "取消",
   "settings.transfer.confirm_title": "要匯入此快照嗎？",
-  "settings.transfer.confirm_description": "確認後，此快照會取代同一台電腦先前匯入的資料。",
+  "settings.transfer.confirm_description": "確認後，此快照會與同一台電腦先前匯入的資料按列累加。",
   "settings.transfer.account_source_warning": "Cursor 和 TRAE CN 的用量屬於帳號層級資料，不計入跨裝置總計。",
   "settings.transfer.source_label": "來源電腦",
   "settings.transfer.date_label": "匯出時間",

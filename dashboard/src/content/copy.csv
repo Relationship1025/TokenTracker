@@ -1511,7 +1511,7 @@ settings.transfer.undo,ui,SettingsPage,DataTransferSection,undo,"Undo import",,a
 settings.transfer.confirm,ui,SettingsPage,DataTransferSection,confirm,"Confirm import",,active
 settings.transfer.cancel,ui,SettingsPage,DataTransferSection,cancel,"Cancel",,active
 settings.transfer.confirm_title,ui,SettingsPage,DataTransferSection,confirm_title,"Import this snapshot?",,active
-settings.transfer.confirm_description,ui,SettingsPage,DataTransferSection,confirm_description,"The accepted snapshot will replace the same computer's previous transfer.",,active
+settings.transfer.confirm_description,ui,SettingsPage,DataTransferSection,confirm_description,"Rows from this snapshot will be added to any previous import from the same computer.",,active
 settings.transfer.account_source_warning,ui,SettingsPage,DataTransferSection,account_source_warning,"Cursor and TRAE CN usage is account-level and excluded from combined totals.",,active
 settings.transfer.source_label,ui,SettingsPage,DataTransferSection,source_label,"Source",,active
 settings.transfer.date_label,ui,SettingsPage,DataTransferSection,date_label,"Exported",,active
