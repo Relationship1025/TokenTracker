@@ -8,8 +8,6 @@ const { resolveTrackerPaths } = require("../lib/tracker-paths");
 const { createLocalApiHandler, resolveQueuePath } = require("../lib/local-api");
 const { ensurePricingLoaded } = require("../lib/pricing");
 const { serveStaticFile } = require("../lib/static-server");
-const { openInBrowser } = require("../lib/browser-auth");
-const { maybeShowStarCta } = require("../lib/star-cta");
 
 const DEFAULT_PORT = 7680;
 // Windows Delivery Optimization (DoSvc) listens on 0.0.0.0:7680 on virtually
@@ -179,12 +177,12 @@ async function cmdServe(argv) {
       }
 
       // Static files
-      const served = await serveStaticFile(dashboardDir, url.pathname, res, { localRuntimeConfig: true });
+      const served = await serveStaticFile(dashboardDir, url.pathname, res);
       if (served) return;
 
       // SPA fallback
       if (shouldServeSpaFallback(req, url)) {
-        await serveStaticFile(dashboardDir, "/index.html", res, { localRuntimeConfig: true });
+        await serveStaticFile(dashboardDir, "/index.html", res);
         return;
       }
 
@@ -242,8 +240,6 @@ async function cmdServe(argv) {
       openInBrowser(url);
     }
   }
-
-  await maybeShowStarCta({ trackerDir });
 
   // The Windows desktop app keeps this server alive even when the dashboard
   // window is closed. Provider hooks are the fast path, but they can be removed

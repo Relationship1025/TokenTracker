@@ -22,7 +22,7 @@
 
 #define MyAppName "TokenTracker"
 #define MyAppPublisher "TokenTracker"
-#define MyAppURL "https://www.tokentracker.cc"
+#define MyAppURL "https://github.com/Relationship1025/TokenTracker"
 #define MyAppExeName "TokenTracker.exe"
 
 [Setup]

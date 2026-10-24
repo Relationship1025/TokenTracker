@@ -14,12 +14,10 @@ const {
   isGeminiHookConfigured,
 } = require("./gemini-config");
 const { resolveOpencodeConfigDir, isOpencodePluginInstalled } = require("./opencode-config");
-const { normalizeState: normalizeUploadState } = require("./upload-throttle");
 const { probeOpenclawHookState } = require("./openclaw-hook");
 const { probeOpenclawSessionPluginState } = require("./openclaw-session-plugin");
 const { probeGrokHookState } = require("./grok-hook");
 const { resolveTrackerPaths } = require("./tracker-paths");
-const { resolveDeviceTokenPresence } = require("./cloud-device-token");
 const wsl = require("./wsl-probe");
 // TASK-011: Kiro paths inlined here to avoid pulling the ~4000-line
 // rollout module on every `tokentracker status` / `diagnostics` call.
@@ -79,7 +77,6 @@ async function collectTrackerDiagnostics({
   const notifySignalPath = path.join(trackerDir, "notify.signal");
   const openclawSignalPath = path.join(trackerDir, "openclaw.signal");
   const throttlePath = path.join(trackerDir, "sync.throttle");
-  const uploadThrottlePath = path.join(trackerDir, "upload.throttle.json");
   const autoRetryPath = path.join(trackerDir, "auto.retry.json");
   const syncSkipPath = path.join(trackerDir, "sync.skip.json");
   const codexConfigPath = path.join(codexHome, "config.toml");
@@ -111,7 +108,6 @@ async function collectTrackerDiagnostics({
   const cursorSummary = await readCursorStateSummary({ trackerDir, cursorsPath });
   const cursors = cursorSummary.cursors;
   const queueState = (await readJson(queueStatePath)) || { offset: 0 };
-  const uploadThrottle = normalizeUploadState(await readJson(uploadThrottlePath));
   const autoRetry = await readJson(autoRetryPath);
   const syncSkip = await readJson(syncSkipPath);
 
@@ -191,9 +187,6 @@ async function collectTrackerDiagnostics({
     }
   }
 
-  const lastSuccessAt = uploadThrottle.lastSuccessMs
-    ? new Date(uploadThrottle.lastSuccessMs).toISOString()
-    : null;
   const autoRetryAt = parseEpochMsToIso(autoRetry?.retryAtMs);
 
   return {
@@ -238,10 +231,6 @@ async function collectTrackerDiagnostics({
       claude: describeScanRoots(scanRoots.claude),
     },
     config: {
-      base_url: typeof config?.baseUrl === "string" ? config.baseUrl : null,
-      device_token: resolveDeviceTokenPresence({ trackerDir, config: config || {} }).set
-        ? "set"
-        : "unset",
       device_id: maskId(config?.deviceId),
       installed_at: typeof config?.installedAt === "string" ? config.installedAt : null,
     },
@@ -284,17 +273,7 @@ async function collectTrackerDiagnostics({
       grok_hook_handler_exists: Boolean(grokHookState?.handlerExists),
       grok_sessions_dir: redactValue(grokHookState?.sessionsDir, home),
     },
-    upload: {
-      last_success_at: lastSuccessAt,
-      next_allowed_after: parseEpochMsToIso(uploadThrottle.nextAllowedAtMs || null),
-      backoff_until: parseEpochMsToIso(uploadThrottle.backoffUntilMs || null),
-      last_error: uploadThrottle.lastError
-        ? {
-            at: uploadThrottle.lastErrorAt || null,
-            message: redactError(String(uploadThrottle.lastError), home),
-          }
-        : null,
-    },
+    upload: { last_success_at: null },
     sync_skip: syncSkip?.at
       ? {
           at: syncSkip.at,

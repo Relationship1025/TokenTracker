@@ -20,18 +20,12 @@
   <ItemGroup>
     <Compile Include="../TokenTrackerWin/ChildProcessProxy.cs" Link="ChildProcessProxy.cs" />
     <Compile Include="../TokenTrackerWin/LocalSyncPublisher.cs" Link="LocalSyncPublisher.cs" />
-    <Compile Include="../TokenTrackerWin/ResumableDownloader.cs" Link="ResumableDownloader.cs" />
     <Compile Include="../TokenTrackerWin/Diag.cs" Link="Diag.cs" />
     <Compile Include="../TokenTrackerWin/ServerRecoveryPolicy.cs" Link="ServerRecoveryPolicy.cs" />
     <Compile Include="../TokenTrackerWin/DispatcherExceptionPolicy.cs" Link="DispatcherExceptionPolicy.cs" />
     <Compile Include="../TokenTrackerWin/TiltWheelScrollForwarder.cs" Link="TiltWheelScrollForwarder.cs" />
     <Compile Include="../TokenTrackerWin/UsagePoller.cs" Link="UsagePoller.cs" />
     <Compile Include="../TokenTrackerWin/TokenUnits.cs" Link="TokenUnits.cs" />
-    <Compile Include="../TokenTrackerWin/AutoUpdatePolicy.cs" Link="AutoUpdatePolicy.cs" />
-    <Compile Include="../TokenTrackerWin/UpdateIntegrity.cs" Link="UpdateIntegrity.cs" />
-    <Compile Include="../TokenTrackerWin/UpdateReleaseClient.cs" Link="UpdateReleaseClient.cs" />
-    <Compile Include="../TokenTrackerWin/UpdateChecker.cs" Link="UpdateChecker.cs" />
-    <Compile Include="../TokenTrackerWin/NativeReturnUri.cs" Link="NativeReturnUri.cs" />
     <Compile Include="../TokenTrackerWin/DocumentScriptCache.cs" Link="DocumentScriptCache.cs" />
     <Compile Include="../TokenTrackerWin/NativeTheme.cs" Link="NativeTheme.cs" />
     <Compile Include="../TokenTrackerWin/WebViewActivity.cs" Link="WebViewActivity.cs" />

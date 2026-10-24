@@ -4,8 +4,6 @@ const path = require("node:path");
 const { readJsonStrict, writeFileAtomic, chmod600IfPossible } = require("../lib/fs");
 const { resolveTrackerPaths } = require("../lib/tracker-paths");
 const { collectTrackerDiagnostics } = require("../lib/diagnostics");
-const { resolveRuntimeConfig } = require("../lib/runtime-config");
-const { resolveDeviceTokenPresence } = require("../lib/cloud-device-token");
 const { buildDoctorReport } = require("../lib/doctor");
 
 async function cmdDoctor(argv = []) {
@@ -17,29 +15,10 @@ async function cmdDoctor(argv = []) {
   const configStatus = await readJsonStrict(configPath);
   const config =
     configStatus.status === "ok" && isPlainObject(configStatus.value) ? configStatus.value : {};
-  let runtime = resolveRuntimeConfig({
-    cli: { baseUrl: opts.baseUrl },
-    config,
-    env: process.env,
-  });
-  const deviceTokenPresence = resolveDeviceTokenPresence({
-    trackerDir,
-    config,
-    runtime,
-  });
-  if (deviceTokenPresence.set && !(typeof runtime.deviceToken === "string" && runtime.deviceToken.trim())) {
-    // Sentinel only — doctor reports set/unset and never uses the value for auth.
-    runtime = {
-      ...runtime,
-      deviceToken: "present",
-      sources: { ...(runtime.sources || {}), deviceToken: deviceTokenPresence.source },
-    };
-  }
   const diagnostics = await collectTrackerDiagnostics({ home });
   const cliPath = process.argv[1] ? path.resolve(process.argv[1]) : null;
 
   const report = await buildDoctorReport({
-    runtime,
     diagnostics,
     fetch: globalThis.fetch,
     paths: {
@@ -71,12 +50,11 @@ async function cmdDoctor(argv = []) {
 }
 
 function parseArgs(argv) {
-  const out = { json: false, out: null, baseUrl: null };
+  const out = { json: false, out: null };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "--json") out.json = true;
     else if (arg === "--out") out.out = argv[++i] || null;
-    else if (arg === "--base-url") out.baseUrl = argv[++i] || null;
     else throw new Error(`Unknown option: ${arg}`);
   }
   return out;

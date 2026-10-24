@@ -5,7 +5,6 @@ const { cmdDiagnostics } = require("./commands/diagnostics");
 const { cmdDoctor } = require("./commands/doctor");
 const { cmdUninstall } = require("./commands/uninstall");
 const { cmdServe } = require("./commands/serve");
-const { cmdDeviceLogin } = require("./commands/device-login");
 const { cmdWrapped } = require("./commands/wrapped");
 const { cmdSessions } = require("./commands/sessions");
 
@@ -51,9 +50,6 @@ async function run(argv) {
     case "uninstall":
       await cmdUninstall(rest);
       return;
-    case "device-login":
-      await cmdDeviceLogin(rest);
-      return;
     case "wrapped":
       await cmdWrapped(rest);
       return;
@@ -81,7 +77,6 @@ function printHelp() {
       "  npx tokentracker [--debug] diagnostics [--out diagnostics.json]",
       "  npx tokentracker [--debug] doctor [--json] [--out doctor.json] [--base-url <url>]",
       "  npx tokentracker [--debug] uninstall [--purge]",
-      "  npx tokentracker [--debug] device-login [--json] [--base-url <url>]",
       "  npx tokentracker [--debug] wrapped [--year 2026] [--json]",
       "  npx tokentracker sessions [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--format json|csv] [--out file] [--refresh] [--no-git]",
       "",
@@ -97,7 +92,6 @@ function printHelp() {
       "  - sync parses ~/.codex/sessions/**/rollout-*.jsonl and ~/.code/sessions/**/rollout-*.jsonl, then uploads token deltas.",
       "  - --from-openclaw marks sync runs triggered by the OpenClaw session plugin.",
       "  - --debug shows original backend errors.",
-      "  - device-login pairs a headless CLI / SSH session with a browser sign-in (15-min code).",
       "  - sessions exports metadata-only Claude/Codex/Grok/ZCode efficiency analytics; no prompt or response text is retained.",
       "",
     ].join("\n"),

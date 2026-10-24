@@ -26,7 +26,7 @@ const MIME_TYPES = {
  * Serve a static file from baseDir. Returns true if served, false otherwise.
  * For SPA: caller should fall back to index.html when this returns false.
  */
-async function serveStaticFile(baseDir, pathname, res, { localRuntimeConfig = false } = {}) {
+async function serveStaticFile(baseDir, pathname, res) {
   const safePath = path.normalize(pathname).replace(/^(\.\.[/\\])+/, "");
   const filePath = path.join(baseDir, safePath);
 
@@ -41,21 +41,11 @@ async function serveStaticFile(baseDir, pathname, res, { localRuntimeConfig = fa
 
     const ext = path.extname(filePath).toLowerCase();
     const contentType = MIME_TYPES[ext] || "application/octet-stream";
-    const isHtml = ext === ".html";
-
-    if (isHtml && localRuntimeConfig && path.basename(filePath) === "index.html") {
-      const source = await handle.readFile("utf8");
-      const content = source.replace(/<head(?:\s[^>]*)?>/i,
-        "$&\n<script>window.__TOKENTRACKER_RUNTIME_CONFIG__={configurationError:\"runtime_config_unavailable\"};</script>\n<script src=\"/api/runtime-config.js\"></script>");
-      res.writeHead(200, { "Content-Type": contentType, "Content-Length": Buffer.byteLength(content), "Cache-Control": "no-store" });
-      res.end(content);
-      return true;
-    }
 
     res.writeHead(200, {
       "Content-Type": contentType,
       "Content-Length": stat.size,
-      "Cache-Control": isHtml || [".js", ".mjs", ".glb", ".gltf", ".wasm"].includes(ext)
+      "Cache-Control": [".js", ".mjs", ".glb", ".gltf", ".wasm"].includes(ext)
         ? "no-cache"
         : "public, max-age=31536000, immutable",
     });

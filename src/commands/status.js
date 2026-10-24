@@ -37,9 +37,6 @@ const {
   describeCopilotOtelStatus,
   readCopilotOauthToken,
 } = require("../lib/usage-limits");
-const {
-  normalizeState: normalizeUploadState,
-} = require("../lib/upload-throttle");
 const { collectTrackerDiagnostics } = require("../lib/diagnostics");
 const { detectPassiveProviders, isPassiveModeActive } = require("../lib/passive-mode");
 const { probeOpenclawHookState } = require("../lib/openclaw-hook");
@@ -47,7 +44,6 @@ const {
   probeOpenclawSessionPluginState,
 } = require("../lib/openclaw-session-plugin");
 const { resolveTrackerPaths } = require("../lib/tracker-paths");
-const { resolveDeviceTokenPresence } = require("../lib/cloud-device-token");
 const {
   resolveKimiWireFiles,
   resolveKimiCodeWireFiles,
@@ -206,7 +202,6 @@ async function cmdStatus(argv = []) {
   const notifySignalPath = path.join(trackerDir, "notify.signal");
   const openclawSignalPath = path.join(trackerDir, "openclaw.signal");
   const throttlePath = path.join(trackerDir, "sync.throttle");
-  const uploadThrottlePath = path.join(trackerDir, "upload.throttle.json");
   const autoRetryPath = path.join(trackerDir, "auto.retry.json");
   const syncSkipPath = path.join(trackerDir, "sync.skip.json");
   // Normalized like sync (a relative CODEX_HOME is anchored to home, not cwd)
@@ -279,9 +274,6 @@ async function cmdStatus(argv = []) {
   const { cursors } = await readCursorStateSummary({ trackerDir, cursorsPath });
   const codexRecordOnlyWarning = formatRecordOnlyWarning(countRecordOnlyFiles(cursors));
   const queueState = (await readJson(queueStatePath)) || { offset: 0 };
-  const uploadThrottle = normalizeUploadState(
-    await readJson(uploadThrottlePath),
-  );
   const autoRetry = await readJson(autoRetryPath);
   // Written by sync whenever it had to skip a run. Present here so a stalled
   // parse has a visible cause instead of only a frozen "Last parse".
@@ -341,16 +333,7 @@ async function cmdStatus(argv = []) {
     env: process.env,
   });
 
-  const lastUpload = uploadThrottle.lastSuccessMs
-    ? parseEpochMsToIso(uploadThrottle.lastSuccessMs)
-    : typeof queueState.updatedAt === "string"
-      ? queueState.updatedAt
-      : null;
-  const nextUpload = parseEpochMsToIso(uploadThrottle.nextAllowedAtMs || null);
-  const backoffUntil = parseEpochMsToIso(uploadThrottle.backoffUntilMs || null);
-  const lastUploadError = uploadThrottle.lastError
-    ? `${uploadThrottle.lastErrorAt || "unknown"} ${uploadThrottle.lastError}`
-    : null;
+  const lastUpload = typeof queueState.updatedAt === "string" ? queueState.updatedAt : null;
   const syncSkipLine = syncSkip?.at
     ? `- Last sync skipped: ${syncSkip.at} (${syncSkip.reason || "unknown"}${
         syncSkip.detail ? `, ${syncSkip.detail}` : ""
@@ -1043,17 +1026,10 @@ async function cmdStatus(argv = []) {
     },
   });
 
-  const deviceTokenPresence = resolveDeviceTokenPresence({
-    trackerDir,
-    config: config || {},
-  });
-
   if (opts.json || opts.light) {
     const summary = {
       version: pkg.version,
       generated_at: new Date().toISOString(),
-      base_url: config?.baseUrl || null,
-      device_token_set: deviceTokenPresence.set,
       queue: {
         pending_bytes: pendingBytes,
         size_bytes: queueSize,
@@ -1063,10 +1039,7 @@ async function cmdStatus(argv = []) {
       last_notify: lastNotify || null,
       last_openclaw_sync: lastOpenclawSync || null,
       last_notify_spawn: lastNotifySpawn || null,
-      last_upload: lastUpload || null,
-      next_upload_after: nextUpload || null,
-      backoff_until: backoffUntil || null,
-      last_upload_error: lastUploadError || null,
+      last_write: lastUpload || null,
       last_sync_skipped: syncSkip?.at ? syncSkip : null,
       auto_retry: autoRetry || null,
       // Extra scan roots (#657): CODEX_HOME / CLAUDE_CONFIG_DIR of this process
@@ -1285,17 +1258,13 @@ async function cmdStatus(argv = []) {
     [
       `TokenTracker v${pkg.version}`,
       "Status:",
-      `- Base URL: ${config?.baseUrl || "unset"}`,
-      `- Device token: ${deviceTokenPresence.set ? "set" : "unset"}`,
-      `- Queue: ${pendingBytes} bytes pending`,
+      `- Queue: ${queueSize} bytes`,
       `- Last parse: ${cursors?.updatedAt || "never"}`,
       `- Last notify: ${lastNotify || "never"}`,
       `- Last OpenClaw-triggered sync: ${lastOpenclawSync || "never"}`,
       `- Last notify-triggered sync: ${lastNotifySpawn || "never"}`,
-      `- Last upload: ${lastUpload || "never"}`,
-      `- Next upload after: ${nextUpload || "never"}`,
+      `- Last queue write: ${lastUpload || "never"}`,
       `- Backoff until: ${backoffUntil || "never"}`,
-      lastUploadError ? `- Last upload error: ${lastUploadError}` : null,
       syncSkipLine,
       autoRetryLine,
       scanRootsLine,
@@ -1614,16 +1583,10 @@ function renderLightTable(summary) {
   const push = (k, v) => rows.push([k, v == null || v === "" ? "—" : String(v)]);
 
   push("Version", summary.version);
-  push("Base URL", summary.base_url);
-  push("Device token", summary.device_token_set ? "set" : "unset");
-  push("Queue pending (bytes)", summary.queue.pending_bytes);
+  push("Queue size (bytes)", summary.queue.size_bytes);
   push("Queue size (bytes)", summary.queue.size_bytes);
   push("Last parse", summary.last_parse);
   push("Last notify", summary.last_notify);
-  push("Last upload", summary.last_upload);
-  push("Next upload after", summary.next_upload_after);
-  push("Backoff until", summary.backoff_until);
-  if (summary.last_upload_error) push("Last upload error", summary.last_upload_error);
   if (summary.last_sync_skipped) {
     push(
       "Last sync skipped",

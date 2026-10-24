@@ -51,8 +51,6 @@ internal sealed class DashboardWindow : Window
     private WebViewActivity? _activity;
     private bool _backdropEnabled;
     private bool _exiting;
-    private bool _oauthInFlight;
-    private CancellationTokenSource? _oauthTimeout;
     private Task? _initializationTask;
     private bool _recoveryInFlight;
     private bool _tiltForwardLogged;
@@ -145,7 +143,7 @@ internal sealed class DashboardWindow : Window
             UpdateWebViewActivity();
         };
         IsVisibleChanged += (_, _) => UpdateWebViewActivity();
-        KeyDown += (_, e) => { if (e.Key == System.Windows.Input.Key.Escape) CloseOrHideForOAuth(); };
+        KeyDown += (_, e) => { if (e.Key == System.Windows.Input.Key.Escape) HideToTray(); };
         _server.StatusChanged += OnServerStatusChanged;
     }
 
@@ -443,12 +441,6 @@ internal sealed class DashboardWindow : Window
             try
             {
                 Log($"nav completed uriPresent={!string.IsNullOrEmpty(_webView.CoreWebView2.Source)} uriLen={_webView.CoreWebView2.Source?.Length ?? 0}");
-                if (_oauthInFlight
-                    && Uri.TryCreate(_webView.CoreWebView2.Source, UriKind.Absolute, out var completedUri)
-                    && completedUri.AbsolutePath is "/" or "/dashboard")
-                {
-                    CompleteNativeOAuth();
-                }
                 await ApplyNativeChromeAsync();
                 UpdateWebViewActivity();
             }
@@ -475,30 +467,13 @@ internal sealed class DashboardWindow : Window
             try { msg = e.TryGetWebMessageAsString(); }
             catch { return; } // non-string message
 
-            // OAuth: the injected nativeOAuth shim posts {type:"oauth",url} with the
-            // provider authorize URL. Open it in the system browser (where the user has
-            // saved Google/GitHub sessions, and where Google permits OAuth — embedded
-            // webviews are blocked). The browser redirects back to the whitelisted
-            // 127.0.0.1:17680/auth/callback, whose page deep-links the code to us via the
-            // tokentracker:// scheme. Mirrors the macOS nativeOAuth handler.
             if (msg.Length > 0 && msg[0] == '{')
             {
                 try
                 {
                     using var doc = JsonDocument.Parse(msg);
                     if (!doc.RootElement.TryGetProperty("type", out var t)) return;
-                    if (t.GetString() == "oauth"
-                        && doc.RootElement.TryGetProperty("url", out var u) && u.GetString() is { } url)
-                    {
-                        Log($"oauth open urlPresent={!string.IsNullOrEmpty(url)} urlLen={url.Length}");
-                        BeginNativeOAuth();
-                        OpenInBrowser(url);
-                    }
-                    else if (t.GetString() == "authCompleted")
-                    {
-                        CompleteNativeOAuth();
-                    }
-                    else if (t.GetString() == "getSettings")
+                    if (t.GetString() == "getSettings")
                     {
                         NativeSettingsRequested?.Invoke();
                     }
@@ -584,7 +559,7 @@ internal sealed class DashboardWindow : Window
                 case "theme": ThemeChanged?.Invoke(); break;
                 case "win:min": WindowState = WindowState.Minimized; break;
                 case "win:max": ToggleMaximize(); break;
-                case "win:close": CloseOrHideForOAuth(); break;
+                case "win:close": HideToTray(); break;
                 case "win:drag":
                     // Hand the drag off to the OS so Aero-snap / move works natively.
                     ReleaseCapture();
@@ -619,15 +594,6 @@ internal sealed class DashboardWindow : Window
             "if(k==='tokentracker-theme'){" +
             "try{window.chrome.webview.postMessage('theme');}catch(e){}" +
             "try{window.chrome.webview.postMessage(JSON.stringify({type:'nativeSetting',key:k,value:v}));}catch(e){}}};" +
-            // nativeOAuth shim: the dashboard's OAuth code already has a native branch
-            // gated on window.webkit.messageHandlers.nativeOAuth (the macOS bridge).
-            // Provide the same shape here so that branch fires on Windows too — it posts
-            // the provider authorize URL, which we forward to the system browser (see
-            // WebMessageReceived). Needs no dashboard JS changes for the OAuth start.
-            "try{window.webkit=window.webkit||{};" +
-            "window.webkit.messageHandlers=window.webkit.messageHandlers||{};" +
-            "window.webkit.messageHandlers.nativeOAuth={postMessage:function(u){" +
-            "try{window.chrome.webview.postMessage(JSON.stringify({type:'oauth',url:u}));}catch(e){}}};" +
             "}catch(e){}" +
             "}catch(e){}");
 
@@ -638,7 +604,7 @@ internal sealed class DashboardWindow : Window
     }
 
     private void UpdateWebViewActivity() =>
-        _activity?.Update(IsVisible && WindowState != WindowState.Minimized, _oauthInFlight);
+        _activity?.Update(IsVisible && WindowState != WindowState.Minimized);
 
     public void PushPetSettings(bool visible, string size, string character, string botColor)
     {
@@ -851,20 +817,6 @@ internal sealed class DashboardWindow : Window
         {
             await _webView.CoreWebView2.ExecuteScriptAsync(js);
             await _webView.CoreWebView2.ExecuteScriptAsync(TitleBarScript);
-            // Belt-and-suspenders: guarantee the nativeOAuth shim exists *after* the page
-            // has loaded. The document-created injection can lose a race against the first
-            // navigation, leaving the shim absent — then the dashboard's OAuth code takes
-            // its web branch (redirect → "/", no callback page) and login never completes.
-            // Re-injecting here runs on every NavigationCompleted, so the shim is reliably
-            // present by the time the user clicks a provider button. Idempotent; logs
-            // whether it was already there for diagnostics.
-            var hadShim = await _webView.CoreWebView2.ExecuteScriptAsync(
-                "(function(){var had=!!(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.nativeOAuth);" +
-                "window.webkit=window.webkit||{};window.webkit.messageHandlers=window.webkit.messageHandlers||{};" +
-                "if(!window.webkit.messageHandlers.nativeOAuth){window.webkit.messageHandlers.nativeOAuth={postMessage:function(u){" +
-                "try{window.chrome.webview.postMessage(JSON.stringify({type:'oauth',url:u}));}catch(e){}}};}" +
-                "return had;})()");
-            Log($"nativeOAuth shim present-before-reinject={hadShim}");
             // Sync the maximise/restore glyph to the current state.
             var maxed = WindowState == WindowState.Maximized ? "true" : "false";
             await _webView.CoreWebView2.ExecuteScriptAsync($"window.__ttSetMax&&window.__ttSetMax({maxed})");
@@ -918,29 +870,6 @@ internal sealed class DashboardWindow : Window
 
     // ── Public API ─────────────────────────────────────────────────────
 
-    private void BeginNativeOAuth()
-    {
-        _oauthInFlight = true;
-        UpdateWebViewActivity();
-        _oauthTimeout?.Cancel();
-        _oauthTimeout?.Dispose();
-        _oauthTimeout = new CancellationTokenSource();
-        _ = WaitForNativeOAuthTimeoutAsync(_oauthTimeout.Token);
-    }
-
-    private async Task WaitForNativeOAuthTimeoutAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            await Task.Delay(TimeSpan.FromMinutes(10), cancellationToken);
-            await Dispatcher.InvokeAsync(ExpireNativeOAuth);
-        }
-        catch (OperationCanceledException)
-        {
-            // A completed/restarted flow or app shutdown owns the next transition.
-        }
-    }
-
     /// <summary>Push the native settings snapshot to the dashboard WebView.</summary>
     public void PushNativeSettings(object settings)
     {
@@ -968,27 +897,11 @@ internal sealed class DashboardWindow : Window
         };
     }
 
-    private void CompleteNativeOAuth()
-    {
-        if (!_oauthInFlight) return;
-        _oauthInFlight = false;
-        _oauthTimeout?.Cancel();
-        _oauthTimeout?.Dispose();
-        _oauthTimeout = null;
-        UpdateWebViewActivity();
-    }
-
-    private void ExpireNativeOAuth()
-    {
-        CompleteNativeOAuth();
-    }
-
-    private void CloseOrHideForOAuth()
+    private void HideToTray()
     {
         // Keep the initialized WebView2 alive while the dashboard is hidden. This
         // preserves cookies/session state and avoids recreating the Chromium process
-        // (which added several seconds to every tray click). OAuth still uses Hide so
-        // its sessionStorage PKCE verifier remains available.
+        // (which added several seconds to every tray click).
         Hide();
     }
 
@@ -1006,7 +919,7 @@ internal sealed class DashboardWindow : Window
     /// <summary>Toggle visibility — used by the tray left-click (popover-like).</summary>
     public void ToggleDashboard()
     {
-        if (IsVisible && WindowState != WindowState.Minimized) CloseOrHideForOAuth();
+        if (IsVisible && WindowState != WindowState.Minimized) HideToTray();
         else ShowDashboard();
     }
 
@@ -1015,48 +928,6 @@ internal sealed class DashboardWindow : Window
     {
         ShowDashboard();
         NavigateWhenServerReady("/settings?app=1");
-    }
-
-    /// <summary>
-    /// Finish an OAuth sign-in: load the callback page in this WebView so the InsForge
-    /// SDK exchanges the code using the PKCE verifier already in this WebView's storage
-    /// (the same context that started the flow), then hard-reload the dashboard root so
-    /// the freshly-relayed session is picked up. Mirrors macOS
-    /// <c>handleAuthCallback</c> + <c>handleAuthDone</c>.
-    /// </summary>
-    public void HandleAuthCallback(string code)
-    {
-        Log($"HandleAuthCallback code.len={code.Length}");
-        ShowDashboard();
-        BrowserTabCloser.CloseAuthCallbackTab(_server.BaseUrl, _hwnd);
-        var encoded = Uri.EscapeDataString(code);
-        NavigateWhenServerReady($"/auth/callback?insforge_code={encoded}&app=1");
-
-        // The callback page exchanges the code → the local server captures the
-        // insforge_refresh_token cookie (the relay). In-page the React auth context
-        // does NOT reliably flip to signed-in here on Windows (confirmed: the UI stays
-        // logged-out, yet a *restart* shows signed-in — proving the session is fully
-        // persisted server-side). So once the exchange has had time to land, reload
-        // /?app=1: a fresh load reads the relayed session and renders signed-in, exactly
-        // like the working restart. Mirrors macOS handleAuthDone()'s reload.
-        _ = Dispatcher.BeginInvoke(async () =>
-        {
-            await Task.Delay(2000);
-            try
-            {
-                var path = await _webView.CoreWebView2.ExecuteScriptAsync("location.pathname");
-                Log($"post-callback pathPresent={!string.IsNullOrEmpty(path)} pathLen={path?.Length ?? 0}; reloading dashboard");
-            }
-            catch { /* window closed / page navigating */ }
-            NavigateWhenServerReady("/?app=1");
-        });
-    }
-
-    public void HandleBillingReturn(Guid order)
-    {
-        Log("HandleBillingReturn type=billing");
-        ShowDashboard();
-        NavigateWhenServerReady(NativeReturnUri.CheckoutPath(order));
     }
 
     /// <summary>Diagnostics → %LOCALAPPDATA%\TokenTracker\windows-host.log (shared with ServerManager).</summary>
@@ -1175,9 +1046,6 @@ internal sealed class DashboardWindow : Window
         _activity = null;
         try { HwndSource.FromHwnd(_hwnd)?.RemoveHook(DashboardWndProc); }
         catch { /* the source may already be gone during teardown */ }
-        _oauthTimeout?.Cancel();
-        _oauthTimeout?.Dispose();
-        _oauthTimeout = null;
         _coreReady = false;
         Content = null;
         _webView.Dispose();

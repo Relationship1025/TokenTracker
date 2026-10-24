@@ -4,15 +4,11 @@ const { constants } = require("node:fs");
 const { readJsonStrict } = require("./fs");
 
 async function buildDoctorReport({
-  runtime = {},
   diagnostics = null,
-  fetch = globalThis.fetch,
   now = () => new Date(),
   paths = {},
 } = {}) {
   const checks = [];
-
-  checks.push(...buildRuntimeChecks(runtime));
 
   if (paths.trackerDir) {
     checks.push(await checkTrackerDir(paths.trackerDir));
@@ -23,8 +19,6 @@ async function buildDoctorReport({
   if (paths.cliPath) {
     checks.push(await checkCliEntrypoint(paths.cliPath));
   }
-
-  checks.push(await checkNetwork({ baseUrl: runtime?.baseUrl || null, fetch }));
 
   if (diagnostics) {
     checks.push(...buildDiagnosticsChecks(diagnostics));
@@ -40,91 +34,6 @@ async function buildDoctorReport({
     checks,
     diagnostics,
   };
-}
-
-function buildRuntimeChecks(runtime = {}) {
-  const checks = [];
-  const baseUrl =
-    typeof runtime.baseUrl === "string" && runtime.baseUrl.trim() ? runtime.baseUrl.trim() : null;
-  const deviceToken =
-    typeof runtime.deviceToken === "string" && runtime.deviceToken.trim() ? "set" : "unset";
-  const dashboardUrl =
-    typeof runtime.dashboardUrl === "string" && runtime.dashboardUrl.trim()
-      ? runtime.dashboardUrl.trim()
-      : null;
-  const httpTimeoutMs = Number.isFinite(Number(runtime.httpTimeoutMs))
-    ? Number(runtime.httpTimeoutMs)
-    : null;
-  const debug = Boolean(runtime.debug);
-  const autoRetryNoSpawn = Boolean(runtime.autoRetryNoSpawn);
-
-  checks.push({
-    id: "runtime.base_url",
-    status: baseUrl ? "ok" : "fail",
-    detail: baseUrl ? "base_url set" : "base_url missing",
-    critical: false,
-    meta: {
-      base_url: baseUrl,
-      source: runtime?.sources?.baseUrl || null,
-    },
-  });
-
-  checks.push({
-    id: "runtime.device_token",
-    status: deviceToken === "set" ? "ok" : "warn",
-    detail: deviceToken === "set" ? "device token set" : "device token missing",
-    critical: false,
-    meta: {
-      device_token: deviceToken,
-      source: runtime?.sources?.deviceToken || null,
-    },
-  });
-
-  checks.push({
-    id: "runtime.dashboard_url",
-    status: "ok",
-    detail: dashboardUrl ? "dashboard_url set" : "dashboard_url unset",
-    critical: false,
-    meta: {
-      dashboard_url: dashboardUrl,
-      source: runtime?.sources?.dashboardUrl || null,
-    },
-  });
-
-  checks.push({
-    id: "runtime.http_timeout_ms",
-    status: "ok",
-    detail: "http timeout resolved",
-    critical: false,
-    meta: {
-      http_timeout_ms: httpTimeoutMs,
-      source: runtime?.sources?.httpTimeoutMs || null,
-    },
-  });
-
-  checks.push({
-    id: "runtime.debug",
-    status: "ok",
-    detail: debug ? "debug enabled" : "debug disabled",
-    critical: false,
-    meta: {
-      debug,
-      source: runtime?.sources?.debug || null,
-    },
-  });
-
-  checks.push({
-    id: "runtime.auto_retry_no_spawn",
-    status: "ok",
-    detail: autoRetryNoSpawn ? "auto retry spawn disabled" : "auto retry spawn enabled",
-    critical: false,
-    meta: {
-      auto_retry_no_spawn: autoRetryNoSpawn,
-      source: runtime?.sources?.autoRetryNoSpawn || null,
-    },
-  });
-
-  return checks;
 }
 
 async function checkTrackerDir(trackerDir) {
@@ -248,49 +157,6 @@ async function checkCliEntrypoint(cliPath) {
   }
 }
 
-async function checkNetwork({ baseUrl, fetch }) {
-  if (!baseUrl) {
-    return {
-      id: "network.base_url",
-      status: "warn",
-      detail: "base_url missing (skipped)",
-      critical: false,
-      meta: { base_url: null },
-    };
-  }
-
-  const start = Date.now();
-  try {
-    if (typeof fetch !== "function") throw new Error("Missing fetch");
-    const res = await fetch(baseUrl, { method: "GET" });
-    const latency = Date.now() - start;
-    return {
-      id: "network.base_url",
-      status: "ok",
-      detail: `HTTP ${res.status} (reachable)`,
-      critical: false,
-      meta: {
-        status_code: res.status,
-        latency_ms: latency,
-        base_url: baseUrl,
-      },
-    };
-  } catch (err) {
-    const latency = Date.now() - start;
-    return {
-      id: "network.base_url",
-      status: "fail",
-      detail: "Network error",
-      critical: false,
-      meta: {
-        error: err?.message || String(err),
-        latency_ms: latency,
-        base_url: baseUrl,
-      },
-    };
-  }
-}
-
 function buildDiagnosticsChecks(diagnostics) {
   const checks = [];
   const notify = diagnostics?.notify || {};
@@ -309,15 +175,6 @@ function buildDiagnosticsChecks(diagnostics) {
     detail: notifyConfigured ? "notify configured" : "notify not configured",
     critical: false,
     meta: { configured: notifyConfigured },
-  });
-
-  const uploadError = diagnostics?.upload?.last_error || null;
-  checks.push({
-    id: "upload.last_error",
-    status: uploadError ? "warn" : "ok",
-    detail: uploadError ? "last upload error present" : "no upload errors",
-    critical: false,
-    meta: { last_error: uploadError ? uploadError.message || null : null },
   });
 
   // Dual-install visibility (#306): surface resolved Kiro installs in the
