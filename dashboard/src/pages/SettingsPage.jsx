@@ -24,7 +24,6 @@ const SETTINGS_SECTION_IDS = {
   APPEARANCE: "appearance",
   NATIVE_APP: "native-app",
   NETWORK: "network",
-  ACCOUNT: "account",
   LIMITS: "limits",
   LABS: "labs",
 };

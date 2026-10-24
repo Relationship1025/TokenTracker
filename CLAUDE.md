@@ -101,7 +101,7 @@ UTC, half-hour buckets, append-only — readers take the latest entry per `(sour
 ## Lessons learned (dashboard / Windows)
 
 - **`AppLayout`-wrapped pages use `flex flex-col flex-1`** as the outer wrapper, not `min-h-screen` + own sticky header/footer.
-- **Motion height animations clip box-shadow focus rings.** Use `focus:ring-inset` on inputs inside `AnimatePresence` height-collapsing containers (see `SettingsPage.jsx` Account section).
+- **Motion height animations clip box-shadow focus rings.** Use `focus:ring-inset` on inputs inside `AnimatePresence` height-collapsing containers (see the Settings page's collapsing sections).
 - **Dashboard pages are lazy-loaded in `App.jsx`** — keep the null-fallback `.catch(() => ({ default: nullComponent }))` pattern so a stale index.html with rotated chunk hashes degrades to a blank region instead of a blank app.
 - **The Windows tray owns native settings push**: `PushDashboardNativeSettings` mirrors launchAtLogin/isSyncing/version into the WebView; add new native settings there + in `use-native-settings.js`, not via new endpoints.
 - **WebView2 disposal races**: `DispatcherExceptionPolicy.Classify` decides between absorb / recreate-WebView / crash. Never swallow unknown dispatcher exceptions silently.

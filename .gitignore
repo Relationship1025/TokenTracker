@@ -53,7 +53,6 @@ TokenTrackerBar/*.xcarchive
 .github/copilot*
 .gstack/
 .iflow/
-.insforge/
 .kilocode/
 .kilo/
 .kiro/
@@ -114,7 +113,6 @@ promo-video/
 skills-lock.json
 
 # InsForge & AI agent skills
-.insforge
 .agent
 .agents
 .augment

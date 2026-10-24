@@ -85,7 +85,7 @@ export async function resolveAuthAccessToken(auth) {
 }
 
 /**
- * InsForge 等云端接口：localhost 上 `isAccessTokenReady` 可能已为 true，但 `getAccessToken()`
+ * 外部接口：localhost 上 `isAccessTokenReady` 可能已为 true，但 `getAccessToken()`
  * 首帧尚未就绪。短重试避免无 Authorization 的 401。
  */
 export async function resolveAuthAccessTokenWithRetry(auth, options = {}) {
