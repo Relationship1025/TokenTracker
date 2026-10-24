@@ -413,6 +413,7 @@ settings.appearance.theme.dark,ui,SettingsPage,SettingsPage,theme_dark,"Dark",,a
 settings.appearance.theme.classic,ui,SettingsPage,SettingsPage,theme_classic,"Classic",,active
 settings.appearance.theme.system,ui,SettingsPage,SettingsPage,theme_system,"System",,active
 settings.appearance.theme.neon_store,ui,SettingsPage,SettingsPage,theme_neon_store,"Token Store",,active
+settings.appearance.store_period.hint,ui,SettingsPage,AppearanceSection,store_period_hint,"Day and night for Token Store. Also available on the usage dashboard.",,active
 dashboard.rainy_store.description,ui,DashboardView,RainyStoreStatic,rainy_store_description,"Anime-style miniature of a warm-lit convenience store on a rainy Japanese street corner.",,active
 dashboard.rainy_store.reset_view,ui,DashboardView,RainyStoreScene,rainy_store_reset_view,"Reset store view",,active
 dashboard.rainy_store.canvas_description,ui,DashboardView,RainyStoreScene,rainy_store_canvas_description,"Interactive third-person miniature of a rainy Japanese convenience store. Drag to rotate and hold Shift while scrolling to zoom.",,active

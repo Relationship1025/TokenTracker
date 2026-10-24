@@ -1,5 +1,5 @@
 import React from "react";
-import { Info, Languages, Palette, Store } from "lucide-react";
+import { Info, Languages, Moon, Palette, Store, Sun } from "lucide-react";
 import { themeControlValue, themeFromControlValue } from "../../ui/foundation/theme-preference.js";
 import { useTheme } from "../../hooks/useTheme.js";
 import { useLocale } from "../../hooks/useLocale.js";
@@ -106,8 +106,16 @@ function CurrencyHint({ currency, rate, rateSource, rateFetchedAt }) {
   );
 }
 
+function buildStorePeriodOptions() {
+  return [
+    { value: "day", label: copy("dashboard.rainy_store.period_day"), Icon: Sun },
+    { value: "night", label: copy("dashboard.rainy_store.period_night"), Icon: Moon },
+  ];
+}
+
 export function AppearanceSection() {
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme, neonStorePeriod = "night", setNeonStorePeriod } = useTheme();
+  const showStorePeriod = themeControlValue(theme) === "neon-store";
   const { locale, setLocale } = useLocale();
   const { currency, rate, rateSource, rateFetchedAt, setCurrency } = useCurrency();
   const {
@@ -132,6 +140,19 @@ export function AppearanceSection() {
           />
         }
       />
+      {showStorePeriod ? (
+        <SettingsRow
+          label={copy("dashboard.rainy_store.period_label")}
+          hint={copy("settings.appearance.store_period.hint")}
+          control={
+            <SegmentedControl
+              options={buildStorePeriodOptions()}
+              value={neonStorePeriod === "day" ? "day" : "night"}
+              onChange={(value) => setNeonStorePeriod?.(value)}
+            />
+          }
+        />
+      ) : null}
       <SettingsRow
         label={copy("settings.appearance.language.label")}
         hint={copy("settings.appearance.language.hint")}
