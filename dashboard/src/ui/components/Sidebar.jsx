@@ -734,7 +734,10 @@ function MobileTopBar({ open, onOpenDrawer, menuButtonRef }) {
 export function AppLayout({ children }) {
   const { collapsed, toggle } = useSidebarCollapsed();
   const { theme, neonStorePeriod = "night", setNeonStorePeriod } = useTheme();
+  const location = useLocation();
   const isNeonStore = theme === "neon-store";
+  const normalizedPath = (location?.pathname || "/").replace(/\/+$/, "") || "/";
+  const showNeonPeriodSwitch = isNeonStore && (normalizedPath === "/" || normalizedPath === "/dashboard");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const menuButtonRef = useRef(null);
   const mainContentRef = useRef(null);
@@ -777,7 +780,7 @@ export function AppLayout({ children }) {
           aria-hidden
         />
       )}
-      {isNeonStore && (
+      {showNeonPeriodSwitch && (
         <div className="pointer-events-none fixed right-4 top-4 z-40">
           <div className="pointer-events-auto">
             <NeonSunMoonSwitch neonStorePeriod={neonStorePeriod} setNeonStorePeriod={setNeonStorePeriod} />

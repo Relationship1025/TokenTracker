@@ -83,9 +83,9 @@ vi.mock("../dashboard/util/should-fetch-github-stars.js", () => ({
 let desktopMatches = false;
 let mediaListeners;
 
-function renderLayout() {
+function renderLayout(path = "/settings") {
   return render(
-    <MemoryRouter initialEntries={["/settings"]}>
+    <MemoryRouter initialEntries={[path]}>
       <AppLayout>
         <main />
       </AppLayout>
@@ -130,11 +130,21 @@ describe("AppLayout sidebar controls", () => {
     expect(document.querySelectorAll(".tt-rainy-rail-chip").length).toBeGreaterThan(1);
     expect(document.querySelector(".tt-rainy-rail-brand")).not.toBeInTheDocument();
     expect(document.querySelector(".tt-rainy-rail-utilities")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Daytime" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Nighttime" })).toBeInTheDocument();
+    // Day/night switch is dashboard-only; this layout is mounted on /settings.
+    expect(screen.queryByRole("button", { name: "Daytime" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Nighttime" })).not.toBeInTheDocument();
     // Settings remains reachable from the icon rail, not a duplicated footer control.
     const settingsLinks = screen.getAllByRole("link", { name: "Settings" });
     expect(settingsLinks).toHaveLength(1);
+  });
+
+  it("shows the neon store day/night switch only on the usage dashboard", () => {
+    themeState.theme = "neon-store";
+    themeState.resolvedTheme = "dark";
+    themeState.isNeonStore = true;
+    renderLayout("/dashboard");
+    expect(screen.getByRole("button", { name: "Daytime" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Nighttime" })).toBeInTheDocument();
   });
 
   it("collapses and expands the desktop sidebar and persists the preference", async () => {
