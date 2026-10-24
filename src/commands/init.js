@@ -200,10 +200,7 @@ async function cmdInit(argv, options = {}) {
   if (opts.dryRun) {
     const preview = await buildDryRunSummary({ home, trackerDir, notifyPath });
     renderLocalReport({ summary: preview.summary, isDryRun: true });
-    process.stdout.write("
-Dry run complete. Run init without --dry-run to apply changes.
-
-");
+    process.stdout.write("\nDry run complete. Run init without --dry-run to apply changes.\n\n");
     return;
   }
 
@@ -303,7 +300,14 @@ function renderLocalSuccess({ firstSync } = {}) {
   process.stdout.write(lines.join("\n"));
 }
 
+async function buildDryRunSummary({ home, trackerDir, notifyPath }) {
+  const context = buildIntegrationTargets({ home, trackerDir, notifyPath });
+  const summary = await previewIntegrations({ context });
+  return { summary };
+}
+
 async function runSetup({
+  opts,
   home,
   trackerDir,
   binDir,
@@ -1343,9 +1347,14 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--no-open") out.noOpen = true;
-    else if (a === "--no-open") out.noOpen = true;
     else if (a === "--yes") out.yes = true;
     else if (a === "--dry-run") out.dryRun = true;
+    // Legacy cloud-era flags: accepted and ignored so old scripts keep working.
+    else if (["--base-url", "--dashboard-url", "--anon-key", "--anon-key-file",
+      "--email", "--password", "--device-name", "--link-code"].includes(a)) {
+      i += 1; // value-taking flags: skip the value
+    }
+    else if (a === "--no-auth") { /* cloud sign-in removed */ }
     else throw new Error(`Unknown option: ${a}`);
   }
   return out;

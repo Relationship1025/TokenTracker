@@ -363,7 +363,7 @@ test("runProxyConnectivityTest uses a temporary dispatcher and never sets the gl
   }
   const result = await runProxyConnectivityTest({
     proxyUrl: "socks5://127.0.0.1:7890",
-    targetUrl: "https://www.tokentracker.cc",
+    targetUrl: "https://example.com",
     fetchImpl: async () => ({ status: 204 }),
     ProxyAgent: FakeAgent,
     Agent: function () {},

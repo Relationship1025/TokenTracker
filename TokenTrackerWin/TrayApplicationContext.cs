@@ -921,12 +921,19 @@ internal sealed class TrayApplicationContext : ApplicationContext
         }
     }
 
-    private static string CurrentAppVersion =>
-        System.Reflection.Assembly.GetExecutingAssembly()
-            .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()
-            ?.InformationalVersion.Split('+', '-')[0]
-        ?? System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3)
-        ?? "0.0.0";
+    private static string CurrentAppVersion
+    {
+        get
+        {
+            var assembly = typeof(TrayApplicationContext).Assembly;
+            var attrs = assembly.GetCustomAttributes(
+                typeof(System.Reflection.AssemblyInformationalVersionAttribute), false);
+            var info = attrs is { Length: > 0 } ? ((System.Reflection.AssemblyInformationalVersionAttribute)attrs[0]).InformationalVersion : null;
+            if (string.IsNullOrWhiteSpace(info))
+                return assembly.GetName().Version?.ToString(3) ?? "0.0.0";
+            return info.Split('+', '-')[0];
+        }
+    }
 
     private void PostToUi(Action action)
     {

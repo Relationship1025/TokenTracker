@@ -76,10 +76,6 @@ vi.mock("../../lib/host-mode", () => ({
   isLocalDashboardHost: () => localDashboardHost,
 }));
 
-vi.mock("../dashboard/util/should-fetch-github-stars.js", () => ({
-  shouldFetchGithubStars: () => false,
-}));
-
 let desktopMatches = false;
 let mediaListeners;
 

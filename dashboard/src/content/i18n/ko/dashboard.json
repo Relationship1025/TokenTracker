@@ -431,6 +431,14 @@
   "sessions.detail.session_id": "세션 ID",
   "sessions.detail.local_path": "로컬 경로",
   "sessions.detail.resume_command": "재개 명령",
-  "sessions.performance.first_response_value_single": "{{seconds}}초 · 표본 {{count}}개"
-  ,"dashboard.device_usage.title":"?? ??","dashboard.device_usage.subtitle":"?? ?? ?? ??","dashboard.device_usage.loading":"?? ?? ??","dashboard.device_usage.empty":"?? ?? ?? ??","dashboard.device_usage.error":"?? ?? ??","dashboard.device_usage.local":"??","dashboard.device_usage.imported":"??","dashboard.device_usage.bar_aria":"{{name}}: {{percent}}%"
+  "sessions.performance.first_response_value_single": "{{seconds}}초 · 표본 {{count}}개",
+  "dashboard.device_usage.title": "?? ??",
+  "dashboard.device_usage.subtitle": "?? ?? ?? ??",
+  "dashboard.device_usage.loading": "?? ?? ??",
+  "dashboard.device_usage.empty": "?? ?? ?? ??",
+  "dashboard.device_usage.error": "?? ?? ??",
+  "dashboard.device_usage.local": "??",
+  "dashboard.device_usage.imported": "??",
+  "dashboard.device_usage.bar_aria": "{{name}}: {{percent}}%",
+  "sessions.filter.source_kimi": "Kimi Code"
 }

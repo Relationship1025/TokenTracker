@@ -20,7 +20,6 @@ import { petVisualScale } from "./lib/pet-appearance.js";
 import { BotAnimated } from "./ui/foundation/BotAnimated.jsx";
 import { PetAtlasAnimated } from "./ui/foundation/PetAtlasAnimated.jsx";
 import { usePetCatalog } from "./hooks/use-pet-catalog.js";
-import { startLinuxPetHost } from "./lib/pet-linux-host.js";
 
 /**
  * Standalone floating-pet entry for the Windows tray app (PetWindow.cs loads
@@ -1025,7 +1024,6 @@ function Pet() {
 }
 
 // The Linux app has no native poller: the page feeds itself from the local API.
-if (window.__TAURI_INTERNALS__ && !window.chrome?.webview) startLinuxPetHost();
 
 createRoot(document.getElementById("pet-root")).render(
   <React.StrictMode>

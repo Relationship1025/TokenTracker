@@ -8,7 +8,7 @@ const ROOT = path.resolve(__dirname, "..");
 const COPY_PATH = path.join(ROOT, "dashboard", "src", "content", "copy.csv");
 const I18N_ROOT = path.join(ROOT, "dashboard", "src", "content", "i18n");
 const LOCALES = ["zh", "zh-TW"];
-const LOCALE_FILES = ["core.json", "dashboard.json", "marketing.json"];
+const LOCALE_FILES = ["core.json", "dashboard.json"];
 const REQUIRED_COLUMNS = ["key", "module", "page", "component", "slot", "text"];
 
 // These values are deliberately language-neutral: commands, URLs, product

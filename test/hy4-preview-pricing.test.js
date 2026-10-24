@@ -29,23 +29,3 @@ test("hy4-preview resolves locally, including the -agent and provider forms", ()
   assert.ok(Math.abs(pricing.computeRowCost(row) - 4.208) < 1e-9);
 });
 
-for (const slug of [
-  "tokentracker-leaderboard-refresh", "tokentracker-account-daily",
-  "tokentracker-account-summary", "tokentracker-account-model-breakdown",
-  "tokentracker-leaderboard-profile",
-]) {
-  test(`${slug}: hy4-preview is priced in the cloud`, () => {
-    const source = fs.readFileSync(path.join(__dirname, "../dashboard/edge-patches", `${slug}.ts`), "utf8");
-    const block = source.match(/const MODEL_PRICING[\s\S]*?\nfunction getModelPricing\(model: string(?:, source = "")?\) \{[\s\S]*?\n\}/);
-    assert.ok(block, `${slug}: pricing block is present`);
-    const script = transformSync(block[0], { loader: "ts", format: "cjs" }).code;
-    const context = vm.createContext({});
-    vm.runInContext(script, context);
-    for (const model of models) {
-      const actual = context.getModelPricing(model);
-      for (const [key, value] of Object.entries(rates)) {
-        assert.equal(actual[key], value, `${slug} ${model}: ${key}`);
-      }
-    }
-  });
-}

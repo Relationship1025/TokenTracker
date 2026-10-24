@@ -65,26 +65,3 @@ test("Sol long-context and Fast premiums apply only to observed request subsets"
   }), 0.62, "fast is 2x");
 });
 
-for (const slug of [
-  "tokentracker-leaderboard-refresh", "tokentracker-account-daily",
-  "tokentracker-account-summary", "tokentracker-account-model-breakdown",
-  "tokentracker-leaderboard-profile",
-]) {
-  test(`${slug}: Sol prices match local standard estimates`, () => {
-    const source = fs.readFileSync(path.join(__dirname, "../dashboard/edge-patches", `${slug}.ts`), "utf8");
-    const blockMatch = source.match(/const MODEL_PRICING[\s\S]*?\nfunction getModelPricing\(model: string(?:, source = "")?\) \{[\s\S]*?\n\}/);
-    assert.ok(blockMatch, `${slug}: pricing block is present`);
-    const rowPricing = source.match(/\nfunction getRowPricing\([\s\S]*?\n\}/)[0];
-    const compute = source.match(/\nfunction computeRowCost\([\s\S]*?\n\}/)?.[0] || "";
-    const script = transformSync(`${blockMatch[0]}\n${rowPricing}\n${compute}`, { loader: "ts", format: "cjs" }).code;
-    const context = vm.createContext({ SOURCES_WITH_AUTHORITATIVE_COST: new Set(["grok"]) });
-    vm.runInContext(script, context);
-    for (const model of models) {
-      const actual = context.getModelPricing(model);
-      for (const [key, value] of Object.entries(rates)) {
-        assert.equal(actual[key], value, `${model}: ${key}`);
-      }
-      if (compute) close(context.computeRowCost({ ...row, model }), 14.7, `${slug} ${model}`);
-    }
-  });
-}

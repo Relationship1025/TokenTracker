@@ -1264,7 +1264,6 @@ async function cmdStatus(argv = []) {
       `- Last OpenClaw-triggered sync: ${lastOpenclawSync || "never"}`,
       `- Last notify-triggered sync: ${lastNotifySpawn || "never"}`,
       `- Last queue write: ${lastUpload || "never"}`,
-      `- Backoff until: ${backoffUntil || "never"}`,
       syncSkipLine,
       autoRetryLine,
       scanRootsLine,

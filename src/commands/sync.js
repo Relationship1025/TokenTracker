@@ -152,7 +152,7 @@ const {
 } = require("../lib/rollout");
 const { computeClaudeGroundTruthBuckets } = require("../lib/claude-categorizer");
 const { createProgress, renderBar, formatNumber, formatBytes } = require("../lib/progress");
-const { compactPendingQueue } = require("../lib/upload-queue");
+const { compactPendingQueue, iterateQueueLines, sessionSnapshotMs } = require("../lib/upload-queue");
 const {
   isCursorInstalled,
   extractCursorSessionToken,
@@ -460,21 +460,6 @@ async function acquireSyncLock(
       lock = await openLock(lockPath, { quietIfLocked: true });
     }
     return lock;
-    if (!opts.auto) {
-      const codexRecordOnlyWarning = formatRecordOnlyWarning(countRecordOnlyFiles(cursors));
-      process.stdout.write(
-        [
-          "Sync finished:",
-          `- Parsed files: ${totalParsed}`,
-          `- New 30-min buckets queued: ${totalBuckets}`,
-          codexRecordOnlyWarning ? `- Warning: ${codexRecordOnlyWarning}` : null,
-          "",
-        ]
-          .filter(Boolean)
-          .join("\n"),
-      );
-    }
-
   } finally {
     await waiter.release();
   }
@@ -3434,6 +3419,21 @@ async function cmdSync(argv, context = {}) {
     }
 
     progress?.stop();
+
+    if (!opts.auto) {
+      const codexRecordOnlyWarning = formatRecordOnlyWarning(countRecordOnlyFiles(cursors));
+      process.stdout.write(
+        [
+          "Sync finished:",
+          `- Parsed files: ${totalParsed}`,
+          `- New 30-min buckets queued: ${totalBuckets}`,
+          codexRecordOnlyWarning ? `- Warning: ${codexRecordOnlyWarning}` : null,
+          "",
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      );
+    }
 
   } finally {
     progress?.stop();

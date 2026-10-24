@@ -8,7 +8,6 @@ import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite";
 import os from "node:os";
 import { copyRegistryPlugin } from "./scripts/copy-registry-plugin.mjs";
-import { validateInsforgeBuildEnv } from "./src/lib/insforge-deployment-config.mjs";
 
 const COPY_REQUIRED_KEYS = [
   "landing.meta.title",
@@ -391,7 +390,6 @@ async function runLocalSyncCommand(extraEnv = {}, opts = {}) {
     if (opts.auto === true) args.push("--auto");
     if (opts.background === true) args.push("--background");
     if (opts.allLocalSources === true) args.push("--all-local-sources");
-    if (opts.drain === true) args.push("--drain");
     const child = spawn(process.platform === "win32" ? "npx.cmd" : "npx", args, {
       cwd: REPO_ROOT,
       env: { ...process.env, ...extraEnv },
@@ -613,18 +611,10 @@ async function handleLocalApi(req, res, url) {
         body = {};
       }
       const extraEnv = {};
-      const drain = body.drain === true;
-      const auto = body.auto === true && !drain;
+      const auto = body.auto === true;
       const background = auto && body.background === true;
       const allLocalSources = background && body.allLocalSources === true;
-      if (typeof body.deviceToken === "string" && body.deviceToken.trim()) {
-        extraEnv.TOKENTRACKER_DEVICE_TOKEN = body.deviceToken.trim();
-      }
-      if (typeof body.insforgeBaseUrl === "string" && /^https?:\/\//i.test(body.insforgeBaseUrl.trim())) {
-        extraEnv.TOKENTRACKER_INSFORGE_BASE_URL = body.insforgeBaseUrl.trim();
-      }
       const result = await runLocalSyncCommand(extraEnv, {
-        drain,
         auto,
         background,
         allLocalSources,
@@ -1206,9 +1196,6 @@ function localDataApiPlugin() {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, ROOT_DIR, "VITE_");
-  const backendConfiguration = validateInsforgeBuildEnv(env);
-  if (backendConfiguration.errorCode)
-    throw new Error(`InsForge frontend configuration rejected: ${backendConfiguration.errorCode}. Values were not logged.`);
   const fallbackVersion = loadAppVersion();
   const define = {};
 
@@ -1224,7 +1211,6 @@ export default defineConfig(({ mode }) => {
   // breaking the native OAuth callback (see CLAUDE.md). macOS never loads pet.html.
   const rollupInput = {
     main: path.resolve(ROOT_DIR, "index.html"),
-    share: path.resolve(ROOT_DIR, "share.html"),
   };
   if (process.env.TOKENTRACKER_BUILD_PET === "1") {
     rollupInput.pet = path.resolve(ROOT_DIR, "pet.html");
@@ -1234,16 +1220,6 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       copyRegistryPlugin(),
-      {
-        name: "tokentracker-third-party-notices",
-        apply: "build",
-        generateBundle() {
-          // dist is shared by the web deployment, npm package and all desktop
-          // EmbeddedServer bundles, so licenses travel with the shipped code.
-          this.emitFile({ type: "asset", fileName: "THIRD_PARTY_NOTICES.txt",
-            source: fs.readFileSync(path.join(REPO_ROOT, "THIRD_PARTY_NOTICES.md"), "utf8") });
-        },
-      },
       react(),
       richLinkMetaPlugin(),
       routeSeoPagesPlugin(),
@@ -1265,30 +1241,17 @@ export default defineConfig(({ mode }) => {
           { from: /^\/functions\/.*$/, to: (ctx) => ctx.parsedUrl.pathname }
         ]
       },
-      // 代理 InsForge auth/functions 请求到云端，避免跨域 cookie 问题
-      proxy: (() => {
-        const proxies = {
-          // IP-check page proxies ip.net.coffee API + assets. Without this,
-          // 5173 dev mode shows "无数据" because trust score / geoip endpoints
-          // are not part of the Vite mock — they live on ip.net.coffee.
-          "/proxy/ipcheck": {
-            target: "https://ip.net.coffee",
-            changeOrigin: true,
-            secure: true,
-            rewrite: (p) => p.replace(/^\/proxy\/ipcheck/, ""),
-          },
-        };
-        // Match the frontend's validated configuration, including its official
-        // default. Otherwise the SDK receives SPA HTML as a successful config.
-        proxies["/api/auth"] = {
-          target: backendConfiguration.baseUrl,
+      proxy: {
+        // IP-check page proxies ip.net.coffee API + assets. Without this,
+        // 5173 dev mode shows "无数据" because trust score / geoip endpoints
+        // are not part of the Vite mock — they live on ip.net.coffee.
+        "/proxy/ipcheck": {
+          target: "https://ip.net.coffee",
           changeOrigin: true,
           secure: true,
-          // Host-only cookies work on both localhost and 127.0.0.1.
-          cookieDomainRewrite: "",
-        };
-        return proxies;
-      })(),
+          rewrite: (p) => p.replace(/^\/proxy\/ipcheck/, ""),
+        },
+      },
     },
   };
 });

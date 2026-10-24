@@ -209,7 +209,7 @@ for (const [scenario, code] of [
         if (isWsl) assert.ok(!output.includes("Command Code: discovery failed"));
         else assert.ok(output.includes(`- Command Code: discovery failed (${expectedError})`));
         assert.match(output, /- Cline: passive reader \(1 transcript in 1 sessions dir\)/);
-        assert.ok(output.includes(`- Queue: ${pendingBytes} bytes pending`));
+        assert.ok(output.includes(`- Queue: ${pendingBytes} bytes`));
       }
       // WSL-only can be empty on failure; native discovery errors stay visible.
       const discovery = runtime.load("src/lib/rollout.js").resolveCommandCodeSessionFiles();

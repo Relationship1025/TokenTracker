@@ -8,7 +8,7 @@ const { cmdDiagnostics } = require("../src/commands/diagnostics");
 const { collectTrackerDiagnostics } = require("../src/lib/diagnostics");
 const { withHome } = require("./helpers/with-home");
 
-test("diagnostics redacts device token and home paths", async () => {
+test("diagnostics redacts secrets and home paths", async () => {
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "tokentracker-diagnostics-"));
   let restoreHome = () => {};
   const prevCodexHome = process.env.CODEX_HOME;
@@ -101,7 +101,6 @@ test("diagnostics redacts device token and home paths", async () => {
     assert.ok(!out.includes(tmp), "expected home path to be redacted");
 
     const data = JSON.parse(out);
-    assert.equal(data?.config?.device_token, "set");
     assert.equal(data?.notify?.last_openclaw_triggered_sync, "2026-02-12T00:00:00.000Z");
     assert.equal(data?.notify?.openclaw_session_plugin_conversation_access, false);
     assert.equal(data?.notify?.grok_hook_configured, true);

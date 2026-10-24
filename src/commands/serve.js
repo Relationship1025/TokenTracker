@@ -237,7 +237,13 @@ async function cmdServe(argv) {
     );
 
     if (opts.open) {
-      openInBrowser(url);
+      try {
+        const { spawn } = require("node:child_process");
+        const opener = process.platform === "win32" ? "cmd"
+          : process.platform === "darwin" ? "open" : "xdg-open";
+        const args = process.platform === "win32" ? ["/c", "start", "", url] : [url];
+        spawn(opener, args, { detached: true, stdio: "ignore" }).unref();
+      } catch { /* opening the dashboard is best-effort */ }
     }
   }
 

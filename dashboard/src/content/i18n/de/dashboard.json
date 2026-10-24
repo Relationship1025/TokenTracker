@@ -430,6 +430,14 @@
   "sessions.detail.session_id": "Sitzungs-ID",
   "sessions.detail.local_path": "Lokaler Pfad",
   "sessions.detail.resume_command": "Fortsetzungsbefehl",
-  "sessions.performance.first_response_value_single": "{{seconds}}s · {{count}} Messung"
-  ,"dashboard.device_usage.title":"Ger?tenutzung","dashboard.device_usage.subtitle":"Nutzung nach lokalem und importiertem Ger?t","dashboard.device_usage.loading":"Ger?tenutzung wird geladen","dashboard.device_usage.empty":"Keine Ger?tenutzung in diesem Zeitraum","dashboard.device_usage.error":"Ger?tenutzung ist nicht verf?gbar","dashboard.device_usage.local":"Lokal","dashboard.device_usage.imported":"Importiert","dashboard.device_usage.bar_aria":"{{name}}: {{percent}}%"
+  "sessions.performance.first_response_value_single": "{{seconds}}s · {{count}} Messung",
+  "dashboard.device_usage.title": "Ger?tenutzung",
+  "dashboard.device_usage.subtitle": "Nutzung nach lokalem und importiertem Ger?t",
+  "dashboard.device_usage.loading": "Ger?tenutzung wird geladen",
+  "dashboard.device_usage.empty": "Keine Ger?tenutzung in diesem Zeitraum",
+  "dashboard.device_usage.error": "Ger?tenutzung ist nicht verf?gbar",
+  "dashboard.device_usage.local": "Lokal",
+  "dashboard.device_usage.imported": "Importiert",
+  "dashboard.device_usage.bar_aria": "{{name}}: {{percent}}%",
+  "sessions.filter.source_kimi": "Kimi Code"
 }

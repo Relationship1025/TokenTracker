@@ -23,16 +23,14 @@ test("failed currency reads preserve the last known currency instead of persisti
   assert.match(currency, /catch \{ return null; \}/);
 });
 
-test("hidden and minimized dashboards suspend with OAuth and restore race protection", () => {
+test("hidden and minimized dashboards suspend and restore", () => {
   const source = read("DashboardWindow.cs");
   assert.match(source, /IsVisibleChanged[^\n]*UpdateWebViewActivity/);
-  assert.match(source, /_activity\?\.Update\(IsVisible && WindowState != WindowState.Minimized, _oauthInFlight\)/);
+  assert.match(source, /_activity\?\.Update\(IsVisible && WindowState != WindowState.Minimized\);/);
   assert.match(source, /visible => view.Visibility = visible \? Visibility.Visible : Visibility.Collapsed/);
   assert.match(source, /core.Resume, core.TrySuspendAsync, Log/);
-  // Behavioral coverage for pending suspension, recovery and OAuth is in
+  // Behavioral coverage for pending suspension and recovery is in
   // WebViewActivityTests; keep this check on the native host's wiring only.
   assert.match(source, /_activity\?\.Dispose\(\);[\s\S]*_activity = null;/);
   assert.doesNotMatch(source, /--disable-background-timer-throttling|--disable-renderer-backgrounding|--disable-backgrounding-occluded-windows/);
-  const oauth = source.slice(source.indexOf("private void BeginNativeOAuth()"), source.indexOf("private async Task WaitForNativeOAuthTimeoutAsync("));
-  assert.match(oauth, /_oauthInFlight = true;[\s\S]*UpdateWebViewActivity/);
 });
