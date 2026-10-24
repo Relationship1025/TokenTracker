@@ -77,9 +77,20 @@ it("offers and selects the rainy neon store theme", async () => {
   expect(setTheme).toHaveBeenCalledWith("neon-store");
 });
 
-it("hides store day/night controls in classic theme", () => {
+it("hides store day/night controls in classic theme and shows light/dark", async () => {
+  const user = userEvent.setup();
   render(<AppearanceSection />);
   expect(screen.queryByRole("button", { name: "dashboard.rainy_store.period_day" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "settings.appearance.theme.light" })).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "settings.appearance.theme.dark" }));
+  expect(setTheme).toHaveBeenCalledWith("dark");
+});
+
+it("hides classic light/dark when neon-store is active", () => {
+  themeState.theme = "neon-store";
+  themeState.resolvedTheme = "dark";
+  render(<AppearanceSection />);
+  expect(screen.queryByRole("button", { name: "settings.appearance.theme.light" })).not.toBeInTheDocument();
 });
 
 it("shows and updates store day/night when neon-store is active", async () => {

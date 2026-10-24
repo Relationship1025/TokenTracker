@@ -1,6 +1,6 @@
 import React from "react";
 import { Info, Languages, Moon, Palette, Store, Sun } from "lucide-react";
-import { themeControlValue, themeFromControlValue } from "../../ui/foundation/theme-preference.js";
+import { isClassicTheme, themeControlValue, themeFromControlValue } from "../../ui/foundation/theme-preference.js";
 import { useTheme } from "../../hooks/useTheme.js";
 import { useLocale } from "../../hooks/useLocale.js";
 import { useCurrency } from "../../hooks/useCurrency.js";
@@ -113,9 +113,17 @@ function buildStorePeriodOptions() {
   ];
 }
 
+function buildClassicShadeOptions() {
+  return [
+    { value: "light", label: copy("settings.appearance.theme.light"), Icon: Sun },
+    { value: "dark", label: copy("settings.appearance.theme.dark"), Icon: Moon },
+  ];
+}
+
 export function AppearanceSection() {
   const { theme, setTheme, resolvedTheme, neonStorePeriod = "night", setNeonStorePeriod } = useTheme();
   const showStorePeriod = themeControlValue(theme) === "neon-store";
+  const showClassicShade = isClassicTheme(theme);
   const { locale, setLocale } = useLocale();
   const { currency, rate, rateSource, rateFetchedAt, setCurrency } = useCurrency();
   const {
@@ -140,6 +148,19 @@ export function AppearanceSection() {
           />
         }
       />
+      {showClassicShade ? (
+        <SettingsRow
+          label={copy("settings.appearance.classic_shade.label")}
+          hint={copy("settings.appearance.classic_shade.hint")}
+          control={
+            <SegmentedControl
+              options={buildClassicShadeOptions()}
+              value={theme === "dark" ? "dark" : "light"}
+              onChange={(value) => setTheme(value === "dark" ? "dark" : "light")}
+            />
+          }
+        />
+      ) : null}
       {showStorePeriod ? (
         <SettingsRow
           label={copy("dashboard.rainy_store.period_label")}

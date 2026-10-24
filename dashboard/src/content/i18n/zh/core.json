@@ -366,6 +366,8 @@
   "settings.appearance.theme.dark": "深色",
   "settings.appearance.theme.system": "系统",
   "settings.appearance.theme.neon_store": "Token 便利店",
+  "settings.appearance.classic_shade.label": "深浅色",
+  "settings.appearance.classic_shade.hint": "经典主题下的浅色或深色。",
   "settings.appearance.store_period.hint": "控制便利店主题的白天/夜晚；用量主看板右上角也可切换。",
   "dashboard.rainy_store.description": "雨夜日本街角的动漫风便利店微缩景观，店内透出温暖灯光。",
   "dashboard.rainy_store.reset_view": "重置便利店视角",
