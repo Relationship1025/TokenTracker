@@ -125,7 +125,6 @@ export function DashboardView(props) {
 
   const {
     copy,
-    onOpenShare,
     screenshotMode,
     identityDisplayName,
     identityStartDate,
@@ -138,7 +137,6 @@ export function DashboardView(props) {
     projectDetailQuery,
     topModels,
     signedIn,
-    publicMode,
     isLocalMode,
     shouldShowInstall,
     installPrompt,
@@ -361,7 +359,6 @@ export function DashboardView(props) {
               onRefresh={screenshotMode ? null : refreshAll}
               loading={usageLoadingState}
               announceLoading={announceUsageLoading}
-              onOpenShare={screenshotMode ? null : onOpenShare}
               customFrom={customFrom}
               customTo={customTo}
               onCustomRangeApply={onCustomRangeApply}

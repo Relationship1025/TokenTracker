@@ -5,14 +5,11 @@ import { LocaleProvider } from "./ui/foundation/LocaleProvider.jsx";
 import { CurrencyProvider } from "./ui/foundation/CurrencyProvider.jsx";
 import { TokenFormatProvider } from "./ui/foundation/TokenFormatProvider.jsx";
 import App from "./App.jsx";
-import { initAnalytics } from "./lib/analytics.js";
 import "@fontsource/geist-mono/400.css";
 import "@fontsource/geist-mono/500.css";
 import "@fontsource/geist-mono/700.css";
 import "@fontsource/geist-mono/900.css";
 import "./styles.css";
-
-initAnalytics();
 
 const router = createBrowserRouter([
   { path: "*", element: <App /> },

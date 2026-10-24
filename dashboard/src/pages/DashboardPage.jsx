@@ -6,7 +6,6 @@ import { useTrendData } from "../hooks/use-trend-data.ts";
 import { useUsageData } from "../hooks/use-usage-data.ts";
 import { useUsageLimits } from "../hooks/use-usage-limits.ts";
 import { useUsageModelBreakdown } from "../hooks/use-usage-model-breakdown.ts";
-import { normalizeAccessToken } from "../lib/auth-token";
 import { copy } from "../lib/copy";
 import { useLocale } from "../hooks/useLocale.js";
 import { useCurrency } from "../hooks/useCurrency.js";
@@ -38,8 +37,6 @@ import {
 import { invalidateSessionInsightsCache, triggerLocalSync } from "../lib/api";
 import { ActivityHeatmap } from "../ui/dashboard/components/ActivityHeatmap.jsx";
 import { DashboardView } from "../ui/dashboard/views/DashboardView.jsx";
-import { ShareModal } from "../ui/share/ShareModal";
-import { useShareCardData } from "../ui/share/use-share-card-data";
 import { runSingleFlight } from "../lib/single-flight";
 import {
   LOCAL_DASHBOARD_REFRESH_OPTIONS,
@@ -111,8 +108,6 @@ export function DashboardPage({
   signedIn,
   sessionSoftExpired,
   signOut,
-  publicMode = false,
-  publicToken = null,
   onMainContentVisible,
 }) {
   const { resolvedLocale } = useLocale();
@@ -124,7 +119,6 @@ export function DashboardPage({
     return isScreenshotModeEnabled(window.location.search);
   }, []);
   const forceInstall = useMemo(() => isForceInstallEnabled(), []);
-  const [shareModalOpen, setShareModalOpen] = useState(false);
   const identityScrambleDurationMs = 2200;
   const [coreIndexCollapsed, setCoreIndexCollapsed] = useState(true);
   const [installCopied, setInstallCopied] = useState(false);
@@ -142,9 +136,9 @@ export function DashboardPage({
     return null;
   }, [auth, authTokenAllowed]);
   const effectiveAuthToken = authTokenAllowed ? authAccessToken : null;
-  const accessToken = publicMode ? normalizeAccessToken(publicToken) : effectiveAuthToken;
-  const accessEnabled = signedIn || mockEnabled || publicMode;
-  const guestAllowed = signedIn && sessionSoftExpired && !publicMode;
+  const accessToken = effectiveAuthToken;
+  const accessEnabled = signedIn || mockEnabled;
+  const guestAllowed = signedIn && sessionSoftExpired;
 
   const isLocalMode = typeof window !== "undefined" &&
     (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
@@ -519,7 +513,7 @@ export function DashboardPage({
 
   const activeDays = useMemo(() => {
     // 本地模式下跳过登录检查
-    if (!signedIn && !mockEnabled && !publicMode && !isLocalMode) return 0;
+    if (!signedIn && !mockEnabled && !isLocalMode) return 0;
     const serverActive = Number(heatmap?.active_days);
     if (Number.isFinite(serverActive)) return serverActive;
 
@@ -737,7 +731,6 @@ export function DashboardPage({
     if (typeof auth?.name !== "string") return "";
     return auth.name.trim();
   }, [auth?.name]);
-  const publicIdentityName = "";
 
   const identityLabel = useMemo(() => {
     if (!identityRawName || identityRawName.includes("@")) {
@@ -750,12 +743,7 @@ export function DashboardPage({
     return identityLabel.replace(/[^a-zA-Z0-9._-]/g, "_");
   }, [identityLabel]);
 
-  const identityDisplayName = useMemo(() => {
-    if (publicMode) {
-      return publicIdentityName || copy("dashboard.identity.fallback");
-    }
-    return identityHandle;
-  }, [identityHandle, publicIdentityName, publicMode]);
+  const identityDisplayName = identityHandle;
   const identityStartDate = useMemo(() => {
     let earliest = null;
 
@@ -857,13 +845,6 @@ export function DashboardPage({
     return { agentName, modelName, modelPercent };
   }, [modelBreakdown, placeholderShort]);
   const displayTotalTokens = toDisplayNumber(summaryTotalTokens);
-  const twitterTotalTokens = displayTotalTokens === "-" ? placeholderShort : displayTotalTokens;
-  const screenshotTwitterText = copy("dashboard.screenshot.twitter_text", {
-    total_tokens: twitterTotalTokens,
-    agent_name: agentSummary.agentName,
-    model_name: agentSummary.modelName,
-    model_percent: agentSummary.modelPercent,
-  });
   const periodsForDisplay = useMemo(() => (screenshotMode ? [] : PERIODS), [screenshotMode]);
 
   const metricsRows = useMemo(
@@ -929,25 +910,6 @@ export function DashboardPage({
     [modelBreakdown],
   );
 
-  const shareCardData = useShareCardData({
-    enabled: shareModalOpen,
-    handle: identityDisplayName,
-    startDate: identityStartDate,
-    activeDays,
-    summary,
-    topModels,
-    period,
-    periodFrom: from,
-    periodTo: to,
-    heatmap,
-    accessToken: typeof accessToken === "string" ? accessToken : null,
-    userId: auth?.userId || null,
-    currency,
-    exchangeRate: rate,
-  });
-  const openShareModal = useCallback(() => setShareModalOpen(true), []);
-  const closeShareModal = useCallback(() => setShareModalOpen(false), []);
-
   const openCostModal = useCallback(() => setCostModalOpen(true), []);
   const closeCostModal = useCallback(() => setCostModalOpen(false), []);
   const costInfoEnabled = summaryCostValue && summaryCostValue !== "-" && fleetData.length > 0;
@@ -962,7 +924,6 @@ export function DashboardPage({
   const sessionExpiredCopiedLabel = copy("dashboard.session_expired.copied");
   const hasActiveDeviceToken = false;
   const shouldShowInstall = shouldShowInstallCard({
-    publicMode,
     screenshotMode,
     forceInstall,
     accessEnabled,
@@ -1031,7 +992,6 @@ export function DashboardPage({
     <>
     <DashboardView
       copy={copy}
-      onOpenShare={openShareModal}
       screenshotMode={screenshotMode}
       identityDisplayName={identityDisplayName}
       identityStartDate={identityStartDate}
@@ -1044,7 +1004,6 @@ export function DashboardPage({
       projectDetailQuery={{ from, to, timeZone, tzOffsetMinutes }}
       topModels={topModels}
       signedIn={signedIn}
-      publicMode={publicMode}
       isLocalMode={isLocalMode}
       shouldShowInstall={shouldShowInstall}
       installPrompt={installPrompt}
@@ -1133,12 +1092,6 @@ export function DashboardPage({
       onLeftReorder={dashboardCardOrder.left.reorder}
       rightCardOrder={dashboardCardOrder.right.order}
       onRightReorder={dashboardCardOrder.right.reorder}
-    />
-    <ShareModal
-      open={shareModalOpen}
-      onClose={closeShareModal}
-      data={shareCardData}
-      twitterText={screenshotTwitterText}
     />
     </>
   );

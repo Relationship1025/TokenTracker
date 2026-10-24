@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useCallback, useMemo, useRef } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
 import { useLocale } from "./hooks/useLocale.js";
 import { ThemeProvider } from "./ui/foundation/ThemeProvider.jsx";
@@ -7,47 +7,30 @@ import { getBackendBaseUrl } from "./lib/config";
 import { isMockEnabled } from "./lib/mock-mode";
 import { isScreenshotModeEnabled } from "./lib/screenshot-mode";
 import { AppLayout } from "./ui/components/Sidebar.jsx";
-import { LegalLinks } from "./ui/components/LegalLinks.jsx";
 import { ToastProvider } from "./ui/components/Toast.jsx";
 import {
   markDashboardMainContentVisible,
   preloadDashboardPageResources,
 } from "./lib/dashboard-preload.js";
-// Telemetry beacons and modal/palette UI are not first-paint critical; lazy
-// loading keeps them out of the eager entry chunk (which the anonymous share
-// page also downloads). The providers above must stay eager.
-// Every lazy import has a null fallback: after a deploy rotates chunk hashes,
-// a client holding the old index.html gets 404s on the new chunks — a rejected
-// lazy() would otherwise throw past the outer ErrorBoundary and blank the
-// whole app. Telemetry/modals must never have that power.
+// The command palette is not first-paint critical; lazy loading keeps it out
+// of the eager entry chunk. The lazy import has a null fallback: a client
+// holding a stale index.html after a rebuild gets 404s on new chunks — a
+// rejected lazy() would otherwise throw past the outer ErrorBoundary and
+// blank the whole app.
 const nullComponent = () => null;
-const Analytics = lazy(() =>
-  import("@vercel/analytics/react")
-    .then((m) => ({ default: m.Analytics }))
-    .catch(() => ({ default: nullComponent })),
-);
-const SpeedInsights = lazy(() =>
-  import("@vercel/speed-insights/react")
-    .then((m) => ({ default: m.SpeedInsights }))
-    .catch(() => ({ default: nullComponent })),
-);
 const CommandPalette = lazy(() =>
   import("./ui/dashboard/components/CommandPalette.jsx")
     .then((m) => ({ default: m.CommandPalette }))
     .catch(() => ({ default: nullComponent })),
 );
 // Pages are lazy-loaded so each route ships in its own chunk; keeps the
-// initial main bundle small (was 1.9 MB before splitting, all 11 pages
-// were bundled together). Routes are mutually exclusive, so only one
+// initial main bundle small. Routes are mutually exclusive, so only one
 // chunk loads per navigation.
 const DashboardPage = lazy(() =>
   import("./pages/DashboardPage.jsx").then((m) => ({ default: m.DashboardPage })),
 );
 const IpCheckPage = lazy(() => import("./pages/IpCheckPage.jsx"));
 const ServiceStatusPage = lazy(() => import("./pages/ServiceStatusPage.jsx"));
-const LandingPage = lazy(() =>
-  import("./pages/LandingPage.jsx").then((m) => ({ default: m.LandingPage })),
-);
 const LimitsPage = lazy(() =>
   import("./pages/LimitsPage.jsx").then((m) => ({ default: m.LimitsPage })),
 );
@@ -85,16 +68,6 @@ export default function App() {
     return isScreenshotModeEnabled(window.location.search);
   }, []);
   const pathname = location?.pathname || "/";
-  const pageUrl = new URL(window.location.href);
-  const sharePathname = pageUrl.pathname.replace(/\/+$/, "") || "/";
-  const shareMatch = sharePathname.match(/^\/share\/([^/?#]+)$/i);
-  const tokenFromPath = shareMatch?.[1] || null;
-  const tokenFromQuery = pageUrl.searchParams.get("token") || null;
-  const publicToken = tokenFromPath || tokenFromQuery;
-  const publicMode =
-    sharePathname === "/share" ||
-    sharePathname === "/share.html" ||
-    sharePathname.startsWith("/share/");
 
   const isLocalMode =
     typeof window !== "undefined" &&
@@ -119,12 +92,6 @@ export default function App() {
     }
   }, [isDashboardDefaultPath]);
 
-  const authObject = null;
-
-  let gate = isLocalMode || mockEnabled || screenshotMode ? "dashboard" : "landing";
-  if (normalizedPath === "/landing") gate = "landing";
-  if (normalizedPath === "/dashboard") gate = "dashboard";
-
   const isLimitsPath = normalizedPath === "/limits";
   const isSettingsPath = normalizedPath === "/settings";
   const isSkillsPath = normalizedPath === "/skills";
@@ -134,7 +101,6 @@ export default function App() {
   const isIpCheckPath = normalizedPath === "/ip-check";
   const isServiceStatusPath = normalizedPath === "/service-status";
   const isDataTransferPath = normalizedPath === "/data-transfer" && isLocalMode;
-  if (isLimitsPath || isSettingsPath || isSkillsPath || isSessionsPath || isWidgetsPath || isPetPath || isIpCheckPath || isServiceStatusPath || isDataTransferPath) gate = "dashboard";
 
   let PageComponent = DashboardPage;
   if (isLimitsPath) {
@@ -158,50 +124,35 @@ export default function App() {
   }
 
   const showSidebar =
-    !publicMode &&
-    (normalizedPath === "/dashboard" ||
-      normalizedPath === "/" ||
-      isLimitsPath ||
-      isSettingsPath ||
-      isSkillsPath ||
-      isSessionsPath ||
-      isWidgetsPath ||
-      isPetPath ||
-      isIpCheckPath ||
-      isServiceStatusPath ||
-      isDataTransferPath);
+    normalizedPath === "/dashboard" ||
+    normalizedPath === "/" ||
+    isLimitsPath ||
+    isSettingsPath ||
+    isSkillsPath ||
+    isSessionsPath ||
+    isWidgetsPath ||
+    isPetPath ||
+    isIpCheckPath ||
+    isServiceStatusPath ||
+    isDataTransferPath;
 
   let content = null;
-  let hasLandingFooter = false;
-  if (normalizedPath === "/login" || normalizedPath === "/reset-password" || normalizedPath === "/auth/callback" || normalizedPath === "/auth/native-callback") {
-    content = <Navigate to="/dashboard" replace />;
-  } else if (normalizedPath === "/wrapped") {
+  if (normalizedPath === "/wrapped") {
     // Year-end Wrapped page. Reads from /functions/tokentracker-wrapped
-    // (provided by the local CLI server) — no auth required.
+    // (provided by the local CLI server).
     content = <WrappedPage />;
-  } else if (gate === "landing") {
-    content = <LandingPage />;
-    hasLandingFooter = true;
   } else {
     const pageNode = (<>
       <PageComponent
         key={resolvedLocale}
         baseUrl={baseUrl}
-        auth={authObject}
         signedIn={signedIn}
         sessionSoftExpired={sessionSoftExpired}
-        publicMode={publicMode}
-        publicToken={publicToken}
         onMainContentVisible={handleDashboardMainContentVisible}
       />
     </>);
     if (showSidebar) {
-      content = (
-        <AppLayout>
-          {pageNode}
-          {!isLocalMode && <footer className="px-4 py-6"><LegalLinks /></footer>}
-        </AppLayout>
-      );
+      content = <AppLayout>{pageNode}</AppLayout>;
     } else {
       content = pageNode;
     }
@@ -212,13 +163,8 @@ export default function App() {
       <ThemeProvider>
         <ToastProvider>
             <Suspense fallback={null}>{content}</Suspense>
-            {!isLocalMode && !showSidebar && !hasLandingFooter && (
-              <footer className="px-4 py-6"><LegalLinks /></footer>
-            )}
             <Suspense fallback={null}>
               {showSidebar ? <CommandPalette /> : null}
-              <Analytics />
-              <SpeedInsights />
             </Suspense>
         </ToastProvider>
       </ThemeProvider>
