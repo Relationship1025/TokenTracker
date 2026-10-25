@@ -1,19 +1,23 @@
-import { act, render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { copy, setCopyLocale } from "../lib/copy";
 import { EN_LOCALE, ZH_CN_LOCALE } from "../lib/locale";
 import { WidgetsPage } from "./WidgetsPage.jsx";
 
-function installNativeBridge(settings) {
+/**
+ * Fake the WebView2 host bridge (TokenTrackerWin). `?app=1` flips the sticky
+ * native-app flag; `window.chrome.webview` is the Windows transport, which
+ * receives a single JSON string per message (see native-bridge post()).
+ */
+function installWebView2Bridge(settings) {
   const messages = [];
   window.history.pushState({}, "", "/widgets?app=1");
-  window.webkit = {
-    messageHandlers: {
-      nativeBridge: {
-        postMessage(message) {
-          messages.push(message);
-        },
+  window.chrome = {
+    webview: {
+      postMessage(raw) {
+        messages.push(JSON.parse(raw));
       },
     },
   };
@@ -25,6 +29,14 @@ function installNativeBridge(settings) {
   };
 }
 
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <WidgetsPage />
+    </MemoryRouter>,
+  );
+}
+
 afterEach(() => {
   vi.restoreAllMocks();
   setCopyLocale(EN_LOCALE);
@@ -32,140 +44,89 @@ afterEach(() => {
   if (typeof window.localStorage?.removeItem === "function") {
     window.localStorage.removeItem("tokentracker_native_app");
   }
-  delete window.webkit;
+  delete window.chrome;
 });
 
-describe("WidgetsPage menu bar configurator", () => {
-  it("edits the two menu bar preview slots through NativeBridge", async () => {
+describe("WidgetsPage desktop quota widget", () => {
+  it("reflects the pushed native state and toggles quotaWidget through the bridge", async () => {
     const user = userEvent.setup();
-    const bridge = installNativeBridge({
-      showStats: true,
-      menuBarItems: ["todayTokens", "claude5h"],
-      menuBarMaxItems: 2,
-      menuBarAvailableItems: [
-        { id: "todayTokens", label: "Today Tokens", shortLabel: "Tokens", category: "tokens" },
-        { id: "todayCost", label: "Today Cost", shortLabel: "Cost", category: "cost" },
-        { id: "claude5h", label: "Claude 5h Limit", shortLabel: "Cl 5h", category: "limits" },
-      ],
-    });
+    const bridge = installWebView2Bridge({ platform: "windows", quotaWidget: true });
 
-    render(<WidgetsPage />);
+    renderPage();
     act(() => bridge.pushSettings());
 
-    const secondaryLabel = copy("menubar.slot.secondary");
-    const primary = await screen.findByRole("combobox", { name: copy("menubar.slot.primary") });
-    const secondary = screen.getByRole("combobox", { name: secondaryLabel });
+    const toggle = await screen.findByRole("switch", { name: copy("widgets.quota.toggle.label") });
+    expect(toggle).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByAltText(copy("widgets.quota.screenshot.collapsed.aria"))).toBeInTheDocument();
+    expect(screen.getByAltText(copy("widgets.quota.screenshot.expanded.aria"))).toBeInTheDocument();
 
-    // The slots are now custom (base-ui) dropdowns: the trigger renders the
-    // selected option's label as text rather than exposing a native value.
-    expect(primary).toHaveTextContent(copy("menubar.metric.today_tokens"));
-    expect(secondary).toHaveTextContent(copy("menubar.metric.claude_5h"));
-
-    // Open the secondary dropdown and verify it dedupes the primary's metric.
     await act(async () => {
-      await user.click(secondary);
-    });
-    // The popup mounts asynchronously (base-ui portal + floating-ui positioning),
-    // so wait for the listbox rather than querying synchronously right after the
-    // click — a sync getByRole races the mount and fails intermittently.
-    const listbox = await screen.findByRole("listbox", { name: secondaryLabel });
-    expect(
-      within(listbox).queryByRole("option", { name: copy("menubar.metric.today_tokens") }),
-    ).not.toBeInTheDocument();
-
-    // Pick "Today Cost". A touch tap commits without first highlighting the
-    // item — base-ui's mouse path requires a highlighted item, which jsdom's
-    // lack of layout for floating-ui list navigation never sets.
-    const todayCostOption = within(listbox).getByRole("option", {
-      name: copy("menubar.metric.today_cost"),
-    });
-    await act(async () => {
-      await user.pointer([
-        { keys: "[TouchA>]", target: todayCostOption },
-        { keys: "[/TouchA]", target: todayCostOption },
-      ]);
+      await user.click(toggle);
     });
 
     await waitFor(() => {
       expect(bridge.messages).toContainEqual({
         type: "setSetting",
-        key: "menuBarItems",
-        value: ["todayTokens", "todayCost"],
+        key: "quotaWidget",
+        value: false,
       });
     });
   });
 
-  it("localizes Codex credit and Spark native menu item labels through copy", async () => {
-    setCopyLocale(ZH_CN_LOCALE);
-    const bridge = installNativeBridge({
-      showStats: true,
-      menuBarItems: ["codexCredits", "codexSpark7d"],
-      menuBarMaxItems: 2,
-      menuBarAvailableItems: [
-        {
-          id: "codexCredits",
-          label: "Codex Credit Limit",
-          shortLabel: "Cx Cred",
-          category: "limits",
-        },
-        {
-          id: "codexSpark5h",
-          label: "Codex Spark 5h Limit",
-          shortLabel: "Cx Spark 5h",
-          category: "limits",
-        },
-        {
-          id: "codexSpark7d",
-          label: "Codex Spark 7d Limit",
-          shortLabel: "Cx Spark 7d",
-          category: "limits",
-        },
-      ],
+  it("toggles the four gallery widgets through the bridge", async () => {
+    const user = userEvent.setup();
+    const bridge = installWebView2Bridge({
+      platform: "windows",
+      widgetSummary: true,
+      widgetHeatmap: false,
+      widgetTopmodels: false,
+      widgetLimits: false,
     });
 
-    render(<WidgetsPage />);
+    renderPage();
     act(() => bridge.pushSettings());
 
-    const primary = await screen.findByRole("combobox", { name: copy("menubar.slot.primary") });
-    const secondary = screen.getByRole("combobox", { name: copy("menubar.slot.secondary") });
+    const summaryToggle = await screen.findByRole("switch", { name: copy("widgets.card.summary.toggle") });
+    expect(summaryToggle).toHaveAttribute("aria-checked", "true");
+    await act(async () => {
+      await user.click(summaryToggle);
+    });
+    await waitFor(() => {
+      expect(bridge.messages).toContainEqual({ type: "setSetting", key: "widgetSummary", value: false });
+    });
 
-    expect(primary).toHaveTextContent(copy("menubar.metric.codex_credits"));
-    expect(secondary).toHaveTextContent(copy("menubar.metric.codex_spark_7d"));
+    const heatmapToggle = screen.getByRole("switch", { name: copy("widgets.card.heatmap.toggle") });
+    const topModelsToggle = screen.getByRole("switch", { name: copy("widgets.card.topmodels.toggle") });
+    const limitsToggle = screen.getByRole("switch", { name: copy("widgets.card.limits.toggle") });
+    await act(async () => {
+      await user.click(heatmapToggle);
+      await user.click(topModelsToggle);
+      await user.click(limitsToggle);
+    });
+    expect(bridge.messages).toContainEqual({ type: "setSetting", key: "widgetHeatmap", value: true });
+    expect(bridge.messages).toContainEqual({ type: "setSetting", key: "widgetTopmodels", value: true });
+    expect(bridge.messages).toContainEqual({ type: "setSetting", key: "widgetLimits", value: true });
   });
 
-  it("configures limit-reset toast and confetti independently", async () => {
-    const user = userEvent.setup();
-    const bridge = installNativeBridge({
-      toastOnReset: true,
-      confettiOnReset: true,
-    });
+  it("disables the toggle and shows the tray-app hint in plain browser mode", async () => {
+    window.history.pushState({}, "", "/widgets");
+    renderPage();
 
-    render(<WidgetsPage />);
+    const toggle = await screen.findByRole("switch", { name: copy("widgets.quota.toggle.label") });
+    expect(toggle).toBeDisabled();
+    expect(screen.getByText(copy("widgets.quota.browser_hint"))).toBeInTheDocument();
+  });
+
+  it("localizes the quota widget card through copy", async () => {
+    setCopyLocale(ZH_CN_LOCALE);
+    const bridge = installWebView2Bridge({ platform: "windows", quotaWidget: false });
+
+    renderPage();
     act(() => bridge.pushSettings());
 
-    const toastSwitch = await screen.findByRole("switch", {
-      name: copy("settings.menubar.toastOnReset"),
-    });
-    const confettiSwitch = screen.getByRole("switch", {
-      name: copy("settings.menubar.confettiOnReset"),
-    });
-
-    await act(async () => {
-      await user.click(toastSwitch);
-    });
-    await act(async () => {
-      await user.click(confettiSwitch);
-    });
-
-    expect(bridge.messages).toContainEqual({
-      type: "setSetting",
-      key: "toastOnReset",
-      value: false,
-    });
-    expect(bridge.messages).toContainEqual({
-      type: "setSetting",
-      key: "confettiOnReset",
-      value: false,
-    });
+    expect(screen.getByRole("heading", { name: copy("widgets.page.title") })).toBeInTheDocument();
+    const toggle = await screen.findByRole("switch", { name: copy("widgets.quota.toggle.label") });
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByText(copy("widgets.tray.title"))).toBeInTheDocument();
   });
 });

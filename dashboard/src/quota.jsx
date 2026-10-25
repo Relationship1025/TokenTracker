@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, GripHorizontal, Settings2, ArrowUpRight, Check,
 import { copy, setCopyLocale } from "./lib/copy";
 import { desktopQuotaRows, selectQuotaRows, mergeQuotaSnapshot, quotaPeriodLabel, quotaResetCountdown } from "./lib/desktop-quota.js";
 import { limitProviderName } from "./lib/limits-providers.js";
+import { widgetThemeClasses } from "./lib/widget-theme.js";
 import "./quota.css";
 
 function send(message) { window.chrome?.webview?.postMessage(message); }
@@ -44,7 +45,7 @@ export function QuotaWidget() {
     setContext(value => ({ ...value, selected: next }));
     send(JSON.stringify({ type: "quota:select", ids: next }));
   };
-  return <main className={`quota ${context.light ? "light" : ""} ${expanded ? "expanded" : ""} ${stale ? "stale" : ""}`}>
+  return <main className={`quota ${widgetThemeClasses(context.style, context.light)} ${expanded ? "expanded" : ""} ${stale ? "stale" : ""}`}>
     <header>
       {expanded ? <span className="quota-title">{copy("quota.title")}</span> : <span className={`quota-status ${stale ? "stale-status" : ""}`} role="status" aria-label={copy(stale ? "quota.stale" : "quota.remaining")} title={copy(stale ? "quota.stale" : "quota.remaining")}>{stale ? "!" : null}</span>}
       <button className="drag-handle" aria-label={copy("quota.drag")} title={copy("quota.drag")}

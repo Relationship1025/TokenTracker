@@ -24,15 +24,15 @@ export function desktopQuotaRows(snapshot) {
   return rows;
 }
 
-export function selectQuotaRows(rows, selected) {
+export function selectQuotaRows(rows, selected, max = 2) {
   const pinned = selected.map(id => rows.find(row => row.id === id)).filter(Boolean);
-  if (selected.length) return pinned;
+  if (selected.length) return pinned.slice(0, max);
   const providers = new Set();
   return rows.filter(row => {
     if (providers.has(row.provider)) return false;
     providers.add(row.provider);
     return true;
-  }).slice(0, 2);
+  }).slice(0, max);
 }
 
 /** A provider failure must not erase its last known windows or look like a reset. */

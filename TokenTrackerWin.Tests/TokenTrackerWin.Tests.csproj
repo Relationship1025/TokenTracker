@@ -29,6 +29,7 @@
     <Compile Include="../TokenTrackerWin/DocumentScriptCache.cs" Link="DocumentScriptCache.cs" />
     <Compile Include="../TokenTrackerWin/NativeTheme.cs" Link="NativeTheme.cs" />
     <Compile Include="../TokenTrackerWin/WebViewActivity.cs" Link="WebViewActivity.cs" />
+    <Compile Include="../TokenTrackerWin/DesktopWidgetSettings.cs" Link="DesktopWidgetSettings.cs" />
   </ItemGroup>
 
 </Project>

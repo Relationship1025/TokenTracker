@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import { RotateCcw } from "lucide-react";
 import { copy } from "../../../lib/copy";
 import { RainyStoreStatic } from "./RainyStoreStatic.jsx";
 
@@ -91,15 +90,6 @@ export function RainyStoreScene({
       data-rainy-period={daytime ? "day" : "night"}
     >
       <div ref={mountRef} className="tt-rainy-canvas-mount" />
-      <button
-        type="button"
-        className="tt-rainy-reset"
-        aria-label={copy("dashboard.rainy_store.reset_view")}
-        title={copy("dashboard.rainy_store.reset_view")}
-        onClick={() => controllerRef.current?.resetView()}
-      >
-        <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-      </button>
       <span className="sr-only">{copy("dashboard.rainy_store.canvas_description")}</span>
     </div>
   );

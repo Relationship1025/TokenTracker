@@ -1,5 +1,5 @@
 import React from "react";
-import { act, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -141,6 +141,24 @@ describe("AppLayout sidebar controls", () => {
     renderLayout("/dashboard");
     expect(screen.getByRole("button", { name: "Daytime" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Nighttime" })).toBeInTheDocument();
+  });
+
+  it("keeps non-dashboard pages scrollable in the neon store theme", () => {
+    themeState.theme = "neon-store";
+    themeState.resolvedTheme = "dark";
+    themeState.isNeonStore = true;
+
+    renderLayout("/sessions");
+    const sessionsContent = document.getElementById("app-main-content");
+    expect(sessionsContent.className).toContain("overflow-y-auto");
+
+    cleanup();
+    renderLayout("/dashboard");
+    const dashboardContent = document.getElementById("app-main-content");
+    // The rainy usage dashboard is a full-bleed scene that scrolls internally;
+    // its viewport stays locked.
+    expect(dashboardContent.className).toContain("overflow-hidden");
+    expect(dashboardContent.className).not.toContain("overflow-y-auto");
   });
 
   it("collapses and expands the desktop sidebar and persists the preference", async () => {

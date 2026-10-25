@@ -784,29 +784,6 @@
   outline: none;
 }
 
-.tt-rainy-reset {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
-  z-index: 2;
-  display: inline-flex;
-  height: 32px;
-  width: 32px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  border: 1px solid rgba(184, 240, 232, 0.2);
-  background: rgba(8, 24, 33, 0.78);
-  color: #b9d8d4;
-  backdrop-filter: blur(10px);
-  transition: color 150ms ease, background 150ms ease;
-}
-
-.tt-rainy-reset:hover {
-  color: #effffa;
-  background: rgba(24, 61, 68, 0.9);
-}
-
 :root.neon-store .tt-rainy-dashboard--wide {
   display: block;
   position: relative;

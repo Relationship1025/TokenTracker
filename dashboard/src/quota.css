@@ -13,6 +13,22 @@ svg { flex-shrink:0; }
   box-shadow:inset 0 1px 0 #ffffff05;
 }
 .quota.light { --bg:#f5f6f5; --fg:#242930; --secondary:#59626b; --track:#0000000c; --accent-start:#287d70; --accent-end:#68a999; color-scheme:light; border-color:#00000016; }
+
+/* Neon-store theme (便利店): night = deep teal storefront, day = light glass. */
+.quota.store-night {
+  --bg:#0a1c26; --fg:#ecf8f7; --secondary:#91aab0; --track:#93deda17;
+  --accent-start:#2ea89b; --accent-end:#67e8d4;
+  color-scheme:dark; border-color:#93deda2e;
+  background:linear-gradient(130deg,#67e8d40d,transparent 55%),var(--bg);
+}
+.quota.store-day {
+  --bg:#eef5fb; --fg:#0f172a; --secondary:#475569; --track:#0f172a0f;
+  --accent-start:#2f8f83; --accent-end:#7fd8c9;
+  color-scheme:light; border-color:#78aadc52;
+  background:linear-gradient(130deg,#5aa0d21f,transparent 55%),var(--bg);
+}
+.quota.store-night .low,.quota.store-day .low { --accent-start:#c98d4d; --accent-end:#f0c98f; }
+.quota.store-day button:focus-visible { outline-color:#3f8f77; }
 .quota .low { --accent-start:#ba8852; --accent-end:#efd3ab; }
 .quota header { display:flex; align-items:center; gap:4px; }
 .quota header button,.quota footer button { width:28px; height:28px; padding:0; display:flex; align-items:center; justify-content:center; background:transparent; color:var(--secondary); border-radius:7px; }

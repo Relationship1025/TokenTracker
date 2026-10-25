@@ -1203,18 +1203,21 @@ export default defineConfig(({ mode }) => {
     define["import.meta.env.VITE_APP_VERSION"] = JSON.stringify(fallbackVersion);
   }
 
-  // Build inputs. The Windows and Linux apps' floating-pet page (pet.html) is an
-  // OPT-IN extra entry, enabled only when TOKENTRACKER_BUILD_PET=1 (set by the
-  // Windows and Linux builds). Adding a rollup entry reshuffles shared chunks, so keeping it
-  // off by default makes the macOS + web builds byte-identical to a no-pet build —
-  // this matters because this project has a history of chunk-split changes subtly
-  // breaking the native OAuth callback (see CLAUDE.md). macOS never loads pet.html.
+  // Build inputs. The Windows app's native-hosted pages — the floating pet
+  // (pet.html), the desktop quota widget (quota.html), and the four generic
+  // desktop widgets (widget-summary/heatmap/topmodels/limits.html) — are
+  // OPT-IN extra entries, enabled only when TOKENTRACKER_BUILD_PET=1 (set by
+  // the Windows build). Adding a rollup entry reshuffles shared chunks, so
+  // keeping them off by default keeps the plain web build lean.
   const rollupInput = {
     main: path.resolve(ROOT_DIR, "index.html"),
   };
   if (process.env.TOKENTRACKER_BUILD_PET === "1") {
     rollupInput.pet = path.resolve(ROOT_DIR, "pet.html");
     rollupInput.quota = path.resolve(ROOT_DIR, "quota.html");
+    for (const widget of ["summary", "heatmap", "topmodels", "limits"]) {
+      rollupInput[`widget-${widget}`] = path.resolve(ROOT_DIR, `widget-${widget}.html`);
+    }
   }
 
   return {

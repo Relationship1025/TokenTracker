@@ -25,7 +25,7 @@ import { cn } from "../../lib/cn";
 import { useTheme } from "../../hooks/useTheme.js";
 import { isClassicTheme, themeControlValue, themeFromControlValue } from "../foundation/theme-preference.js";
 import { useLocale } from "../../hooks/useLocale.js";
-import { isNativeApp, isNativeEmbed, isNativeLinuxApp, isNativeWindowsApp } from "../../lib/native-bridge.js";
+import { isNativeApp, isNativeEmbed, isNativeWindowsApp } from "../../lib/native-bridge.js";
 import { isLocalDashboardHost } from "../../lib/host-mode";
 import { NavIconRail } from "./NavIconRail.jsx";
 
@@ -424,12 +424,7 @@ function SidebarBody({
       <div className="tt-rainy-rail-glass flex w-full flex-1 flex-col items-start justify-center px-2">
         <div className="tt-rainy-rail-stack pointer-events-auto max-h-[min(78vh,640px)] overflow-visible">
           <NavIconRail
-            groups={navGroups.map((group) => ({
-              ...group,
-              items: group.items.filter(
-                (item) => !(item.to === "/widgets" && (isNativeWindowsApp() || isNativeLinuxApp())),
-              ),
-            }))}
+            groups={navGroups}
             pathname={pathname}
             onNavigate={onItemClick}
           />
@@ -485,9 +480,6 @@ function SidebarBody({
             <NavGroupLabel label={group.label} collapsed={collapsed} first={groupIdx === 0} />
             <div className="flex flex-col gap-0.5">
               {group.items
-                // Widgets is a macOS-only feature (system widget gallery); hide it in
-                // the Windows and Linux apps.
-                .filter((item) => !(item.to === "/widgets" && (isNativeWindowsApp() || isNativeLinuxApp())))
                 .map((item) => (
                   <NavItem
                     key={item.id}
@@ -687,7 +679,8 @@ export function AppLayout({ children }) {
   const location = useLocation();
   const isNeonStore = theme === "neon-store";
   const normalizedPath = (location?.pathname || "/").replace(/\/+$/, "") || "/";
-  const showNeonPeriodSwitch = isNeonStore && (normalizedPath === "/" || normalizedPath === "/dashboard");
+  const isDashboardUsagePath = normalizedPath === "/" || normalizedPath === "/dashboard";
+  const showNeonPeriodSwitch = isNeonStore && isDashboardUsagePath;
   const [drawerOpen, setDrawerOpen] = useState(false);
   const menuButtonRef = useRef(null);
   const mainContentRef = useRef(null);
@@ -767,7 +760,11 @@ export function AppLayout({ children }) {
               tabIndex={-1}
               className={cn(
                 "flex-1 min-h-0",
-                isNeonStore ? "flex flex-col overflow-hidden" : "overflow-y-auto",
+                // Only the usage dashboard needs a locked (overflow-hidden)
+                // viewport under neon-store: its rainy layout is a full-bleed
+                // scene with its own internal scrollers. Every other page is
+                // plain document flow and must scroll right here.
+                isNeonStore && isDashboardUsagePath ? "flex flex-col overflow-hidden" : "overflow-y-auto",
               )}
             >
               {children}

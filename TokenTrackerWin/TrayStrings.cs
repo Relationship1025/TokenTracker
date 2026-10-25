@@ -23,7 +23,12 @@ internal sealed record TrayStrings(
     string SizeSmall,
     string SizeMedium,
     string SizeLarge,
-    string DesktopQuota)
+    string DesktopQuota,
+    string DesktopWidgetsMenu,
+    string WidgetSummary,
+    string WidgetHeatmap,
+    string WidgetTopModels,
+    string WidgetLimits)
 {
     public static TrayStrings For(string locale)
     {
@@ -52,7 +57,12 @@ internal sealed record TrayStrings(
                 "小",
                 "中",
                 "大",
-                "桌面限额"),
+                "桌面限额",
+                "桌面小组件",
+                "使用概览",
+                "活动热力图",
+                "热门模型",
+                "使用限额"),
             NativeLocalization.TraditionalChineseLocale => new(
                 "Microsoft JhengHei UI",
                 "今日",
@@ -76,7 +86,12 @@ internal sealed record TrayStrings(
                 "小",
                 "中",
                 "大",
-                "桌面限額"),
+                "桌面限額",
+                "桌面小工具",
+                "使用概覽",
+                "活動熱力圖",
+                "熱門模型",
+                "使用限額"),
             NativeLocalization.JapaneseLocale => new(
                 "Yu Gothic UI",
                 "今日",
@@ -100,7 +115,12 @@ internal sealed record TrayStrings(
                 "小",
                 "中",
                 "大",
-                "デスクトップ使用枠"),
+                "デスクトップ使用枠",
+                "デスクトップウィジェット",
+                "使用概要",
+                "アクティビティヒートマップ",
+                "上位モデル",
+                "使用制限"),
             NativeLocalization.KoreanLocale => new(
                 "Malgun Gothic",
                 "오늘",
@@ -124,7 +144,12 @@ internal sealed record TrayStrings(
                 "작게",
                 "보통",
                 "크게",
-                "데스크톱 사용 한도"),
+                "데스크톱 사용 한도",
+                "데스크톱 위젯",
+                "사용 요약",
+                "활동 히트맵",
+                "상위 모델",
+                "사용 한도"),
             _ => new(
                 "Segoe UI Variable Text",
                 "Today",
@@ -148,7 +173,12 @@ internal sealed record TrayStrings(
                 "Small",
                 "Medium",
                 "Large",
-                "Desktop quota"),
+                "Desktop quota",
+                "Desktop Widgets",
+                "Usage Summary",
+                "Activity Heatmap",
+                "Top Models",
+                "Usage Limits"),
         };
     }
 }

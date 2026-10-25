@@ -516,6 +516,11 @@ internal sealed class DashboardWindow : Window
                             NativeTheme.StorePreference(value);
                             ThemeChanged?.Invoke();
                         }
+                        else if (key == NativeTheme.StorePeriodKey)
+                        {
+                            NativeTheme.StoreNeonStorePeriod(value);
+                            ThemeChanged?.Invoke();
+                        }
                         else if (key is "tokentracker-currency" or "tokentracker-exchange-rates")
                         {
                             CurrencyChanged?.Invoke();
@@ -574,28 +579,31 @@ internal sealed class DashboardWindow : Window
         //  2. Mark native-app on <html> so the dashboard's transparent-background
         //     rules apply — letting the acrylic backdrop show through.
         //  3. Wrap localStorage.setItem to notify native when tray-facing settings change.
+        // Raw string, not concatenation: the earlier +/- appended string version had an
+        // unbalanced brace ("Unexpected token '}'" on every document) so NONE of this ran.
         await core.AddScriptToExecuteOnDocumentCreatedAsync(
-            "try{if(!localStorage.getItem('tokentracker-theme')){" +
-            "localStorage.setItem('tokentracker-theme','dark');" +
-            "document.documentElement.classList.add('dark');}" +
-            "document.documentElement.classList.add('native-app');" +
-            "document.documentElement.classList.add('native-windows-app');" +
-            "var s=document.createElement('style');" +
-            "s.textContent='html,html.dark,body,#root{background:transparent!important}';" +
-            "(document.head||document.documentElement).appendChild(s);" +
-            "var _set=localStorage.setItem.bind(localStorage);" +
-            "localStorage.setItem=function(k,v){_set(k,v);" +
-            "if(k==='tokentracker-currency'||k==='tokentracker-exchange-rates'){" +
-            "try{window.chrome.webview.postMessage('currency');}catch(e){}" +
-            "try{window.chrome.webview.postMessage(JSON.stringify({type:'nativeSetting',key:k,value:v}));}catch(e){}}" +
-            "if(k==='tokentracker-locale'){" +
-            "try{window.chrome.webview.postMessage('locale');}catch(e){}" +
-            "try{window.chrome.webview.postMessage(JSON.stringify({type:'nativeSetting',key:k,value:v}));}catch(e){}}" +
-            "if(k==='tokentracker-theme'){" +
-            "try{window.chrome.webview.postMessage('theme');}catch(e){}" +
-            "try{window.chrome.webview.postMessage(JSON.stringify({type:'nativeSetting',key:k,value:v}));}catch(e){}}};" +
-            "}catch(e){}" +
-            "}catch(e){}");
+            """
+            try{
+              if(!localStorage.getItem('tokentracker-theme')){
+                localStorage.setItem('tokentracker-theme','dark');
+                document.documentElement.classList.add('dark');
+              }
+              document.documentElement.classList.add('native-app');
+              document.documentElement.classList.add('native-windows-app');
+              var s=document.createElement('style');
+              s.textContent='html,html.dark,body,#root{background:transparent!important}';
+              (document.head||document.documentElement).appendChild(s);
+              var _set=localStorage.setItem.bind(localStorage);
+              localStorage.setItem=function(k,v){
+                _set(k,v);
+                var notify=function(){try{window.chrome.webview.postMessage(JSON.stringify({type:'nativeSetting',key:k,value:v}));}catch(e){}};
+                if(k==='tokentracker-currency'||k==='tokentracker-exchange-rates'){try{window.chrome.webview.postMessage('currency');}catch(e){}notify();}
+                if(k==='tokentracker-locale'){try{window.chrome.webview.postMessage('locale');}catch(e){}notify();}
+                if(k==='tokentracker-theme'){try{window.chrome.webview.postMessage('theme');}catch(e){}notify();}
+                if(k==='tokentracker-neon-store-period'){try{window.chrome.webview.postMessage('theme');}catch(e){}notify();}
+              };
+            }catch(e){}
+            """);
 
         // ?app=1 → dashboard renders in native-app layout (Clawd companion, native
         // component treatment, transparent root + 28px drag strip), matching macOS.
@@ -1009,6 +1017,28 @@ internal sealed class DashboardWindow : Window
         catch
         {
             return NativeTheme.DarkPreference;
+        }
+    }
+
+    /// <summary>
+    /// Read the neon-store day/night period from dashboard localStorage. Returns
+    /// "night" until the WebView is ready or on any failure.
+    /// </summary>
+    public async Task<string> ReadNeonStorePeriodAsync()
+    {
+        if (!_coreReady) return NativeTheme.NightPeriod;
+        try
+        {
+            var raw = await _webView.CoreWebView2.ExecuteScriptAsync(
+                "(function(){return localStorage.getItem('tokentracker-neon-store-period')||'night';})()");
+            var value = JsonSerializer.Deserialize<string>(raw);
+            var normalized = NativeTheme.NormalizeNeonStorePeriod(value);
+            NativeTheme.StoreNeonStorePeriod(normalized);
+            return normalized;
+        }
+        catch
+        {
+            return NativeTheme.NightPeriod;
         }
     }
 

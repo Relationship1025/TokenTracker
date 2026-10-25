@@ -32,7 +32,8 @@ internal sealed class UsagePoller : IDisposable
         long Last30dAvgPerDay,
         int StreakDays,
         int ActiveDaysAllTime,
-        IReadOnlyList<TopModelStat> TopModels);
+        IReadOnlyList<TopModelStat> TopModels,
+        string? HeatmapJson = null);
 
     // Local server only (127.0.0.1) — never route through a system/env proxy, or a
     // VPN/proxy user without a loopback bypass can't reach it (see ServerManager.Http).
@@ -220,8 +221,10 @@ internal sealed class UsagePoller : IDisposable
                 }
             }
 
-            // Heatmap (all-time active days / streak) + top models only when the pet wants them.
+            // Heatmap (all-time active days / streak) + top models only when a
+            // rich-stats consumer wants them.
             int streak = 0, activeAll = 0;
+            string? heatmapJson = null;
             IReadOnlyList<TopModelStat> models = NoModels;
             if (IncludeRichStats)
             {
@@ -237,7 +240,7 @@ internal sealed class UsagePoller : IDisposable
                 var heatmap = await heatmapTask;
                 var topModels = await modelsTask;
                 if (heatmap is null || topModels is null) return null;
-                (streak, activeAll) = heatmap.Value;
+                (streak, activeAll, heatmapJson) = heatmap.Value;
                 models = topModels;
             }
 
@@ -246,7 +249,8 @@ internal sealed class UsagePoller : IDisposable
                 l7Tokens, l7Active,
                 l30Tokens, l30Avg,
                 streak, activeAll,
-                models);
+                models,
+                heatmapJson);
         }
         catch
         {
@@ -255,22 +259,23 @@ internal sealed class UsagePoller : IDisposable
     }
 
     /// <summary>Heatmap: all-time active days + current streak (streak is server-computed; the
-    /// local server returns 0, matching how the macOS pet reads it against the same backend).</summary>
-    private async Task<(int Streak, int ActiveDays)?> FetchHeatmapAsync(
+    /// local server returns 0, matching how the macOS pet reads it against the same backend) and
+    /// the raw endpoint JSON for the desktop heatmap widget.</summary>
+    private async Task<(int Streak, int ActiveDays, string? Json)?> FetchHeatmapAsync(
         string tzQuery, CancellationToken cancellationToken = default)
     {
         try
         {
             var url = $"{_baseUrl()}/functions/tokentracker-usage-heatmap?weeks=52{tzQuery}";
             using var resp = await Http.GetAsync(url, cancellationToken);
-            if (!resp.IsSuccessStatusCode) return (0, 0);
-            await using var stream = await resp.Content.ReadAsStreamAsync(cancellationToken);
-            using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+            if (!resp.IsSuccessStatusCode) return (0, 0, null);
+            var json = await resp.Content.ReadAsStringAsync(cancellationToken);
+            using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
-            var parsed = ((int)GetLong(root, "streak_days"), (int)GetLong(root, "active_days"));
+            var parsed = ((int)GetLong(root, "streak_days"), (int)GetLong(root, "active_days"), json);
             return parsed;
         }
-        catch { return (0, 0); }
+        catch { return (0, 0, null); }
     }
 
     /// <summary>

@@ -42,12 +42,17 @@ async function serveStaticFile(baseDir, pathname, res) {
     const ext = path.extname(filePath).toLowerCase();
     const contentType = MIME_TYPES[ext] || "application/octet-stream";
 
+    // Vite emits content-hashed filenames under /assets/, so those can be
+    // cached immutably. Everything else — SPA entry HTML above all — must
+    // revalidate: an index.html cached for a year keeps pointing at the
+    // previous build's chunk hashes after a dashboard rebuild.
+    const isHashedAsset = pathname.startsWith("/assets/");
     res.writeHead(200, {
       "Content-Type": contentType,
       "Content-Length": stat.size,
-      "Cache-Control": [".js", ".mjs", ".glb", ".gltf", ".wasm"].includes(ext)
-        ? "no-cache"
-        : "public, max-age=31536000, immutable",
+      "Cache-Control": isHashedAsset
+        ? "public, max-age=31536000, immutable"
+        : "no-cache",
     });
 
     const stream = handle.createReadStream();

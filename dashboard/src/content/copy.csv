@@ -169,28 +169,66 @@ dashboard.projects.detail.comp_output,ui,DataDetails,ProjectDetailModal,comp_out
 dashboard.projects.detail.comp_reasoning,ui,DataDetails,ProjectDetailModal,comp_reasoning,"Reasoning",,active
 dashboard.projects.detail.source_days,ui,DataDetails,ProjectDetailModal,source_days,"{{n}}d",,active
 dashboard.projects.detail.source_conv,ui,DataDetails,ProjectDetailModal,source_conv,"{{n}} conv",,active
-dashboard.widgets.title,dashboard,DashboardPage,WidgetOnboardingCard,title,"Desktop Widgets",,active
-dashboard.widgets.hint,dashboard,DashboardPage,WidgetOnboardingCard,hint,"Right-click your desktop → Edit Widgets → search ""TokenTracker""",,active
-dashboard.widgets.dismiss_aria,dashboard,DashboardPage,WidgetOnboardingCard,dismiss_aria,"Dismiss widget intro",,active
 dashboard.linux_topbar.title,dashboard,DashboardPage,LinuxTopBarCard,title,"Track usage in your top bar",,active
 dashboard.linux_topbar.hint,dashboard,DashboardPage,LinuxTopBarCard,hint,"On GNOME, the TokenTracker extension puts today's tokens and spend next to Clawd in the top bar, with a dropdown for limits and trends.",,active
 dashboard.linux_topbar.setup,dashboard,DashboardPage,LinuxTopBarCard,setup,"Set up",,active
 dashboard.linux_topbar.dismiss_aria,dashboard,DashboardPage,LinuxTopBarCard,dismiss_aria,"Dismiss top bar tip",,active
 dashboard.linux_topbar.preview_readout,dashboard,DashboardPage,LinuxTopBarCard,preview_readout,"8.2M · $12.40",Illustrative figures,active
-widgets.page.title,dashboard,WidgetsPage,WidgetsPage,title,"Menu Bar & Widgets",,active
-widgets.cta.open_gallery,dashboard,WidgetsPage,WidgetsPage,cta_open_gallery,"Open Widget Gallery",,active
-widgets.cta.download,dashboard,WidgetsPage,WidgetsPage,cta_download,"Download Mac App",,active
-widgets.cta.macos_only,dashboard,WidgetsPage,WidgetsPage,cta_macos_only,"macOS only",,active
-widgets.menubar.section.title,dashboard,WidgetsPage,WidgetsPage,menubar_section_title,"Menu Bar",,active
-widgets.gallery.section.title,dashboard,WidgetsPage,WidgetsPage,gallery_section_title,"Desktop Widgets",,active
-widgets.summary.name,dashboard,WidgetsPage,WidgetsPage,summary_name,"Usage Summary",,active
-widgets.summary.description,dashboard,WidgetsPage,WidgetsPage,summary_desc,"Today and seven-day usage with a compact sparkline.",,active
-widgets.heatmap.name,dashboard,WidgetsPage,WidgetsPage,heatmap_name,"Activity Heatmap",,active
-widgets.heatmap.description,dashboard,WidgetsPage,WidgetsPage,heatmap_desc,"GitHub-style daily calendar. Spot streaks and quiet days at a glance.",,active
-widgets.topModels.name,dashboard,WidgetsPage,WidgetsPage,topmodels_name,"Top Models",,active
-widgets.topModels.description,dashboard,WidgetsPage,WidgetsPage,topmodels_desc,"Your heaviest-used models ranked by token share.",,active
-widgets.limits.name,dashboard,WidgetsPage,WidgetsPage,limits_name,"Usage Limits",,active
-widgets.limits.description,dashboard,WidgetsPage,WidgetsPage,limits_desc,"Live rate-limit progress for Claude, Codex, Cursor, Gemini and more.",,active
+widgets.page.title,dashboard,WidgetsPage,WidgetsPage,title,"Desktop Widgets",,active
+widgets.page.subtitle,dashboard,WidgetsPage,WidgetsPage,page_subtitle,"Always-on desktop companions from the Windows tray app.",,active
+widgets.quota.title,dashboard,WidgetsPage,WidgetsPage,quota_title,"Desktop quota widget",,active
+widgets.quota.description,dashboard,WidgetsPage,WidgetsPage,quota_desc,"A compact always-on-top surface showing remaining quota and reset countdowns for up to two providers.",,active
+widgets.quota.toggle.label,dashboard,WidgetsPage,WidgetsPage,quota_toggle_label,"Show desktop quota widget",,active
+widgets.quota.browser_hint,dashboard,WidgetsPage,WidgetsPage,quota_browser_hint,"The desktop quota widget lives in the Windows tray app. Open this dashboard inside the app to toggle it here.",,active
+widgets.quota.features.bars,dashboard,WidgetsPage,WidgetsPage,quota_feature_bars,"Remaining-quota bars for up to two providers with real reset countdowns",,active
+widgets.quota.features.expand,dashboard,WidgetsPage,WidgetsPage,quota_feature_expand,"Click to expand; pick provider windows with the sliders button",,active
+widgets.quota.features.move,dashboard,WidgetsPage,WidgetsPage,quota_feature_move,"Drag the grip to move it, press Escape to collapse, hides over fullscreen apps",,active
+widgets.quota.features.theme,dashboard,WidgetsPage,WidgetsPage,quota_feature_theme,"Follows the app theme and language, remembers its position",,active
+widgets.quota.screenshot.collapsed.caption,dashboard,WidgetsPage,WidgetsPage,quota_shot_collapsed_caption,"Collapsed · 320 × 144",,active
+widgets.quota.screenshot.collapsed.aria,dashboard,WidgetsPage,WidgetsPage,quota_shot_collapsed_aria,"Desktop quota widget in collapsed state",,active
+widgets.quota.screenshot.expanded.caption,dashboard,WidgetsPage,WidgetsPage,quota_shot_expanded_caption,"Expanded · 360 × 340",,active
+widgets.quota.screenshot.expanded.aria,dashboard,WidgetsPage,WidgetsPage,quota_shot_expanded_aria,"Desktop quota widget in expanded state",,active
+widgets.tray.title,dashboard,WidgetsPage,WidgetsPage,tray_title,"System tray",,active
+widgets.tray.description,dashboard,WidgetsPage,WidgetsPage,tray_desc,"TokenTracker lives in the system tray. Right-click the tray icon for quick actions:",,active
+widgets.tray.item.dashboard,dashboard,WidgetsPage,WidgetsPage,tray_item_dashboard,"Open Dashboard — the top row shows your live usage summary",,active
+widgets.tray.item.quota,dashboard,WidgetsPage,WidgetsPage,tray_item_quota,"Desktop quota — show or hide the widget",,active
+widgets.tray.item.pet,dashboard,WidgetsPage,WidgetsPage,tray_item_pet,"Floating pet — size and character",,active
+widgets.tray.item.startup,dashboard,WidgetsPage,WidgetsPage,tray_item_startup,"Launch at Windows startup",,active
+widgets.tray.item.quit,dashboard,WidgetsPage,WidgetsPage,tray_item_quit,"Quit the app (also stops the local server)",,active
+widgets.pet.title,dashboard,WidgetsPage,WidgetsPage,pet_title,"Floating pet",,active
+widgets.pet.description,dashboard,WidgetsPage,WidgetsPage,pet_desc,"A desktop companion that reacts to your usage. Configure its size, character, and color on the pet settings page.",,active
+widgets.pet.link,dashboard,WidgetsPage,WidgetsPage,pet_link,"Open pet settings",,active
+widgets.gallery.title,dashboard,WidgetsPage,WidgetGallery,gallery_title,"More desktop widgets",,active
+widgets.gallery.hint,dashboard,WidgetsPage,WidgetGallery,gallery_hint,"Previews only — open this dashboard inside the Windows tray app to toggle these widgets.",,active
+widgets.card.summary.name,dashboard,WidgetsPage,WidgetGallery,card_summary_name,"Usage Summary",,active
+widgets.card.summary.description,dashboard,WidgetsPage,WidgetGallery,card_summary_desc,"Today and 7-day token usage and cost at a glance.",,active
+widgets.card.summary.toggle,dashboard,WidgetsPage,WidgetGallery,card_summary_toggle,"Show summary widget",,active
+widgets.card.heatmap.name,dashboard,WidgetsPage,WidgetGallery,card_heatmap_name,"Activity Heatmap",,active
+widgets.card.heatmap.description,dashboard,WidgetsPage,WidgetGallery,card_heatmap_desc,"GitHub-style 52-week activity calendar.",,active
+widgets.card.heatmap.toggle,dashboard,WidgetsPage,WidgetGallery,card_heatmap_toggle,"Show heatmap widget",,active
+widgets.card.topmodels.name,dashboard,WidgetsPage,WidgetGallery,card_topmodels_name,"Top Models",,active
+widgets.card.topmodels.description,dashboard,WidgetsPage,WidgetGallery,card_topmodels_desc,"Your heaviest-used models with their token share.",,active
+widgets.card.topmodels.toggle,dashboard,WidgetsPage,WidgetGallery,card_topmodels_toggle,"Show top models widget",,active
+widgets.card.limits.name,dashboard,WidgetsPage,WidgetGallery,card_limits_name,"Usage Limits",,active
+widgets.card.limits.description,dashboard,WidgetsPage,WidgetGallery,card_limits_desc,"Remaining quota and reset countdowns for up to four providers.",,active
+widgets.card.limits.toggle,dashboard,WidgetsPage,WidgetGallery,card_limits_toggle,"Show limits widget",,active
+widget.loading,ui,NativeWidgets,WidgetShell,loading,"Loading…",,active
+widget.summary.title,ui,NativeWidgets,SummaryWidget,title,"Usage Summary",,active
+widget.heatmap.title,ui,NativeWidgets,HeatmapWidget,title,"Activity Heatmap",,active
+widget.topmodels.title,ui,NativeWidgets,TopModelsWidget,title,"Top Models",,active
+widget.limits.title,ui,NativeWidgets,LimitsWidget,title,"Usage Limits",,active
+widget.today,ui,NativeWidgets,SummaryWidget,today,"Today",,active
+widget.seven_days,ui,NativeWidgets,SummaryWidget,seven_days,"7 days",,active
+widget.thirty_days,ui,NativeWidgets,SummaryWidget,thirty_days,"30 days",,active
+widget.avg_per_day,ui,NativeWidgets,SummaryWidget,avg_per_day,"Avg / active day",,active
+widget.last30d_active,ui,NativeWidgets,SummaryWidget,last30d_active,"last 30 days",,active
+widget.active_days_count,ui,NativeWidgets,SummaryWidget,active_days_count,"{{count}} active days",,active
+widget.conversations,ui,NativeWidgets,SummaryWidget,conversations,"conversations",,active
+widget.streak_days,ui,NativeWidgets,SummaryWidget,streak_days,"day streak",,active
+widget.active_days,ui,NativeWidgets,HeatmapWidget,active_days,"active days",,active
+widget.total_cost,ui,NativeWidgets,HeatmapWidget,total_cost,"total cost",,active
+widget.no_models,ui,NativeWidgets,TopModelsWidget,no_models,"No model usage yet",,active
+widget.limits_pick,ui,NativeWidgets,LimitsWidget,limits_pick,"Pick up to four provider windows",,active
 dashboard.cost_breakdown.title,ui,CostAnalysisModal,CostAnalysisModal,title,"Cost Breakdown",,active
 dashboard.cost_breakdown.total_label,ui,CostAnalysisModal,CostAnalysisModal,total_label,"Estimated Total Cost",,active
 dashboard.cost_breakdown.close,ui,CostAnalysisModal,CostAnalysisModal,close_label,"Close",,active
@@ -299,7 +337,7 @@ dashboard.overview.layout.drag_handle,dashboard,DashboardPage,SortableCard,drag_
 dashboard.screenshot.twitter_text,dashboard,DashboardPage,ScreenshotShare,share_text,"{{total_tokens}} tokens on the record.\n{{model_name}} led with {{model_percent}}%.\n\nMy AI usage, unaudited →",,active
 nav.usage,shared,*,Sidebar,nav_usage,"Tokens",,active
 nav.limits,shared,*,Sidebar,nav_limits,"Limits",,active
-nav.widgets,shared,*,Sidebar,nav_widgets,"Menu Bar & Widgets",,active
+nav.widgets,shared,*,Sidebar,nav_widgets,"Desktop Widgets",,active
 nav.collapse,shared,*,Sidebar,nav_collapse,"Collapse sidebar",,active
 nav.expand,shared,*,Sidebar,nav_expand,"Expand sidebar",,active
 nav.menu,shared,*,Sidebar,nav_menu,"Open navigation menu",,active
@@ -417,7 +455,6 @@ settings.appearance.store_period.hint,ui,SettingsPage,AppearanceSection,store_pe
 settings.appearance.classic_shade.label,ui,SettingsPage,AppearanceSection,classic_shade_label,"Classic look",,active
 settings.appearance.classic_shade.hint,ui,SettingsPage,AppearanceSection,classic_shade_hint,"Light or dark for the classic theme.",,active
 dashboard.rainy_store.description,ui,DashboardView,RainyStoreStatic,rainy_store_description,"Anime-style miniature of a warm-lit convenience store on a rainy Japanese street corner.",,active
-dashboard.rainy_store.reset_view,ui,DashboardView,RainyStoreScene,rainy_store_reset_view,"Reset store view",,active
 dashboard.rainy_store.canvas_description,ui,DashboardView,RainyStoreScene,rainy_store_canvas_description,"Interactive third-person miniature of a rainy Japanese convenience store. Drag to rotate and hold Shift while scrolling to zoom.",,active
 dashboard.rainy_store.period_label,ui,DashboardView,NeonSunMoonSwitch,rainy_store_period_label,"Store time of day",,active
 dashboard.rainy_store.period_day,ui,DashboardView,NeonSunMoonSwitch,rainy_store_period_day,"Daytime",,active
@@ -497,22 +534,6 @@ settings.menubar.autoUpdate,ui,SettingsPage,MenuBarSection,mb_auto_update,"Autom
 settings.menubar.autoUpdateHint,ui,SettingsPage,MenuBarSection,mb_auto_update_hint,"Download and install new versions in the background. Manual checks stay available when this is off.",,active
 settings.menubar.checkUpdates,ui,SettingsPage,SettingsPage,mb_check_updates,"Check for updates",,active
 settings.footer.statusPage,ui,SettingsPage,NativeAppFooter,status_page,"System status",,active
-menubar.slot.primary,ui,WidgetsPage,MenuBarDisplayCard,slot_primary,"Primary slot",,active
-menubar.slot.secondary,ui,WidgetsPage,MenuBarDisplayCard,slot_secondary,"Secondary slot",,active
-menubar.native_only,ui,WidgetsPage,MenuBarDisplayCard,native_only,"Open TokenTrackerBar for macOS to edit the live menu bar display.",,active
-menubar.metric.today_tokens,ui,WidgetsPage,MenuBarDisplayCard,metric_today_tokens,"Today Tokens",,active
-menubar.metric.none,ui,WidgetsPage,MenuBarDisplayCard,metric_none,"None (hide slot)",,active
-menubar.metric.today_cost,ui,WidgetsPage,MenuBarDisplayCard,metric_today_cost,"Today Cost",,active
-menubar.metric.last_7d_tokens,ui,WidgetsPage,MenuBarDisplayCard,metric_last_7d,"Last 7 Days",,active
-menubar.metric.total_tokens,ui,WidgetsPage,MenuBarDisplayCard,metric_total_tokens,"Total Tokens",,active
-menubar.metric.total_cost,ui,WidgetsPage,MenuBarDisplayCard,metric_total_cost,"Total Cost",,active
-menubar.metric.claude_5h,ui,WidgetsPage,MenuBarDisplayCard,metric_claude_5h,"Claude 5h Limit",,active
-menubar.metric.claude_7d,ui,WidgetsPage,MenuBarDisplayCard,metric_claude_7d,"Claude 7d Limit",,active
-menubar.metric.codex_5h,ui,WidgetsPage,MenuBarDisplayCard,metric_codex_5h,"Codex 5h Limit",,active
-menubar.metric.codex_7d,ui,WidgetsPage,MenuBarDisplayCard,metric_codex_7d,"Codex 7d Limit",,active
-menubar.metric.codex_credits,ui,WidgetsPage,MenuBarDisplayCard,metric_codex_credits,"Codex Credit Limit",,active
-menubar.metric.codex_spark_5h,ui,WidgetsPage,MenuBarDisplayCard,metric_codex_spark_5h,"Codex Spark 5h Limit",,active
-menubar.metric.codex_spark_7d,ui,WidgetsPage,MenuBarDisplayCard,metric_codex_spark_7d,"Codex Spark 7d Limit",,active
 share.modal.title,share,DashboardPage,ShareModal,title,"Share your stats",,active
 share.modal.subtitle,share,DashboardPage,ShareModal,subtitle,"Generate a poster-style card and share anywhere.",,active
 share.modal.close,share,DashboardPage,ShareModal,close,"Close",,active
@@ -1274,12 +1295,6 @@ wrapped.highlight.day,ui,WrappedPage,WrappedPage,highlight_day,"Your busiest day
 wrapped.highlight.hour,ui,WrappedPage,WrappedPage,highlight_hour,"You hit peak flow around {{hour}}:00 UTC.",,active
 wrapped.highlight.streak,ui,WrappedPage,WrappedPage,highlight_streak,"Longest streak: {{days}} consecutive days of coding with AI.",,active
 wrapped.highlight.tools,ui,WrappedPage,WrappedPage,highlight_tools,"You used {{count}} different AI tools — that's range.",,active
-widgets.preview.today,ui,WidgetsPage,WidgetsPage,preview_today,"Today",,active
-widgets.preview.seven_days,ui,WidgetsPage,WidgetsPage,preview_seven_days,"7 days",,active
-widgets.preview.heatmap_summary,ui,WidgetsPage,WidgetsPage,preview_heatmap_summary,"tokens · {{days}} active days",,active
-widgets.preview.reset_days,ui,WidgetsPage,WidgetsPage,preview_reset_days,"in {{days}}d",,active
-widgets.preview.reset_hours_minutes,ui,WidgetsPage,WidgetsPage,preview_reset_hours_minutes,"in {{hours}}h {{minutes}}m",,active
-widgets.preview.metric,ui,WidgetsPage,WidgetsPage,preview_metric,"Metric",,active
 landing.v3.how.scene.terminal_title,landing,LandingPage,HowItWorksSection,scene_terminal_title,"Terminal",,active
 landing.v3.how.scene.prompt,landing,LandingPage,HowItWorksSection,scene_prompt,"""refactor the parser""",,active
 landing.v3.how.scene.thinking,landing,LandingPage,HowItWorksSection,scene_thinking,"thinking…",,active

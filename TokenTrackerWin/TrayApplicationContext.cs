@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Win32;
 
@@ -25,6 +26,10 @@ internal sealed class TrayApplicationContext : ApplicationContext
     private PetWindow? _petWindow;
     private QuotaWidgetWindow? _quotaWindow;
     private readonly ToolStripMenuItem _quotaItem;
+    private readonly DesktopWidgetSettings _widgetSettings = DesktopWidgetSettings.Load();
+    private readonly Dictionary<string, DesktopWidgetWindow> _widgetWindows = new();
+    private readonly ToolStripMenuItem _widgetsMenuItem;
+    private readonly Dictionary<string, ToolStripMenuItem> _widgetMenuItems = new();
 
     private readonly ContextMenuStrip _menu;
     private readonly TrayMenuRenderer _menuRenderer;
@@ -92,6 +97,16 @@ internal sealed class TrayApplicationContext : ApplicationContext
         _openDashboardItem = CreateMenuItem("", (_, _) => OpenDashboard());
         _syncItem = CreateMenuItem("", (_, _) => _server.TriggerSync());
         _quotaItem = CreateMenuItem("", (_, _) => ToggleQuota());
+        // "Desktop Widgets" submenu: the quota surface plus the four generic widgets.
+        _widgetsMenuItem = CreateMenuItem("", (_, _) => { });
+        _widgetsMenuItem.DropDownItems.Add(_quotaItem);
+        foreach (var descriptor in DesktopWidgets.All)
+        {
+            var item = CreateMenuItem("", (_, _) => ToggleWidget(descriptor.Kind));
+            _widgetMenuItems[descriptor.Kind] = item;
+            _widgetsMenuItem.DropDownItems.Add(item);
+        }
+        StyleSubmenu(_widgetsMenuItem.DropDown);
         _petItem = CreateMenuItem("", (_, _) => TogglePet());
         _petSizeSmall = CreateMenuItem("", (_, _) => SetPetSize(PetWindow.SizeSmall));
         _petSizeMedium = CreateMenuItem("", (_, _) => SetPetSize(PetWindow.SizeMedium));
@@ -174,7 +189,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
         _menu.Items.Add(CreateSeparator());
         _menu.Items.Add(_openDashboardItem);
         _menu.Items.Add(_syncItem);
-        _menu.Items.Add(_quotaItem);
+        _menu.Items.Add(_widgetsMenuItem);
         _menu.Items.Add(_petItem);
         _menu.Items.Add(_petSizeItem);
         _menu.Items.Add(_petCharacterItem);
@@ -233,6 +248,21 @@ internal sealed class TrayApplicationContext : ApplicationContext
         if (_quotaWindow.Enabled)
             _uiDispatcher.BeginInvoke(new Action(() => { _quotaWindow.SetEnabled(true); UpdateLimitsPolling(); _poller.RefreshNow(); }));
 
+        foreach (var descriptor in DesktopWidgets.All)
+        {
+            var window = EnsureWidgetWindow(descriptor.Kind);
+            window.EnabledChanged += () => { _widgetMenuItems[descriptor.Kind].Checked = window.Enabled; UpdateLimitsPolling(); };
+            _widgetMenuItems[descriptor.Kind].Checked = window.Enabled;
+            if (window.Enabled)
+                _uiDispatcher.BeginInvoke(new Action(() =>
+                {
+                    window.SetEnabled(true);
+                    PushWidgetData(descriptor.Kind);
+                    UpdateLimitsPolling();
+                    _poller.RefreshNow();
+                }));
+        }
+
         if (PetWindow.StoredVisible ?? showPetOnLaunch)
         {
             _uiDispatcher.BeginInvoke(new Action(() =>
@@ -247,12 +277,84 @@ internal sealed class TrayApplicationContext : ApplicationContext
         }
     }
 
-    private void UpdateLimitsPolling() => _poller.IncludeLimits = _petWindow?.IsVisible == true || _quotaWindow?.Enabled == true;
+    private void UpdateLimitsPolling()
+    {
+        // Rich stats (heatmap + top models) cost two extra endpoint calls, so
+        // they are only polled while a consumer is actually visible.
+        _poller.IncludeRichStats = _petWindow?.IsVisible == true
+            || WidgetEnabled(DesktopWidgets.Heatmap.Kind)
+            || WidgetEnabled(DesktopWidgets.TopModels.Kind);
+        _poller.IncludeLimits = _petWindow?.IsVisible == true
+            || _quotaWindow?.Enabled == true
+            || WidgetEnabled(DesktopWidgets.Limits.Kind);
+    }
 
-    private void ToggleQuota()
+    /// <summary>Widget enabled state, from the live window if it exists, else persisted settings.</summary>
+    private bool WidgetEnabled(string kind) =>
+        _widgetWindows.TryGetValue(kind, out var window) ? window.Enabled : _widgetSettings.For(kind).Enabled;
+
+    private DesktopWidgetWindow EnsureWidgetWindow(string kind)
+    {
+        if (_widgetWindows.TryGetValue(kind, out var window)) return window;
+        var descriptor = DesktopWidgets.All.Single(d => d.Kind == kind);
+        window = new DesktopWidgetWindow(descriptor, _server, OpenDashboard, _widgetWebViewEnvironment, _widgetSettings);
+        _widgetWindows[kind] = window;
+        return window;
+    }
+
+    private void ToggleWidget(string kind) => SetWidgetEnabled(kind, !WidgetEnabled(kind));
+
+    private void SetWidgetEnabled(string kind, bool enable)
+    {
+        var window = EnsureWidgetWindow(kind);
+        window.SetEnabled(enable);
+        _widgetMenuItems[kind].Checked = window.Enabled;
+        PushWidgetData(kind);   // seed the first paint with the last known data
+        UpdateLimitsPolling();
+        if (window.Enabled) _poller.RefreshNow();
+    }
+
+    /// <summary>Push the cached data snapshot for one widget kind (summary/topmodels from stats, heatmap raw JSON, limits raw JSON).</summary>
+    private void PushWidgetData(string kind)
+    {
+        if (!_widgetWindows.TryGetValue(kind, out var window)) return;
+        switch (kind)
+        {
+            case "summary" when _lastStats is { } s:
+                window.UpdateData(JsonSerializer.Serialize(new
+                {
+                    today = new { tokens = s.TodayTokens, cost = s.TodayCostUsd, conversations = s.TodayConversations },
+                    last7d = new { tokens = s.Last7dTokens, activeDays = s.Last7dActiveDays },
+                    last30d = new { tokens = s.Last30dTokens, avgPerDay = s.Last30dAvgPerDay },
+                    streakDays = s.StreakDays,
+                    activeDaysAllTime = s.ActiveDaysAllTime,
+                }));
+                break;
+            case "topmodels" when _lastStats is { } st:
+                window.UpdateData(JsonSerializer.Serialize(new
+                {
+                    models = st.TopModels.Select(m => new { name = m.Name, percent = m.Percent, source = m.Source }).ToArray(),
+                }));
+                break;
+            case "heatmap" when _lastStats?.HeatmapJson is { } heatmapJson:
+                window.UpdateData(heatmapJson);
+                break;
+            case "limits" when _lastLimitsJson is { } limitsJson:
+                window.UpdateData(limitsJson);
+                break;
+        }
+    }
+
+    private void ToggleQuota() => SetQuotaWidgetEnabled(!(_quotaWindow?.Enabled ?? false));
+
+    /// <summary>
+    /// Single write path for the desktop quota widget — shared by the tray menu
+    /// toggle and the dashboard's quotaWidget setting so both stay in sync.
+    /// </summary>
+    private void SetQuotaWidgetEnabled(bool enable)
     {
         _quotaWindow ??= new QuotaWidgetWindow(_server, OpenDashboard, _widgetWebViewEnvironment);
-        _quotaWindow.SetEnabled(!_quotaWindow.Enabled);
+        _quotaWindow.SetEnabled(enable);
         _quotaItem.Checked = _quotaWindow.Enabled;
         if (_lastLimitsJson is not null) _quotaWindow.ApplyLimits(_lastLimitsJson);
         UpdateLimitsPolling();
@@ -321,7 +423,14 @@ internal sealed class TrayApplicationContext : ApplicationContext
         _openDashboardItem.Text = _strings.OpenDashboard;
         _syncItem.Text = _strings.SyncNow;
         _quotaItem.Text = _strings.DesktopQuota;
-        _quotaWindow?.ApplyLocale(NativeLocalization.ResolveLocale(_localePreference));
+        _widgetsMenuItem.Text = _strings.DesktopWidgetsMenu;
+        _widgetMenuItems[DesktopWidgets.Summary.Kind].Text = _strings.WidgetSummary;
+        _widgetMenuItems[DesktopWidgets.Heatmap.Kind].Text = _strings.WidgetHeatmap;
+        _widgetMenuItems[DesktopWidgets.TopModels.Kind].Text = _strings.WidgetTopModels;
+        _widgetMenuItems[DesktopWidgets.Limits.Kind].Text = _strings.WidgetLimits;
+        var resolvedLocale = NativeLocalization.ResolveLocale(_localePreference);
+        _quotaWindow?.ApplyLocale(resolvedLocale);
+        foreach (var window in _widgetWindows.Values) window.ApplyLocale(resolvedLocale);
         UpdatePetMenuText();
         _petSizeItem.Text = _strings.PetSize;
         _petSizeSmall.Text = _strings.SizeSmall;
@@ -386,7 +495,9 @@ internal sealed class TrayApplicationContext : ApplicationContext
     private void ApplyThemePreference(string preference)
     {
         var normalized = NativeTheme.NormalizePreference(preference);
-        _quotaWindow?.ApplyTheme(NativeTheme.ResolveIsLight(normalized));
+        var widgetStyle = NativeTheme.ResolveWidgetStyle(normalized, NativeTheme.CurrentNeonStorePeriod);
+        _quotaWindow?.ApplyTheme(widgetStyle);
+        foreach (var window in _widgetWindows.Values) window.ApplyTheme(widgetStyle);
         var nextPalette = TrayMenuRenderer.PaletteFor(NativeTheme.ResolveIsLight(normalized));
         if (_themePreference == normalized && _menuPalette == nextPalette) return;
 
@@ -398,9 +509,19 @@ internal sealed class TrayApplicationContext : ApplicationContext
 
     private async void RefreshThemeFromDashboard()
     {
-        var preference = _dashboard is not null
-            ? await _dashboard.ReadThemePreferenceAsync()
-            : NativeTheme.CurrentPreference;
+        string preference;
+        string period;
+        if (_dashboard is not null)
+        {
+            preference = await _dashboard.ReadThemePreferenceAsync();
+            period = await _dashboard.ReadNeonStorePeriodAsync();
+        }
+        else
+        {
+            preference = NativeTheme.CurrentPreference;
+            period = NativeTheme.CurrentNeonStorePeriod;
+        }
+        NativeTheme.StoreNeonStorePeriod(period);
         ApplyThemePreference(preference);
     }
 
@@ -718,10 +839,15 @@ internal sealed class TrayApplicationContext : ApplicationContext
             launchAtLoginSupported = false,
             isSyncing = _isSyncing,
             version = CurrentAppVersion,
-            // These capabilities are macOS-only. Omitting their controls keeps the
-            // Windows settings page focused on features that are actually supported.
+            quotaWidget = _quotaWindow?.Enabled == true,
+            widgetSummary = WidgetEnabled(DesktopWidgets.Summary.Kind),
+            widgetHeatmap = WidgetEnabled(DesktopWidgets.Heatmap.Kind),
+            widgetTopmodels = WidgetEnabled(DesktopWidgets.TopModels.Kind),
+            widgetLimits = WidgetEnabled(DesktopWidgets.Limits.Kind),
+            // Dynamic Island is macOS-only; the desktop quota widget is the
+            // Windows counterpart and is controlled from the widgets page.
             dynamicIslandSupported = false,
-            widgetsSupported = false,
+            widgetsSupported = true,
         });
     }
 
@@ -732,6 +858,21 @@ internal sealed class TrayApplicationContext : ApplicationContext
             case "launchAtLogin" when value is bool launch:
                 if (launch) LaunchAtStartup.Enable();
                 else LaunchAtStartup.Disable();
+                break;
+            case "quotaWidget" when value is bool enable:
+                SetQuotaWidgetEnabled(enable);
+                break;
+            case "widgetSummary" when value is bool enableSummary:
+                SetWidgetEnabled(DesktopWidgets.Summary.Kind, enableSummary);
+                break;
+            case "widgetHeatmap" when value is bool enableHeatmap:
+                SetWidgetEnabled(DesktopWidgets.Heatmap.Kind, enableHeatmap);
+                break;
+            case "widgetTopmodels" when value is bool enableTopmodels:
+                SetWidgetEnabled(DesktopWidgets.TopModels.Kind, enableTopmodels);
+                break;
+            case "widgetLimits" when value is bool enableLimits:
+                SetWidgetEnabled(DesktopWidgets.Limits.Kind, enableLimits);
                 break;
             case TokenUnits.SettingKey when value is string unitSystem:
                 // Display-only preference: persist it, then re-render the tray summary
@@ -818,7 +959,13 @@ internal sealed class TrayApplicationContext : ApplicationContext
     private void OnStatsUpdated(UsagePoller.UsageStats stats)
     {
         _lastStats = stats;
-        PostToUi(RefreshSummary);
+        PostToUi(() =>
+        {
+            PushWidgetData(DesktopWidgets.Summary.Kind);
+            PushWidgetData(DesktopWidgets.TopModels.Kind);
+            PushWidgetData(DesktopWidgets.Heatmap.Kind);
+            RefreshSummary();
+        });
     }
 
     private void OnLimitsUpdated(string limitsJson)
@@ -830,6 +977,8 @@ internal sealed class TrayApplicationContext : ApplicationContext
             _lastLimitsJson = limitsJson;
             _petWindow?.ApplyLimits(limitsJson);
             _quotaWindow?.ApplyLimits(limitsJson);
+            if (_widgetWindows.TryGetValue(DesktopWidgets.Limits.Kind, out var limitsWidget))
+                limitsWidget.UpdateData(limitsJson);
         });
     }
 
@@ -1006,6 +1155,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
     private void Quit()
     {
         _quotaWindow?.Shutdown();
+        foreach (var window in _widgetWindows.Values) window.Shutdown();
         _refreshTimer.Stop();
         _syncTimer.Stop();
         _trayIcon.Visible = false;
@@ -1031,6 +1181,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
             _dashboard?.Shutdown();   // WPF Window has no Dispose; really close it
             _petWindow?.Shutdown();
             _quotaWindow?.Shutdown();
+            foreach (var window in _widgetWindows.Values) window.Shutdown();
         }
         base.Dispose(disposing);
     }
